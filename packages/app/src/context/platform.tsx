@@ -120,6 +120,18 @@ type PlatformBase = {
 
   /** Record a fatal renderer error in platform logs (desktop only) */
   recordFatalRendererError?(error: FatalRendererErrorLog): Promise<void>
+
+  /** Start voice input (iOS only) */
+  startVoiceInput?(): void
+
+  /** Stop voice input and return transcription (iOS only) */
+  stopVoiceInput?(): Promise<string>
+
+  /** Haptic feedback (iOS only) */
+  haptic?(style: "light" | "medium" | "heavy" | "success" | "warning" | "error"): void
+
+  /** Share content (iOS only) */
+  share?(data: { text?: string; url?: string }): Promise<boolean>
 }
 
 export type Platform = PlatformBase &
@@ -130,6 +142,7 @@ export type Platform = PlatformBase &
         os?: DesktopOS
         openDirectoryPickerDialog(opts?: OpenDirectoryPickerOptions): Promise<PickerPaths>
       }
+    | { platform: "ios"; os?: "ios" }
   )
 
 export type DisplayBackend = "auto" | "wayland"
