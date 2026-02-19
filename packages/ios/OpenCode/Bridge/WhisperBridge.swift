@@ -6,7 +6,7 @@ private let log = Logger(subsystem: "opencode", category: "WhisperBridge")
 final class WhisperBridge {
   var onEvent: (([String: Any]) -> Void)?
   private let recorder = AudioRecorder()
-  private let manager = WhisperManager()
+  private let manager = WhisperManager.shared
   private var isRecording = false
   private var isTranscribing = false
 
