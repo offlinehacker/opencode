@@ -34,6 +34,9 @@ final class BridgeController: NSObject, WKScriptMessageHandler {
     keyboard.onClear = { [weak self] in
       self?.sendEvent(type: "keyboardClear", payload: nil)
     }
+    keyboard.onNewline = { [weak self] in
+      self?.sendEvent(type: "keyboardNewline", payload: nil)
+    }
     keyboard.onDismiss = { webView.endEditing(true) }
     loadStartPage(in: webView)
   }

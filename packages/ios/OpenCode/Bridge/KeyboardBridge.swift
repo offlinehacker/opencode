@@ -2,8 +2,19 @@ import UIKit
 import WebKit
 import ObjectiveC
 
-final class KeyboardBridge {
+// File-scope associated-object key and C-function IMP — kept outside the
+// @MainActor class so they are nonisolated and avoid Swift 6 strict-
+// concurrency issues with @convention(block) inside an actor context.
+private nonisolated(unsafe) var kToolbarKey: UInt8 = 0
+
+private let _accessoryViewIMP: @convention(c) (AnyObject, Selector) -> UIView? = { obj, _ in
+  objc_getAssociatedObject(obj, &kToolbarKey) as? UIView
+}
+
+final class KeyboardBridge: NSObject {
   var onNavigate: ((String) -> Void)?
+  var onClear: (() -> Void)?
+  var onNewline: (() -> Void)?
   var onDismiss: (() -> Void)?
 
   private weak var webView: WKWebView?
@@ -33,7 +44,7 @@ final class KeyboardBridge {
     let subclass = ensureDynamicSubclass(for: contentView)
 
     object_setClass(contentView, subclass)
-    objc_setAssociatedObject(contentView, &AssociatedKeys.toolbar, toolbar, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    objc_setAssociatedObject(contentView, &kToolbarKey, toolbar, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
   }
 
   private func findContentView(in scrollView: UIScrollView) -> UIView? {
@@ -56,10 +67,7 @@ final class KeyboardBridge {
     }
 
     let selector = #selector(getter: UIResponder.inputAccessoryView)
-    let method: @convention(block) (AnyObject) -> UIView? = { obj in
-      objc_getAssociatedObject(obj, &AssociatedKeys.toolbar) as? UIView
-    }
-    let imp = imp_implementationWithBlock(method)
+    let imp = unsafeBitCast(_accessoryViewIMP, to: IMP.self)
     class_addMethod(subclass, selector, imp, "@@:")
 
     objc_registerClassPair(subclass)
@@ -83,6 +91,18 @@ final class KeyboardBridge {
       target: self,
       action: #selector(downTapped)
     )
+    let clear = UIBarButtonItem(
+      image: UIImage(systemName: "trash"),
+      style: .plain,
+      target: self,
+      action: #selector(clearTapped)
+    )
+    let newline = UIBarButtonItem(
+      title: "\\n",
+      style: .plain,
+      target: self,
+      action: #selector(newlineTapped)
+    )
     let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
     let dismiss = UIBarButtonItem(
       image: UIImage(systemName: "keyboard.chevron.compact.down"),
@@ -91,15 +111,13 @@ final class KeyboardBridge {
       action: #selector(dismissTapped)
     )
 
-    toolbar.items = [up, down, flex, dismiss]
+    toolbar.items = [up, down, clear, newline, flex, dismiss]
     return toolbar
   }
 
   @objc private func upTapped() { onNavigate?("up") }
   @objc private func downTapped() { onNavigate?("down") }
+  @objc private func clearTapped() { onClear?() }
+  @objc private func newlineTapped() { onNewline?() }
   @objc private func dismissTapped() { onDismiss?() }
-}
-
-private enum AssociatedKeys {
-  static var toolbar: UInt8 = 0
 }

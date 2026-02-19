@@ -99,12 +99,19 @@ const App = () => {
       document.execCommand("delete")
     })
 
+    const stopKeyboardNewline = bridge.on("keyboardNewline", () => {
+      const el = document.activeElement
+      if (!el || !(el instanceof HTMLElement) || !el.isContentEditable) return
+      document.execCommand("insertLineBreak")
+    })
+
     document.addEventListener("click", handleClick)
     onCleanup(() => {
       document.removeEventListener("click", handleClick)
       stopListening()
       stopKeyboardNav()
       stopKeyboardClear()
+      stopKeyboardNewline()
     })
   })
 
