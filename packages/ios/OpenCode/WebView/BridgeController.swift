@@ -4,6 +4,7 @@ final class BridgeController: NSObject, WKScriptMessageHandler {
   private let userContent = WKUserContentController()
   private let platform = PlatformBridge()
   private let gestures = GestureBridge()
+  private let keyboard = KeyboardBridge()
   private weak var webView: WKWebView?
 
   var configuration: WKWebViewConfiguration {
@@ -26,6 +27,11 @@ final class BridgeController: NSObject, WKScriptMessageHandler {
     gestures.attach(to: webView) { [weak self] type, payload in
       self?.sendEvent(type: type, payload: payload)
     }
+    keyboard.attach(to: webView)
+    keyboard.onNavigate = { [weak self] direction in
+      self?.sendEvent(type: "keyboardNavigation", payload: ["direction": direction])
+    }
+    keyboard.onDismiss = { webView.endEditing(true) }
     loadStartPage(in: webView)
   }
 

@@ -83,10 +83,19 @@ const App = () => {
       emitTranscription(detail.text, detail.isFinal)
     })
 
+    const stopKeyboardNav = bridge.on("keyboardNavigation", (payload) => {
+      if (!payload || typeof payload !== "object") return
+      const { direction } = payload as { direction?: string }
+      if (direction !== "up" && direction !== "down") return
+      const key = direction === "up" ? "ArrowUp" : "ArrowDown"
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }))
+    })
+
     document.addEventListener("click", handleClick)
     onCleanup(() => {
       document.removeEventListener("click", handleClick)
       stopListening()
+      stopKeyboardNav()
     })
   })
 
