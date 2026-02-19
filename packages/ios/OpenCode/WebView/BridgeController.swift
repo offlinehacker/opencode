@@ -31,6 +31,9 @@ final class BridgeController: NSObject, WKScriptMessageHandler {
     keyboard.onNavigate = { [weak self] direction in
       self?.sendEvent(type: "keyboardNavigation", payload: ["direction": direction])
     }
+    keyboard.onClear = { [weak self] in
+      self?.sendEvent(type: "keyboardClear", payload: nil)
+    }
     keyboard.onDismiss = { webView.endEditing(true) }
     loadStartPage(in: webView)
   }

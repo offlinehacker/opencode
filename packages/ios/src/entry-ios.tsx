@@ -91,11 +91,20 @@ const App = () => {
       document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }))
     })
 
+    const stopKeyboardClear = bridge.on("keyboardClear", () => {
+      const el = document.activeElement
+      if (!el || !(el instanceof HTMLElement) || !el.isContentEditable) return
+      el.focus()
+      document.execCommand("selectAll")
+      document.execCommand("delete")
+    })
+
     document.addEventListener("click", handleClick)
     onCleanup(() => {
       document.removeEventListener("click", handleClick)
       stopListening()
       stopKeyboardNav()
+      stopKeyboardClear()
     })
   })
 
