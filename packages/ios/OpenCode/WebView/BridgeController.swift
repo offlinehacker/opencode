@@ -42,15 +42,14 @@ final class BridgeController: NSObject, WKScriptMessageHandler {
 
   private func loadStartPage(in webView: WKWebView) {
 #if DEBUG
-    if let url = URL(string: "http://localhost:1421") {
+    if let url = URL(string: "http://192.168.50.251:1421") {
       webView.load(URLRequest(url: url))
       return
     }
 #endif
 
-    if let url = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "WebAssets") {
-      let access = url.deletingLastPathComponent()
-      webView.loadFileURL(url, allowingReadAccessTo: access)
+    if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
+      webView.loadFileURL(url, allowingReadAccessTo: Bundle.main.bundleURL)
     }
   }
 

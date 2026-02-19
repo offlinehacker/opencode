@@ -6,12 +6,15 @@ final class GestureOverlayView: UIView {
   override init(frame: CGRect) {
     super.init(frame: frame)
     backgroundColor = .clear
-    isUserInteractionEnabled = true
   }
 
   required init?(coder: NSCoder) {
     super.init(coder: coder)
     backgroundColor = .clear
-    isUserInteractionEnabled = true
+  }
+
+  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    // Pass all touches through to the WebView underneath
+    return nil
   }
 }

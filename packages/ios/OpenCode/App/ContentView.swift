@@ -3,6 +3,6 @@ import SwiftUI
 struct ContentView: View {
   var body: some View {
     OpenCodeWebView()
-      .ignoresSafeArea()
+      .ignoresSafeArea(.all, edges: .bottom)
   }
 }
