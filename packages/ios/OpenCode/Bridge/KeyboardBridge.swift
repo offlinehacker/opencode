@@ -20,31 +20,43 @@ final class KeyboardBridge: NSObject {
   private weak var webView: WKWebView?
   private var dynamicSubclass: AnyClass?
   private var observer: NSObjectProtocol?
+  private var didShowObserver: NSObjectProtocol?
 
   func attach(to webView: WKWebView) {
     self.webView = webView
-    observer = NotificationCenter.default.addObserver(
-      forName: UIResponder.keyboardWillShowNotification,
-      object: nil,
-      queue: .main
-    ) { [weak self] _ in
+    let handler: (Notification) -> Void = { [weak self] _ in
       self?.installToolbar()
     }
+    observer = NotificationCenter.default.addObserver(
+      forName: UIResponder.keyboardWillShowNotification,
+      object: nil, queue: .main, using: handler
+    )
+    didShowObserver = NotificationCenter.default.addObserver(
+      forName: UIResponder.keyboardDidShowNotification,
+      object: nil, queue: .main, using: handler
+    )
   }
 
   deinit {
     if let observer { NotificationCenter.default.removeObserver(observer) }
+    if let didShowObserver { NotificationCenter.default.removeObserver(didShowObserver) }
   }
 
   private func installToolbar() {
     guard let webView else { return }
     guard let contentView = findContentView(in: webView.scrollView) else { return }
 
+    let needsReload = objc_getAssociatedObject(contentView, &kToolbarKey) == nil
+
     let toolbar = buildToolbar()
     let subclass = ensureDynamicSubclass(for: contentView)
 
     object_setClass(contentView, subclass)
     objc_setAssociatedObject(contentView, &kToolbarKey, toolbar, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+
+    if needsReload {
+      contentView.reloadInputViews()
+    }
   }
 
   private func findContentView(in scrollView: UIScrollView) -> UIView? {
