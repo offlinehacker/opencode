@@ -27,6 +27,23 @@ actor WhisperManager {
       whisperKit = try await WhisperKit(model: "openai_whisper-base.en")
       let elapsed = CFAbsoluteTimeGetCurrent() - start
       log.warning("[PRELOAD-DEBUG] preload() done — model loaded in \(String(format: "%.1f", elapsed))s, whisperKit is \(self.whisperKit == nil ? "nil" : "SET")")
+
+      // Perform warmup inference to force CoreML initialization
+
+      // note from Human: hacky as hell but i'll allow it 
+      if let kit = whisperKit {
+        log.info("[PRELOAD-DEBUG] Performing warmup inference…")
+        var options = DecodingOptions(language: "en")
+        options.temperatureFallbackCount = 0
+        options.withoutTimestamps = true
+        options.wordTimestamps = false
+        // 1 second of silence at 16kHz
+        let dummyAudio = [Float](repeating: 0, count: 16000)
+        let warmupStart = CFAbsoluteTimeGetCurrent()
+        _ = try? await kit.transcribe(audioArray: dummyAudio, decodeOptions: options)
+        let warmupElapsed = CFAbsoluteTimeGetCurrent() - warmupStart
+        log.warning("[PRELOAD-DEBUG] Warmup inference took \(String(format: "%.1f", warmupElapsed))s")
+      }
     } catch {
       log.error("[PRELOAD-DEBUG] preload() FAILED: \(error)")
     }
