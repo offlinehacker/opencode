@@ -1,5 +1,7 @@
 # WhisperCode
 
+[Install via TestFlight](https://testflight.apple.com/join/cvQaEf6s)
+
 iOS port of [OpenCode](https://github.com/anomalyco/opencode) — true to the desktop experience.
 
 ## What is this?
