@@ -555,6 +555,7 @@ export function useServerManagementController(options: { onSelect?: () => void; 
 export function ServerConnectionList(props: { controller: ReturnType<typeof useServerManagementController> }) {
   const language = useLanguage()
   const settings = useSettings()
+  const platform = usePlatform()
 
   return (
     <div class="flex flex-1 min-h-0 flex-col gap-4">
@@ -658,6 +659,14 @@ export function ServerConnectionList(props: { controller: ReturnType<typeof useS
         >
           {language.t("dialog.server.add.button")}
         </Button>
+        <Show when={platform.platform === "ios"}>
+          <p class="text-text-dimmed text-12-regular mt-2">
+            Don't see your server? Make sure you're serving with CORS:{" "}
+            <code class="bg-surface-raised-base text-text-secondary-base px-1.5 py-0.5 rounded-sm break-all">
+              opencode serve --hostname 0.0.0.0 --cors app-local://localhost
+            </code>
+          </p>
+        </Show>
       </div>
     </div>
   )

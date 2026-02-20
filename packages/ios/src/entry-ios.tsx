@@ -1,7 +1,7 @@
 // @refresh reload
 import { render } from "solid-js/web"
 import { createResource, createSignal, onCleanup, onMount } from "solid-js"
-import { AppBaseProviders, AppInterface, PlatformProvider, type Platform } from "@opencode-ai/app"
+import { AppBaseProviders, AppInterface, PlatformProvider, ServerConnection, type Platform } from "@opencode-ai/app"
 import { bridge } from "./bridge"
 import { createBridgeStorage } from "./ios-storage"
 import { VoiceInputOverlay } from "./voice-input"
@@ -119,7 +119,14 @@ const App = () => {
     <PlatformProvider value={platform}>
       <AppBaseProviders>
         <VoiceInputOverlay active={recording} onStop={() => void stopVoiceInput()} />
-        <AppInterface defaultUrl={defaultUrl() ?? undefined} />
+        <AppInterface
+          {...(() => {
+            const url = defaultUrl()
+            if (!url) return { defaultServer: ServerConnection.key({ type: "http", http: { url: "http://localhost:4096" } }) }
+            const server: ServerConnection.Http = { type: "http", http: { url } }
+            return { defaultServer: ServerConnection.key(server), servers: [server] }
+          })()}
+        />
       </AppBaseProviders>
     </PlatformProvider>
   )

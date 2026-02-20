@@ -14,5 +14,6 @@ export default defineConfig({
     outDir: "WebAssets",
     emptyOutDir: true,
     target: "esnext",
+    assetsDir: ".",
   },
 })
