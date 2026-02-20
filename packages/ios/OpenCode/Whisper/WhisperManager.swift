@@ -10,6 +10,9 @@ actor WhisperManager {
 
   init() {
     log.warning("[PRELOAD-DEBUG] WhisperManager.init() called — instance \(ObjectIdentifier(self).debugDescription)")
+    Task {
+      await preload()
+    }
   }
 
   func preload() async {
@@ -52,8 +55,8 @@ actor WhisperManager {
 
       var options = DecodingOptions(language: "en")
       options.temperatureFallbackCount = 3
-      options.compressionRatioThreshold = nil
-      options.logProbThreshold = nil
+      options.withoutTimestamps = true
+      options.wordTimestamps = false
 
       log.info("Transcribing \(audio.count) samples…")
       let start = CFAbsoluteTimeGetCurrent()
