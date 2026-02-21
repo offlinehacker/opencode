@@ -6,12 +6,13 @@ iOS port of [OpenCode](https://github.com/anomalyco/opencode) — true to the de
 
 ## Quick Start
 
-1. On your dev machine, run:
+1. [Install WhisperCode via TestFlight](https://testflight.apple.com/join/cvQaEf6s)
+2. On your dev machine, run:
    ```
    opencode web --hostname 0.0.0.0 --cors app-local://localhost
    ```
-2. The server will output an IP address and port (e.g. `http://192.168.1.x:port`)
-3. Enter that address in the WhisperCode app on your iPhone to connect
+3. The server will output an IP address and port (e.g. `http://192.168.1.x:port`)
+4. Add that address to the WhisperCode app on your iPhone to connect
 
 > By default, your phone and dev machine must be on the same network. You can use a VPS or [Tailscale](https://tailscale.com) to connect from anywhere.
 

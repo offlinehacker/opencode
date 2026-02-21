@@ -663,8 +663,14 @@ export function ServerConnectionList(props: { controller: ReturnType<typeof useS
           <p class="text-text-dimmed text-12-regular mt-2">
             Don't see your server? Make sure you're serving with CORS:{" "}
             <code class="bg-surface-raised-base text-text-secondary-base px-1.5 py-0.5 rounded-sm break-all">
-              opencode serve --hostname 0.0.0.0 --cors app-local://localhost
-            </code>
+              opencode web --hostname 0.0.0.0 --cors app-local://localhost
+            </code>{" "}
+            <a
+              class="external-link text-text-link underline"
+              href="https://github.com/DNGriffin/whispercode?tab=readme-ov-file#quick-start"
+            >
+              Quick Start Guide
+            </a>
           </p>
         </Show>
       </div>
