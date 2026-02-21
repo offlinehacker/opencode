@@ -1763,6 +1763,12 @@ export function LegacyHome() {
         />
         {server.name}
       </Button>
+      {platform.platform === "ios" && (
+        <p class="block text-center mt-2 text-12-regular text-text-dimmed">
+          Need help connecting?{" "}
+          <a class="external-link text-text-link underline" href="https://github.com/DNGriffin/whispercode?tab=readme-ov-file#quick-start">Quick Start Guide</a>
+        </p>
+      )}
       <Switch>
         <Match when={sync().data.project.length > 0}>
           <div class="mt-20 w-full flex flex-col gap-4">
