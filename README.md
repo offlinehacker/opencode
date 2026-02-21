@@ -4,6 +4,17 @@
 
 iOS port of [OpenCode](https://github.com/anomalyco/opencode) — true to the desktop experience.
 
+## Quick Start
+
+1. On your dev machine, run:
+   ```
+   opencode web --hostname 0.0.0.0 --cors app-local://localhost
+   ```
+2. The server will output an IP address and port (e.g. `http://192.168.1.x:port`)
+3. Enter that address in the WhisperCode app on your iPhone to connect
+
+> By default, your phone and dev machine must be on the same network. You can use a VPS or [Tailscale](https://tailscale.com) to connect from anywhere.
+
 ## What is this?
 
 WhisperCode is a fork of [OpenCode](https://github.com/anomalyco/opencode) that adds native iOS support. It brings the full open-source AI coding agent to your phone.
