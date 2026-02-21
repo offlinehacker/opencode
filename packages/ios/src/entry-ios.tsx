@@ -122,9 +122,8 @@ const App = () => {
         <AppInterface
           {...(() => {
             const url = defaultUrl()
-            if (!url) return { defaultServer: ServerConnection.key({ type: "http", http: { url: "http://localhost:4096" } }) }
-            const server: ServerConnection.Http = { type: "http", http: { url } }
-            return { defaultServer: ServerConnection.key(server), servers: [server] }
+            const placeholder: ServerConnection.Http = { type: "http", http: { url: url || "http://click.me.change.this:4096" } }
+            return { defaultServer: ServerConnection.key(placeholder), servers: [placeholder] }
           })()}
         />
       </AppBaseProviders>
