@@ -2,7 +2,7 @@ import AVFoundation
 import Accelerate
 import os
 
-private let log = Logger(subsystem: "opencode", category: "AudioRecorder")
+private nonisolated let log = Logger(subsystem: "opencode", category: "AudioRecorder")
 
 /// Thread-safe buffer for audio samples collected from AVAudioEngine tap.
 /// Marked `nonisolated` to opt out of the project-wide implicit @MainActor,

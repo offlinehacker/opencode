@@ -8,13 +8,26 @@ final class PlatformBridge {
   var onEvent: ((String, Any?) -> Void)?
 
   private let haptics = HapticBridge()
-  private let whisper = WhisperBridge()
+  private var whisper: WhisperBridge?
   private let config = ServerConfig()
+  private var didKickoffPreload = false
 
-  init() {
-    whisper.onEvent = { [weak self] payload in
-      self?.onEvent?("transcription", payload)
+  private func voice() -> WhisperBridge {
+    if let whisper {
+      return whisper
     }
+    let whisper = WhisperBridge()
+    whisper.onState = { [weak self] payload in
+      self?.onEvent?("voiceState", payload)
+    }
+    self.whisper = whisper
+    return whisper
+  }
+
+  func webContentDidLoad() {
+    guard !didKickoffPreload else { return }
+    didKickoffPreload = true
+    voice().beginPreload()
   }
 
   func handle(id: String, method: String, params: [String: Any], reply: @escaping @MainActor (Any?, String?) -> Void) {
@@ -60,16 +73,19 @@ final class PlatformBridge {
     case "storageLength":
       reply(config.storageLength(name: params["name"] as? String), nil)
     case "startRecording":
-      whisper.start()
-      reply(nil, nil)
+      Task { @MainActor in
+        let result = await voice().start()
+        reply(result, nil)
+      }
     case "stopRecording":
-      whisper.stop { text in
-        reply(text, nil)
+      Task { @MainActor in
+        let result = await voice().stop()
+        reply(result, nil)
       }
     case "isWhisperReady":
       Task { @MainActor in
-        let ready = await whisper.isModelReady()
-        reply(ready, nil)
+        let result = await voice().status()
+        reply(result, nil)
       }
     default:
       reply(nil, "Unknown method")

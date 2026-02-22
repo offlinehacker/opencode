@@ -49,7 +49,7 @@ final class SpeechTranscriber {
     request.append(buffer)
     request.endAudio()
 
-    log.info("Using SFSpeechRecognizer fallback (pre-iOS 26)")
+    log.info("Using SFSpeechRecognizer fallback")
 
     return await withCheckedContinuation { continuation in
       recognizer.recognitionTask(with: request) { result, error in

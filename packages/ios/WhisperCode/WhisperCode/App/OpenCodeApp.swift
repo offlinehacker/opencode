@@ -6,8 +6,7 @@ private let log = Logger(subsystem: "opencode", category: "OpenCodeApp")
 @main
 struct OpenCodeApp: App {
   init() {
-    log.info("OpenCodeApp.init() — triggering WhisperManager singleton")
-    _ = WhisperManager.shared
+    log.info("OpenCodeApp.init()")
   }
 
   var body: some Scene {

@@ -20,43 +20,32 @@ final class KeyboardBridge: NSObject {
   private weak var webView: WKWebView?
   private var dynamicSubclass: AnyClass?
   private var observer: NSObjectProtocol?
-  private var didShowObserver: NSObjectProtocol?
 
   func attach(to webView: WKWebView) {
     self.webView = webView
-    let handler: (Notification) -> Void = { [weak self] _ in
+    observer = NotificationCenter.default.addObserver(
+      forName: UIResponder.keyboardDidShowNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
       self?.installToolbar()
     }
-    observer = NotificationCenter.default.addObserver(
-      forName: UIResponder.keyboardWillShowNotification,
-      object: nil, queue: .main, using: handler
-    )
-    didShowObserver = NotificationCenter.default.addObserver(
-      forName: UIResponder.keyboardDidShowNotification,
-      object: nil, queue: .main, using: handler
-    )
   }
 
   deinit {
     if let observer { NotificationCenter.default.removeObserver(observer) }
-    if let didShowObserver { NotificationCenter.default.removeObserver(didShowObserver) }
   }
 
   private func installToolbar() {
     guard let webView else { return }
     guard let contentView = findContentView(in: webView.scrollView) else { return }
-
-    let needsReload = objc_getAssociatedObject(contentView, &kToolbarKey) == nil
-
-    let toolbar = buildToolbar()
+    guard objc_getAssociatedObject(contentView, &kToolbarKey) == nil else { return }
+    let toolbar = buildToolbar(width: max(webView.bounds.width, UIScreen.main.bounds.width))
     let subclass = ensureDynamicSubclass(for: contentView)
 
     object_setClass(contentView, subclass)
     objc_setAssociatedObject(contentView, &kToolbarKey, toolbar, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-
-    if needsReload {
-      contentView.reloadInputViews()
-    }
+    contentView.reloadInputViews()
   }
 
   private func findContentView(in scrollView: UIScrollView) -> UIView? {
@@ -87,8 +76,9 @@ final class KeyboardBridge: NSObject {
     return subclass
   }
 
-  private func buildToolbar() -> UIToolbar {
-    let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: 0, height: 44))
+  private func buildToolbar(width: CGFloat) -> UIToolbar {
+    let toolbar = UIToolbar(frame: CGRect(x: 0, y: 0, width: width, height: 44))
+    toolbar.autoresizingMask = [.flexibleWidth]
     toolbar.sizeToFit()
 
     let up = UIBarButtonItem(

@@ -2,10 +2,28 @@
 import { render } from "solid-js/web"
 import { createResource, createSignal, onCleanup, onMount } from "solid-js"
 import { AppBaseProviders, AppInterface, PlatformProvider, ServerConnection, type Platform } from "@opencode-ai/app"
+import { showToast } from "@opencode-ai/ui/toast"
 import { bridge } from "./bridge"
 import { createBridgeStorage } from "./ios-storage"
 import { VoiceInputOverlay } from "./voice-input"
 import pkg from "../package.json"
+
+type VoiceState = "prewarming" | "ready" | "recording" | "processing" | "error"
+type VoiceStatus = {
+  state: VoiceState
+  ready: boolean
+  message?: string
+}
+type VoiceStartResult = {
+  ok: boolean
+  code?: string
+  message?: string
+}
+type VoiceStopResult = {
+  text: string
+  code?: string
+  message?: string
+}
 
 const root = document.getElementById("root")
 if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
@@ -13,23 +31,85 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 }
 
 const App = () => {
-  const [recording, setRecording] = createSignal(false)
+  const [voice, setVoice] = createSignal<VoiceStatus>({ state: "prewarming", ready: false })
 
   const emitTranscription = (text: string, isFinal?: boolean) => {
     if (!text) return
     window.dispatchEvent(new CustomEvent("opencode:transcription", { detail: { text, isFinal } }))
   }
 
-  const startVoiceInput = () => {
-    setRecording(true)
-    bridge.send("startRecording")
+  const showVoiceError = (message?: string) => {
+    if (!message) return
+    showToast({
+      title: "Voice input failed",
+      description: message,
+      variant: "error",
+    })
   }
 
-  const stopVoiceInput = async () => {
-    const text = await bridge.sendAsync<string>("stopRecording")
-    setRecording(false)
-    if (text) emitTranscription(text, true)
-    return text ?? ""
+  const normalizeStatus = (value: unknown): VoiceStatus | null => {
+    if (!value || typeof value !== "object") return null
+    const state = (value as { state?: unknown }).state
+    if (
+      state !== "prewarming" &&
+      state !== "ready" &&
+      state !== "recording" &&
+      state !== "processing" &&
+      state !== "error"
+    ) {
+      return null
+    }
+    return {
+      state,
+      ready: (value as { ready?: unknown }).ready === true,
+      message: typeof (value as { message?: unknown }).message === "string" ? (value as { message: string }).message : undefined,
+    }
+  }
+
+  const refreshVoice = async () => {
+    const result = await bridge.sendAsync<VoiceStatus>("isWhisperReady")
+    const status = normalizeStatus(result)
+    if (!status) return
+    setVoice(status)
+  }
+
+  const startVoiceInput = async (): Promise<VoiceStartResult> => {
+    const result = await bridge.sendAsync<VoiceStartResult>("startRecording")
+    if (result?.ok) {
+      setVoice({ state: "recording", ready: false })
+      return result
+    }
+    const message = result?.message ?? "Voice input is unavailable."
+    showVoiceError(message)
+    await refreshVoice()
+    return {
+      ok: false,
+      code: result?.code ?? "voice_start_failed",
+      message,
+    }
+  }
+
+  const stopVoiceInput = async (): Promise<VoiceStopResult> => {
+    setVoice((value) => (value.state === "recording" ? { ...value, state: "processing", ready: false } : value))
+    const result = await bridge.sendAsync<VoiceStopResult>("stopRecording")
+    if (!result) {
+      const message = "Voice input is unavailable."
+      showVoiceError(message)
+      await refreshVoice()
+      return {
+        text: "",
+        code: "voice_stop_failed",
+        message,
+      }
+    }
+    if (result.code) {
+      showVoiceError(result.message ?? "Voice transcription failed.")
+      await refreshVoice()
+      return result
+    }
+    await refreshVoice()
+    if (result.text) emitTranscription(result.text, true)
+    return result
   }
 
   const platform: Platform = {
@@ -43,6 +123,7 @@ const App = () => {
     back: () => window.history.back(),
     forward: () => window.history.forward(),
     restart: async () => window.location.reload(),
+    voiceStatus: voice,
     startVoiceInput,
     stopVoiceInput,
     haptic: (style: "light" | "medium" | "heavy" | "success" | "warning" | "error") => {
@@ -69,6 +150,8 @@ const App = () => {
   })
 
   onMount(() => {
+    void refreshVoice()
+
     const handleClick = (event: MouseEvent) => {
       const link = (event.target as HTMLElement | null)?.closest("a.external-link") as HTMLAnchorElement | null
       if (!link?.href) return
@@ -81,6 +164,13 @@ const App = () => {
       const detail = payload as { text?: string; isFinal?: boolean }
       if (typeof detail.text !== "string") return
       emitTranscription(detail.text, detail.isFinal)
+    })
+
+    const stopVoiceState = bridge.on("voiceState", (payload) => {
+      const status = normalizeStatus(payload)
+      if (!status) return
+      setVoice(status)
+      if (status.state === "error") showVoiceError(status.message)
     })
 
     const stopKeyboardNav = bridge.on("keyboardNavigation", (payload) => {
@@ -109,6 +199,7 @@ const App = () => {
     onCleanup(() => {
       document.removeEventListener("click", handleClick)
       stopListening()
+      stopVoiceState()
       stopKeyboardNav()
       stopKeyboardClear()
       stopKeyboardNewline()
@@ -118,7 +209,14 @@ const App = () => {
   return (
     <PlatformProvider value={platform}>
       <AppBaseProviders>
-        <VoiceInputOverlay active={recording} onStop={() => void stopVoiceInput()} />
+        <VoiceInputOverlay
+          state={() => {
+            const state = voice().state
+            if (state === "recording" || state === "processing") return state
+            return "hidden"
+          }}
+          onStop={() => void stopVoiceInput()}
+        />
         <AppInterface
           {...(() => {
             const url = defaultUrl()

@@ -1639,7 +1639,12 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                     type="button"
                     variant="ghost"
                     class="size-8 p-0"
-                    onClick={() => platform.startVoiceInput?.()}
+                    onClick={() => void platform.startVoiceInput?.()}
+                    disabled={
+                      platform.voiceStatus
+                        ? platform.voiceStatus().state === "recording" || platform.voiceStatus().state === "processing"
+                        : false
+                    }
                     aria-label="Voice input"
                   >
                     <Icon name="microphone" class="size-4.5" />

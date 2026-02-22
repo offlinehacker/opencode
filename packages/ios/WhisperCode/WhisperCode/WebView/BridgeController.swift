@@ -202,6 +202,7 @@ final class BridgeController: NSObject, WKScriptMessageHandler, WKNavigationDele
 
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
     print("[OpenCode] Loaded: \(webView.url?.absoluteString ?? "nil")")
+    platform.webContentDidLoad()
   }
 
   func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
