@@ -86,9 +86,9 @@ final class BridgeController: NSObject, WKScriptMessageHandler, WKNavigationDele
     #if !DEBUG
     let handler = Self.resolveWebAssets()
     if let handler {
-      config.setURLSchemeHandler(handler, forURLScheme: "app-local")
+      config.setURLSchemeHandler(handler, forURLScheme: "tauri")
       self.schemeHandler = handler
-      print("[OpenCode] Registered app-local:// scheme handler")
+      print("[OpenCode] Registered tauri:// scheme handler")
     }
     #endif
 
@@ -143,9 +143,10 @@ final class BridgeController: NSObject, WKScriptMessageHandler, WKNavigationDele
     }
 #endif
 
-    // Use custom scheme to avoid file:// CORS restrictions with ES modules
-    if schemeHandler != nil, let url = URL(string: "app-local://localhost/index.html") {
-      print("[OpenCode] Loading via app-local:// scheme")
+    // Use tauri:// scheme to avoid file:// CORS restrictions with ES modules
+    // and to piggyback on the server's default CORS whitelist for tauri://localhost
+    if schemeHandler != nil, let url = URL(string: "tauri://localhost/index.html") {
+      print("[OpenCode] Loading via tauri:// scheme")
       webView.load(URLRequest(url: url))
       return
     }
