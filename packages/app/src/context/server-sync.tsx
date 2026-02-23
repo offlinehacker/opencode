@@ -457,6 +457,48 @@ export function createServerSyncContextInner(serverSDK: ServerSDK) {
     }
   })
 
+  const RESUME_REFRESH_COOLDOWN_MS = 1000
+  let lastResumeRefresh = 0
+
+  // Mobile webviews can be suspended while the device sleeps, so refresh everything on resume.
+  const refreshOnResume = () => {
+    const now = Date.now()
+    if (now - lastResumeRefresh < RESUME_REFRESH_COOLDOWN_MS) return
+    lastResumeRefresh = now
+    queue.refresh()
+    for (const directory of Object.keys(children.children)) {
+      sessionMeta.delete(directoryKey(directory))
+      queue.push(directory)
+    }
+  }
+
+  onMount(() => {
+    if (typeof window === "undefined") return
+    const onVisibility = () => {
+      if (typeof document === "undefined") return
+      if (document.visibilityState !== "visible") return
+      refreshOnResume()
+    }
+
+    window.addEventListener("focus", refreshOnResume)
+    window.addEventListener("pageshow", refreshOnResume)
+    window.addEventListener("online", refreshOnResume)
+    window.addEventListener("opencode:resume", refreshOnResume)
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibility)
+    }
+
+    onCleanup(() => {
+      window.removeEventListener("focus", refreshOnResume)
+      window.removeEventListener("pageshow", refreshOnResume)
+      window.removeEventListener("online", refreshOnResume)
+      window.removeEventListener("opencode:resume", refreshOnResume)
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibility)
+      }
+    })
+  })
+
   const projectApi = {
     loadSessions,
     meta(directory: string, patch: ProjectMeta) {

@@ -11,6 +11,35 @@ final class PlatformBridge {
   private var whisper: WhisperBridge?
   private let config = ServerConfig()
   private var didKickoffPreload = false
+  private var activeObserver: NSObjectProtocol?
+  private var backgroundObserver: NSObjectProtocol?
+
+  init() {
+    activeObserver = NotificationCenter.default.addObserver(
+      forName: UIApplication.didBecomeActiveNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      self?.onEvent?("appLifecycle", ["state": "active"])
+    }
+
+    backgroundObserver = NotificationCenter.default.addObserver(
+      forName: UIApplication.didEnterBackgroundNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      self?.onEvent?("appLifecycle", ["state": "background"])
+    }
+  }
+
+  deinit {
+    if let activeObserver {
+      NotificationCenter.default.removeObserver(activeObserver)
+    }
+    if let backgroundObserver {
+      NotificationCenter.default.removeObserver(backgroundObserver)
+    }
+  }
 
   private func voice() -> WhisperBridge {
     if let whisper {

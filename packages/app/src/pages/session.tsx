@@ -406,6 +406,17 @@ export default function Page() {
 
   const workspaceTabs = createMemo(() => layout.tabs(workspaceKey))
   const sessionPanelKey = createMemo(() => (params.id ? `${serverSDK().scope}\0${params.id}` : undefined))
+  const RESUME_SYNC_COOLDOWN_MS = 1000
+  let lastResumeSync = 0
+
+  const refreshActiveSession = () => {
+    const id = params.id
+    if (!id) return
+    const now = Date.now()
+    if (now - lastResumeSync < RESUME_SYNC_COOLDOWN_MS) return
+    lastResumeSync = now
+    void sync().session.sync(id, { force: true })
+  }
 
   createEffect(
     on(
@@ -2031,7 +2042,21 @@ export default function Page() {
   )
 
   onMount(() => {
+    const onResume = () => {
+      if (document.visibilityState === "hidden") return
+      refreshActiveSession()
+    }
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") return
+      onResume()
+    }
+
     makeEventListener(document, "keydown", handleKeyDown)
+    makeEventListener(window, "focus", onResume)
+    makeEventListener(window, "pageshow", onResume)
+    makeEventListener(window, "online", onResume)
+    makeEventListener(window, "opencode:resume", onResume)
+    makeEventListener(document, "visibilitychange", onVisibility)
   })
 
   onCleanup(() => {

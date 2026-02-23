@@ -38,6 +38,10 @@ const App = () => {
     window.dispatchEvent(new CustomEvent("opencode:transcription", { detail: { text, isFinal } }))
   }
 
+  const emitResume = () => {
+    window.dispatchEvent(new Event("opencode:resume"))
+  }
+
   const showVoiceError = (message?: string) => {
     if (!message) return
     showToast({
@@ -173,6 +177,17 @@ const App = () => {
       if (status.state === "error") showVoiceError(status.message)
     })
 
+    const stopLifecycle = bridge.on("appLifecycle", (payload) => {
+      const state =
+        typeof payload === "string"
+          ? payload
+          : typeof payload === "object" && payload
+            ? (payload as { state?: unknown }).state
+            : undefined
+      if (state !== "active") return
+      emitResume()
+    })
+
     const stopKeyboardNav = bridge.on("keyboardNavigation", (payload) => {
       if (!payload || typeof payload !== "object") return
       const { direction } = payload as { direction?: string }
@@ -200,6 +215,7 @@ const App = () => {
       document.removeEventListener("click", handleClick)
       stopListening()
       stopVoiceState()
+      stopLifecycle()
       stopKeyboardNav()
       stopKeyboardClear()
       stopKeyboardNewline()
