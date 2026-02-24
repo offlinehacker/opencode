@@ -40,6 +40,10 @@ WhisperCode is a fork of [OpenCode](https://github.com/anomalyco/opencode) that 
 
 WhisperCode is a mobile port that stays true to the desktop experience. Desktop updates from upstream are regularly synced in; mobile improvements are pushed upstream to benefit desktop users too.
 
+## Privacy
+
+WhisperCode does not collect, transmit, or store any analytics, telemetry, or personal data. There are no third-party tracking SDKs, no crash reporting services, and no usage metrics of any kind. Your code and conversations stay entirely between your device and your development server.
+
 ## Upstream
 
 [OpenCode](https://github.com/anomalyco/opencode)
