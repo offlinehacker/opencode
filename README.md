@@ -6,7 +6,7 @@ iOS port of [OpenCode](https://github.com/anomalyco/opencode) — true to the de
 
 ## Quick Start
 
-1. [Install WhisperCode via TestFlight](https://testflight.apple.com/join/cvQaEf6s)
+1. [Install via IOS AppStore](https://apps.apple.com/us/app/whispercode/id6759430954)
 2. On your dev machine, run:
    ```
    opencode web --hostname 0.0.0.0
