@@ -1,6 +1,6 @@
 # WhisperCode
 
-[Install via TestFlight](https://testflight.apple.com/join/cvQaEf6s)
+[Install via IOS AppStore](https://apps.apple.com/us/app/whispercode/id6759430954)
 
 iOS port of [OpenCode](https://github.com/anomalyco/opencode) — true to the desktop experience.
 
@@ -9,7 +9,7 @@ iOS port of [OpenCode](https://github.com/anomalyco/opencode) — true to the de
 1. [Install WhisperCode via TestFlight](https://testflight.apple.com/join/cvQaEf6s)
 2. On your dev machine, run:
    ```
-   opencode web --hostname 0.0.0.0 --cors app-local://localhost
+   opencode web --hostname 0.0.0.0
    ```
 
    <img width="816" height="217" alt="Screenshot 2026-02-20 at 11 24 33 PM" src="https://github.com/user-attachments/assets/725e4056-c279-4335-9d05-51fcb987c29f" />
