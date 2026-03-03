@@ -1,11 +1,12 @@
 // @refresh reload
 import { render } from "solid-js/web"
-import { createResource, createSignal, onCleanup, onMount } from "solid-js"
+import { createResource, createSignal, onCleanup, onMount, Show } from "solid-js"
 import { AppBaseProviders, AppInterface, PlatformProvider, ServerConnection, type Platform } from "@opencode-ai/app"
 import { showToast } from "@opencode-ai/ui/toast"
 import { bridge } from "./bridge"
 import { createBridgeStorage } from "./ios-storage"
 import { VoiceInputOverlay } from "./voice-input"
+import { Onboarding } from "./onboarding"
 import pkg from "../package.json"
 
 type VoiceState = "prewarming" | "ready" | "recording" | "processing" | "error"
@@ -23,6 +24,13 @@ type VoiceStopResult = {
   text: string
   code?: string
   message?: string
+}
+
+const normalizeServerUrl = (input: string) => {
+  const trimmed = input.trim()
+  if (!trimmed) return
+  const withProtocol = /^https?:\/\//.test(trimmed) ? trimmed : `http://${trimmed}`
+  return withProtocol.replace(/\/+$/, "")
 }
 
 const root = document.getElementById("root")
@@ -153,6 +161,15 @@ const App = () => {
     return result ?? null
   })
 
+  const [completedUrl, setCompletedUrl] = createSignal<string | null>(null)
+
+  const handleOnboardingComplete = async (url: string) => {
+    const normalized = normalizeServerUrl(url)
+    if (!normalized) return
+    await platform.setDefaultServerUrl?.(normalized)
+    setCompletedUrl(normalized)
+  }
+
   onMount(() => {
     void refreshVoice()
 
@@ -233,13 +250,20 @@ const App = () => {
           }}
           onStop={() => void stopVoiceInput()}
         />
-        <AppInterface
-          {...(() => {
-            const url = defaultUrl()
-            const placeholder: ServerConnection.Http = { type: "http", http: { url: url || "http://click.me.change.this:4096" } }
-            return { defaultServer: ServerConnection.key(placeholder), servers: [placeholder] }
-          })()}
-        />
+        <Show when={!defaultUrl.loading}>
+          <Show
+            when={defaultUrl() || completedUrl()}
+            fallback={<Onboarding onComplete={handleOnboardingComplete} />}
+          >
+            <AppInterface
+              {...(() => {
+                const url = (defaultUrl() || completedUrl())!
+                const conn: ServerConnection.Http = { type: "http", http: { url } }
+                return { defaultServer: ServerConnection.key(conn), servers: [conn] }
+              })()}
+            />
+          </Show>
+        </Show>
       </AppBaseProviders>
     </PlatformProvider>
   )

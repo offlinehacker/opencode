@@ -20,7 +20,13 @@ final class LocalFileSchemeHandler: NSObject, WKURLSchemeHandler {
     var path = url.path
     if path.isEmpty || path == "/" { path = "/index.html" }
 
-    let fileURL = baseDirectory.appendingPathComponent(path)
+    var fileURL = baseDirectory.appendingPathComponent(path)
+
+    // SPA fallback: if the file doesn't exist and has no extension,
+    // it's a client-side route — serve index.html instead
+    if !FileManager.default.fileExists(atPath: fileURL.path) && fileURL.pathExtension.isEmpty {
+      fileURL = baseDirectory.appendingPathComponent("/index.html")
+    }
 
     guard let data = try? Data(contentsOf: fileURL) else {
       print("[OpenCode] SchemeHandler 404: \(path)")
@@ -145,7 +151,7 @@ final class BridgeController: NSObject, WKScriptMessageHandler, WKNavigationDele
 
     // Use tauri:// scheme to avoid file:// CORS restrictions with ES modules
     // and to piggyback on the server's default CORS whitelist for tauri://localhost
-    if schemeHandler != nil, let url = URL(string: "tauri://localhost/index.html") {
+    if schemeHandler != nil, let url = URL(string: "tauri://localhost/") {
       print("[OpenCode] Loading via tauri:// scheme")
       webView.load(URLRequest(url: url))
       return

@@ -10,6 +10,7 @@ final class PlatformBridge {
   private let haptics = HapticBridge()
   private var whisper: WhisperBridge?
   private let config = ServerConfig()
+  private let networkScan = NetworkScanBridge()
   private var didKickoffPreload = false
   private var activeObserver: NSObjectProtocol?
   private var backgroundObserver: NSObjectProtocol?
@@ -116,6 +117,19 @@ final class PlatformBridge {
         let result = await voice().status()
         reply(result, nil)
       }
+    case "scanNetwork":
+      networkScan.cancel()
+      networkScan.onFound = { [weak self] result in
+        self?.onEvent?("scanResult", result)
+      }
+      networkScan.onComplete = { [weak self] in
+        self?.onEvent?("scanComplete", nil)
+      }
+      networkScan.scan()
+      reply(nil, nil)
+    case "cancelScan":
+      networkScan.cancel()
+      reply(nil, nil)
     default:
       reply(nil, "Unknown method")
     }
