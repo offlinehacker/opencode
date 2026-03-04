@@ -134,7 +134,7 @@ const App = () => {
     },
     back: () => window.history.back(),
     forward: () => window.history.forward(),
-    restart: async () => window.location.reload(),
+    restart: async () => bridge.send("reload"),
     voiceStatus: voice,
     startVoiceInput,
     stopVoiceInput,

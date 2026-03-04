@@ -130,6 +130,11 @@ final class PlatformBridge {
     case "cancelScan":
       networkScan.cancel()
       reply(nil, nil)
+    case "reload":
+      if let webView, let url = URL(string: "tauri://localhost/") {
+        webView.load(URLRequest(url: url))
+      }
+      reply(nil, nil)
     default:
       reply(nil, "Unknown method")
     }
