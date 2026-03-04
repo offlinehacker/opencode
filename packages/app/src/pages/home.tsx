@@ -1763,7 +1763,7 @@ export function LegacyHome() {
         />
         {server.name}
       </Button>
-      {platform.platform === "ios" && (
+      {(platform.platform === "ios" || platform.platform === "android") && (
         <p class="block text-center mt-2 text-12-regular text-text-dimmed">
           Need help connecting?{" "}
           <a class="external-link text-text-link underline" href="https://github.com/DNGriffin/whispercode?tab=readme-ov-file#quick-start">Quick Start Guide</a>

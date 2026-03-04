@@ -659,7 +659,7 @@ export function ServerConnectionList(props: { controller: ReturnType<typeof useS
         >
           {language.t("dialog.server.add.button")}
         </Button>
-        <Show when={platform.platform === "ios"}>
+        <Show when={platform.platform === "ios" || platform.platform === "android"}>
           <p class="text-text-dimmed text-12-regular mt-2">
             Can't find your server? Make sure you're serving with:{" "}
             <code class="bg-surface-raised-base text-text-secondary-base px-1.5 py-0.5 rounded-sm break-all">

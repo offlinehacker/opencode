@@ -52,7 +52,7 @@ const OPEN_APPS = [
 ] as const
 
 type OpenApp = (typeof OPEN_APPS)[number]
-type OS = "macos" | "windows" | "linux" | "ios" | "unknown"
+type OS = "macos" | "windows" | "linux" | "ios" | "android" | "unknown"
 
 const MAC_APPS = [
   {
