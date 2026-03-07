@@ -1,12 +1,16 @@
 # WhisperCode
 
-[Install via IOS AppStore](https://apps.apple.com/us/app/whispercode/id6759430954)
+[Install on iOS (App Store)](https://apps.apple.com/us/app/whispercode/id6759430954)
+
+[Download on Android (GitHub Releases)](https://github.com/DNGriffin/whispercode/releases/latest)
 
 iOS port of [OpenCode](https://github.com/anomalyco/opencode) — true to the desktop experience.
 
 ## Quick Start
 
-1. [Install via IOS AppStore](https://apps.apple.com/us/app/whispercode/id6759430954)
+1. Install WhisperCode:
+   - iOS: [App Store](https://apps.apple.com/us/app/whispercode/id6759430954)
+   - Android: [GitHub Releases (APK)](https://github.com/DNGriffin/whispercode/releases/latest)
 2. On your dev machine, run:
    ```
    opencode web --hostname 0.0.0.0
