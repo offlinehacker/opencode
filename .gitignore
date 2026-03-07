@@ -32,3 +32,5 @@ UPCOMING_CHANGELOG.md
 logs/
 *.bun-build
 tsconfig.tsbuildinfo
+packages/android/src-tauri/**/build/
+packages/android/src-tauri/gen/
