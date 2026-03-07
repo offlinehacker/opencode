@@ -12,9 +12,8 @@ interface OnboardingProps {
 type ScanResult = { host: string; port: number; url: string }
 
 async function checkHealth(url: string): Promise<boolean> {
-  return fetch(`${url}/health`, { signal: AbortSignal.timeout(3000) })
-    .then((r) => r.ok)
-    .catch(() => false)
+  const result = await bridge.sendAsync<{ healthy: boolean }>("checkHealth", { url })
+  return result?.healthy === true
 }
 
 function CopyBlock(props: { code: string }) {
@@ -90,14 +89,15 @@ export function Onboarding(props: OnboardingProps) {
   }
 
   createEffect(() => {
-    const url = manualUrl()
+    const raw = manualUrl()
+    const url = raw.trim()
     setManualStatus(undefined)
     if (healthTimer) clearTimeout(healthTimer)
-    if (!url.trim()) return
+    if (!url) return
     healthTimer = setTimeout(async () => {
       const normalized = url.startsWith("http") ? url : `http://${url}`
       const healthy = await checkHealth(normalized)
-      if (manualUrl() === url) setManualStatus(healthy)
+      if (manualUrl().trim() === url) setManualStatus(healthy)
     }, 500)
   })
 

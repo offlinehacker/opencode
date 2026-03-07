@@ -101,7 +101,7 @@ final class NetworkScanBridge: @unchecked Sendable {
 
   private func verifyHealth(host: String, port: UInt16, gen: Int, done: @escaping () -> Void) {
     let urlString = "http://\(host):\(port)"
-    guard let url = URL(string: "\(urlString)/health") else {
+    guard let url = URL(string: "\(urlString)/global/health") else {
       done()
       return
     }

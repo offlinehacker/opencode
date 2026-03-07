@@ -117,6 +117,13 @@ final class PlatformBridge {
         let result = await voice().status()
         reply(result, nil)
       }
+    case "checkHealth":
+      let urlString = params["url"] as? String ?? ""
+      Self.nativeHealthCheck(urlString: urlString) { healthy in
+        Task { @MainActor in
+          reply(["healthy": healthy], nil)
+        }
+      }
     case "scanNetwork":
       networkScan.cancel()
       networkScan.onFound = { [weak self] result in
@@ -138,6 +145,22 @@ final class PlatformBridge {
     default:
       reply(nil, "Unknown method")
     }
+  }
+
+  private static func nativeHealthCheck(urlString: String, completion: @escaping @Sendable (Bool) -> Void) {
+    guard !urlString.isEmpty,
+          let url = URL(string: "\(urlString)/global/health") else {
+      completion(false)
+      return
+    }
+    var request = URLRequest(url: url)
+    request.httpMethod = "GET"
+    request.timeoutInterval = 5
+    URLSession.shared.dataTask(with: request) { data, response, _ in
+      let http = response as? HTTPURLResponse
+      let healthy = http?.statusCode == 200
+      DispatchQueue.main.async { completion(healthy) }
+    }.resume()
   }
 
   private func share(params: [String: Any]) -> Bool {
