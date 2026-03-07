@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OpenCode Android",
-  "identifier": "ai.opencode.android.dev",
+  "productName": "WhisperCode",
+  "identifier": "com.devgriffin.whispercode",
   "version": "../package.json",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "OpenCode"
+        "title": "WhisperCode"
       }
     ],
     "withGlobalTauri": true,
@@ -23,6 +23,6 @@
   },
   "bundle": {
     "active": false,
-    "icon": ["../../desktop/src-tauri/icons/dev/128x128.png"]
+    "icon": ["../../ios/WhisperCode/WhisperCode/Assets.xcassets/AppIcon.appiconset/AppIcon-dark.png"]
   }
 }

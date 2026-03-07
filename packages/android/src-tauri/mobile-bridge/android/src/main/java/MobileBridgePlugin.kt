@@ -2,8 +2,11 @@ package ai.opencode.mobilebridge
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -37,6 +40,7 @@ class ShareArgs {
 }
 
 private data class ScanEntry(val host: String, val port: Int, val url: String)
+private data class WifiAddressInfo(val address: String, val prefixLength: Int)
 
 @TauriPlugin(
     permissions = [
@@ -61,6 +65,9 @@ class MobileBridgePlugin(private val activity: Activity) : Plugin(activity), Rec
 
     @Volatile
     private var scanTask: Future<*>? = null
+
+    @Volatile
+    private var scanGeneration = 0
 
     override fun load(webView: WebView) {
         super.load(webView)
@@ -172,22 +179,28 @@ class MobileBridgePlugin(private val activity: Activity) : Plugin(activity), Rec
 
     @Command
     fun scanNetwork(invoke: Invoke) {
+        val gen = scanGeneration + 1
+        scanGeneration = gen
         scanCancelled = false
         scanTask?.cancel(true)
 
         scanTask = scanExecutor.submit {
-            val results = runScan()
-            if (scanCancelled) {
-                main.post { invoke.resolve(ArrayList<JSObject>()) }
+            val results = runScan(gen)
+            if (isScanStale(gen)) {
+                main.post { invoke.resolve(JSObject().put("results", ArrayList<JSObject>())) }
                 return@submit
             }
-            main.post { invoke.resolve(results) }
+            main.post {
+                invoke.resolve(JSObject().put("results", results))
+                trigger("scanComplete", JSObject())
+            }
         }
     }
 
     @Command
     fun cancelScan(invoke: Invoke) {
         scanCancelled = true
+        scanGeneration += 1
         scanTask?.cancel(true)
         invoke.resolve()
     }
@@ -197,7 +210,7 @@ class MobileBridgePlugin(private val activity: Activity) : Plugin(activity), Rec
         val args = invoke.parseArgs(ShareArgs::class.java)
         val parts = listOfNotNull(args.text?.trim()?.takeIf { it.isNotEmpty() }, args.url?.trim()?.takeIf { it.isNotEmpty() })
         if (parts.isEmpty()) {
-            invoke.resolve(false)
+            invoke.resolve(JSObject().put("success", false))
             return
         }
 
@@ -210,61 +223,61 @@ class MobileBridgePlugin(private val activity: Activity) : Plugin(activity), Rec
 
         try {
             activity.startActivity(Intent.createChooser(sendIntent, null))
-            invoke.resolve(true)
+            invoke.resolve(JSObject().put("success", true))
         } catch (_: Throwable) {
-            invoke.resolve(false)
+            invoke.resolve(JSObject().put("success", false))
         }
     }
 
-    private fun runScan(): ArrayList<JSObject> {
-        val local = localAddress() ?: return ArrayList()
-        val prefix = local.substringBeforeLast('.', missingDelimiterValue = "")
-        if (prefix.isEmpty()) return ArrayList()
+    private fun runScan(gen: Int): ArrayList<JSObject> {
+        val info = wifiAddress() ?: return ArrayList()
+
+        val hosts = subnetHosts(info.address, info.prefixLength)
+        if (hosts.isEmpty()) return ArrayList()
 
         val pool = Executors.newFixedThreadPool(48)
         val futures = ArrayList<Future<ScanEntry?>>()
 
-        for (i in 1..254) {
-            if (scanCancelled) break
-            val host = "$prefix.$i"
-            futures.add(pool.submit<ScanEntry?> { probeHost(host) })
+        for (host in hosts) {
+            if (isScanStale(gen)) break
+            futures.add(pool.submit<ScanEntry?> { probeHost(host, gen) })
         }
 
-        val found = ArrayList<ScanEntry>()
+        val found = ArrayList<JSObject>()
         for (future in futures) {
-            if (scanCancelled) break
+            if (isScanStale(gen)) break
             val item = try {
                 future.get()
             } catch (_: Throwable) {
                 null
             }
-            if (item != null) found.add(item)
+            if (item != null) {
+                val value = JSObject()
+                value.put("host", item.host)
+                value.put("port", item.port)
+                value.put("url", item.url)
+                found.add(value)
+                main.post {
+                    if (!isScanStale(gen)) trigger("scanResult", value)
+                }
+            }
         }
 
         pool.shutdownNow()
-
-        val out = ArrayList<JSObject>()
-        found.sortedBy { it.host }.forEach {
-            val value = JSObject()
-            value.put("host", it.host)
-            value.put("port", it.port)
-            value.put("url", it.url)
-            out.add(value)
-        }
-        return out
+        return found
     }
 
-    private fun probeHost(host: String): ScanEntry? {
-        if (scanCancelled || Thread.currentThread().isInterrupted) return null
+    private fun probeHost(host: String, gen: Int): ScanEntry? {
+        if (isScanStale(gen)) return null
 
         val port = 4096
         val socket = Socket()
         return try {
-            socket.connect(InetSocketAddress(host, port), 300)
+            socket.connect(InetSocketAddress(host, port), 500)
             socket.close()
 
             val base = "http://$host:$port"
-            if (!checkHealth("$base/global/health") && !checkHealth("$base/health")) return null
+            if (!checkHealth("$base/global/health", gen) && !checkHealth("$base/health", gen)) return null
             ScanEntry(host = host, port = port, url = base)
         } catch (_: Throwable) {
             null
@@ -276,45 +289,115 @@ class MobileBridgePlugin(private val activity: Activity) : Plugin(activity), Rec
         }
     }
 
-    private fun checkHealth(url: String): Boolean {
-        if (scanCancelled || Thread.currentThread().isInterrupted) return false
-        val connection = try {
-            URL(url).openConnection() as HttpURLConnection
-        } catch (_: Throwable) {
-            return false
-        }
+    private fun checkHealth(url: String, gen: Int): Boolean {
+        repeat(2) {
+            if (isScanStale(gen)) return false
+            val connection = try {
+                URL(url).openConnection() as HttpURLConnection
+            } catch (_: Throwable) {
+                return false
+            }
 
-        return try {
-            connection.requestMethod = "GET"
-            connection.connectTimeout = 1000
-            connection.readTimeout = 1000
-            connection.connect()
-            val code = connection.responseCode
-            code in 200..299
-        } catch (_: Throwable) {
-            false
-        } finally {
-            connection.disconnect()
+            val healthy = try {
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 1200
+                connection.readTimeout = 1200
+                connection.connect()
+                val code = connection.responseCode
+                code in 200..299
+            } catch (_: Throwable) {
+                false
+            } finally {
+                connection.disconnect()
+            }
+
+            if (healthy) return true
         }
+        return false
     }
 
-    private fun localAddress(): String? {
-        val interfaces = try {
-            Collections.list(NetworkInterface.getNetworkInterfaces())
-        } catch (_: Throwable) {
-            return null
-        }
-
-        for (network in interfaces) {
-            if (!network.isUp || network.isLoopback) continue
-            val addresses = Collections.list(network.inetAddresses)
-            for (address in addresses) {
-                if (address.isLoopbackAddress) continue
-                if (address is Inet4Address) return address.hostAddress
+    private fun wifiAddress(): WifiAddressInfo? {
+        // Primary: use ConnectivityManager to find the WiFi network's address
+        try {
+            val cm = activity.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            if (cm != null) {
+                val network = cm.activeNetwork
+                if (network != null) {
+                    val caps = cm.getNetworkCapabilities(network)
+                    if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                        val props = cm.getLinkProperties(network)
+                        if (props != null) {
+                            for (la in props.linkAddresses) {
+                                val addr = la.address
+                                if (addr is Inet4Address && !addr.isLoopbackAddress) {
+                                    val host = addr.hostAddress ?: continue
+                                    return WifiAddressInfo(host, la.prefixLength)
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        }
+        } catch (_: Throwable) {}
+
+        // Fallback: iterate NetworkInterface, filter for wlan* (Android WiFi)
+        try {
+            val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
+            for (ni in interfaces) {
+                if (!ni.isUp || ni.isLoopback) continue
+                val name = ni.name ?: continue
+                if (!name.startsWith("wlan")) continue
+                for (ia in ni.interfaceAddresses) {
+                    val addr = ia.address
+                    if (addr is Inet4Address && !addr.isLoopbackAddress) {
+                        val host = addr.hostAddress ?: continue
+                        return WifiAddressInfo(host, ia.networkPrefixLength.toInt())
+                    }
+                }
+            }
+        } catch (_: Throwable) {}
 
         return null
+    }
+
+    private fun subnetHosts(ip: String, prefixLength: Int): List<String> {
+        val parts = ip.split('.')
+        if (parts.size != 4) return emptyList()
+
+        val ipInt = (parts[0].toInt() shl 24) or
+                (parts[1].toInt() shl 16) or
+                (parts[2].toInt() shl 8) or
+                parts[3].toInt()
+
+        // Cap at /20 so scans do not take minutes on large enterprise networks.
+        val prefix = prefixLength.coerceIn(20, 30)
+        val mask = (-1 shl (32 - prefix))
+        val network = ipInt and mask
+        val broadcast = network or mask.inv()
+
+        val local24 = ip.substringBeforeLast('.', missingDelimiterValue = "")
+        val primary = ArrayList<String>()
+        val secondary = ArrayList<String>()
+        // Skip network address (+1) and broadcast address (-1)
+        for (addr in (network + 1) until broadcast) {
+            val host = "${(addr ushr 24) and 0xFF}." +
+                    "${(addr ushr 16) and 0xFF}." +
+                    "${(addr ushr 8) and 0xFF}." +
+                    "${addr and 0xFF}"
+            if (host.startsWith("$local24.")) {
+                primary.add(host)
+            } else {
+                secondary.add(host)
+            }
+        }
+        val hosts = ArrayList<String>(primary.size + secondary.size)
+        hosts.addAll(primary)
+        hosts.addAll(secondary)
+        return hosts
+    }
+
+    private fun isScanStale(gen: Int): Boolean {
+        return scanCancelled || scanGeneration != gen || Thread.currentThread().isInterrupted
     }
 
     private fun finishStop(text: String, code: String? = null, message: String? = null) {

@@ -62,26 +62,32 @@ export function Onboarding(props: OnboardingProps) {
 
   let healthTimer: ReturnType<typeof setTimeout> | undefined
 
+  const stopScanResult = bridge.on("scanResult", (payload) => {
+    const result = payload as ScanResult
+    if (!result?.url) return
+    setServers((prev) => {
+      if (prev.some((s) => s.url === result.url)) return prev
+      return [...prev, result]
+    })
+  })
+
+  const stopScanComplete = bridge.on("scanComplete", () => {
+    setScanning(false)
+  })
+
   onCleanup(() => {
+    stopScanResult()
+    stopScanComplete()
     if (healthTimer) clearTimeout(healthTimer)
     void bridge.sendAsync("cancelScan")
   })
 
-  const startScan = async () => {
+  const startScan = () => {
     setScanning(true)
     setServers([])
     setSelected(null)
     setSelectedHealthy(undefined)
-    const found = await bridge.sendAsync<ScanResult[]>("scanNetwork")
-    if (Array.isArray(found)) {
-      setServers(
-        found.filter(
-          (item): item is ScanResult =>
-            !!item && typeof item.host === "string" && typeof item.port === "number" && typeof item.url === "string",
-        ),
-      )
-    }
-    setScanning(false)
+    void bridge.sendAsync("scanNetwork")
   }
 
   const selectServer = async (url: string) => {
@@ -92,14 +98,15 @@ export function Onboarding(props: OnboardingProps) {
   }
 
   createEffect(() => {
-    const url = manualUrl()
+    const raw = manualUrl()
+    const url = raw.trim()
     setManualStatus(undefined)
     if (healthTimer) clearTimeout(healthTimer)
-    if (!url.trim()) return
+    if (!url) return
     healthTimer = setTimeout(async () => {
       const normalized = url.startsWith("http") ? url : `http://${url}`
       const healthy = await checkHealth(normalized)
-      if (manualUrl() === url) setManualStatus(healthy)
+      if (manualUrl().trim() === url) setManualStatus(healthy)
     }, 500)
   })
 
@@ -195,7 +202,7 @@ export function Onboarding(props: OnboardingProps) {
             size="large"
             class="w-full"
             icon="magnifying-glass"
-            onClick={() => void startScan()}
+            onClick={startScan}
             disabled={scanning()}
           >
             {scanning() ? "Scanning..." : "Scan Network"}
