@@ -244,6 +244,7 @@ const App = () => {
   }
 
   onMount(() => {
+    document.documentElement.dataset.platform = "android"
     void refreshVoice()
 
     const handleClick = (event: MouseEvent) => {
