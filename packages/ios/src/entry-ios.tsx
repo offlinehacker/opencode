@@ -26,6 +26,10 @@ type VoiceStopResult = {
   message?: string
 }
 
+type ServerConfig = { url: string; displayName?: string; username?: string; password?: string }
+
+const credentialStorage = createBridgeStorage("opencode.settings.dat")
+
 const normalizeServerUrl = (input: string) => {
   const trimmed = input.trim()
   if (!trimmed) return
@@ -155,19 +159,34 @@ const App = () => {
     storage: (name?: string) => createBridgeStorage(name),
   }
 
-  const [defaultUrl] = createResource(async () => {
+  const [defaultConfig] = createResource(async () => {
     if (!platform.getDefaultServerUrl) return null
-    const result = await Promise.resolve(platform.getDefaultServerUrl?.()).catch(() => null)
-    return result ?? null
+    const url = await Promise.resolve(platform.getDefaultServerUrl?.()).catch(() => null)
+    if (!url) return null
+    const displayName = await credentialStorage.getItem("displayName").catch(() => null)
+    const username = await credentialStorage.getItem("username").catch(() => null)
+    const password = await credentialStorage.getItem("password").catch(() => null)
+    return {
+      url,
+      displayName: displayName || undefined,
+      username: username || undefined,
+      password: password || undefined,
+    } as ServerConfig
   })
 
-  const [completedUrl, setCompletedUrl] = createSignal<string | null>(null)
+  const [completedConfig, setCompletedConfig] = createSignal<ServerConfig | null>(null)
 
-  const handleOnboardingComplete = async (url: string) => {
-    const normalized = normalizeServerUrl(url)
+  const handleOnboardingComplete = async (server: { url: string; displayName?: string; username?: string; password?: string }) => {
+    const normalized = normalizeServerUrl(server.url)
     if (!normalized) return
     await platform.setDefaultServerUrl?.(normalized)
-    setCompletedUrl(normalized)
+    if (server.displayName) await credentialStorage.setItem("displayName", server.displayName)
+    else await credentialStorage.removeItem("displayName")
+    if (server.username) await credentialStorage.setItem("username", server.username)
+    else await credentialStorage.removeItem("username")
+    if (server.password) await credentialStorage.setItem("password", server.password)
+    else await credentialStorage.removeItem("password")
+    setCompletedConfig({ url: normalized, displayName: server.displayName, username: server.username, password: server.password })
   }
 
   onMount(() => {
@@ -251,15 +270,23 @@ const App = () => {
           }}
           onStop={() => void stopVoiceInput()}
         />
-        <Show when={!defaultUrl.loading}>
+        <Show when={!defaultConfig.loading}>
           <Show
-            when={defaultUrl() || completedUrl()}
+            when={defaultConfig() || completedConfig()}
             fallback={<Onboarding onComplete={handleOnboardingComplete} />}
           >
             <AppInterface
               {...(() => {
-                const url = (defaultUrl() || completedUrl())!
-                const conn: ServerConnection.Http = { type: "http", http: { url } }
+                const config = (defaultConfig() || completedConfig())!
+                const conn: ServerConnection.Http = {
+                  type: "http",
+                  displayName: config.displayName,
+                  http: {
+                    url: config.url,
+                    username: config.username,
+                    password: config.password,
+                  },
+                }
                 return { defaultServer: ServerConnection.key(conn), servers: [conn] }
               })()}
             />

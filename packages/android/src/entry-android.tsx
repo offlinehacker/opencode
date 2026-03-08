@@ -33,7 +33,12 @@ type VoiceStopResult = {
 
 const SETTINGS_STORE = "opencode.settings.dat"
 const DEFAULT_SERVER_URL_KEY = "defaultServerUrl"
+const DEFAULT_SERVER_USERNAME_KEY = "defaultServerUsername"
+const DEFAULT_SERVER_PASSWORD_KEY = "defaultServerPassword"
+const DEFAULT_SERVER_DISPLAY_NAME_KEY = "defaultServerDisplayName"
 const settingsStore = Store.load(SETTINGS_STORE)
+
+type ServerConfig = { url: string; displayName?: string; username?: string; password?: string }
 
 const normalizeServerUrl = (input: string) => {
   const trimmed = input.trim()
@@ -42,20 +47,51 @@ const normalizeServerUrl = (input: string) => {
   return withProtocol.replace(/\/+$/, "")
 }
 
-const getDefaultServerUrl = async () => {
+const getDefaultServerConfig = async (): Promise<ServerConfig | null> => {
   const store = await settingsStore
-  const value = await store.get(DEFAULT_SERVER_URL_KEY).catch(() => null)
-  return typeof value === "string" ? value : null
+  const url = await store.get(DEFAULT_SERVER_URL_KEY).catch(() => null)
+  if (typeof url !== "string") return null
+  const displayName = await store.get(DEFAULT_SERVER_DISPLAY_NAME_KEY).catch(() => null)
+  const username = await store.get(DEFAULT_SERVER_USERNAME_KEY).catch(() => null)
+  const password = await store.get(DEFAULT_SERVER_PASSWORD_KEY).catch(() => null)
+  return {
+    url,
+    displayName: typeof displayName === "string" ? displayName : undefined,
+    username: typeof username === "string" ? username : undefined,
+    password: typeof password === "string" ? password : undefined,
+  }
+}
+
+const setDefaultServerConfig = async (config: ServerConfig | null) => {
+  const store = await settingsStore
+  if (config) {
+    await store.set(DEFAULT_SERVER_URL_KEY, config.url).catch(() => undefined)
+    if (config.displayName) await store.set(DEFAULT_SERVER_DISPLAY_NAME_KEY, config.displayName).catch(() => undefined)
+    else await store.delete(DEFAULT_SERVER_DISPLAY_NAME_KEY).catch(() => undefined)
+    if (config.username) await store.set(DEFAULT_SERVER_USERNAME_KEY, config.username).catch(() => undefined)
+    else await store.delete(DEFAULT_SERVER_USERNAME_KEY).catch(() => undefined)
+    if (config.password) await store.set(DEFAULT_SERVER_PASSWORD_KEY, config.password).catch(() => undefined)
+    else await store.delete(DEFAULT_SERVER_PASSWORD_KEY).catch(() => undefined)
+  } else {
+    await store.delete(DEFAULT_SERVER_URL_KEY).catch(() => undefined)
+    await store.delete(DEFAULT_SERVER_DISPLAY_NAME_KEY).catch(() => undefined)
+    await store.delete(DEFAULT_SERVER_USERNAME_KEY).catch(() => undefined)
+    await store.delete(DEFAULT_SERVER_PASSWORD_KEY).catch(() => undefined)
+  }
+  await store.save().catch(() => undefined)
+}
+
+const getDefaultServerUrl = async () => {
+  const config = await getDefaultServerConfig()
+  return config?.url ?? null
 }
 
 const setDefaultServerUrl = async (url: string | null) => {
-  const store = await settingsStore
   if (url) {
-    await store.set(DEFAULT_SERVER_URL_KEY, url).catch(() => undefined)
+    await setDefaultServerConfig({ url })
   } else {
-    await store.delete(DEFAULT_SERVER_URL_KEY).catch(() => undefined)
+    await setDefaultServerConfig(null)
   }
-  await store.save().catch(() => undefined)
 }
 
 const root = document.getElementById("root")
@@ -192,18 +228,19 @@ const App = () => {
     storage: (name?: string) => createTauriStorage(name),
   }
 
-  const [defaultUrl] = createResource(async () => {
-    const result = await platform.getDefaultServerUrl?.()
-    return result ?? null
+  const [defaultConfig] = createResource(async () => {
+    const config = await getDefaultServerConfig()
+    return config ?? null
   })
 
-  const [completedUrl, setCompletedUrl] = createSignal<string | null>(null)
+  const [completedConfig, setCompletedConfig] = createSignal<ServerConfig | null>(null)
 
-  const handleOnboardingComplete = async (url: string) => {
-    const normalized = normalizeServerUrl(url)
+  const handleOnboardingComplete = async (server: { url: string; displayName?: string; username?: string; password?: string }) => {
+    const normalized = normalizeServerUrl(server.url)
     if (!normalized) return
-    await platform.setDefaultServerUrl?.(normalized)
-    setCompletedUrl(normalized)
+    const config: ServerConfig = { url: normalized, displayName: server.displayName, username: server.username, password: server.password }
+    await setDefaultServerConfig(config)
+    setCompletedConfig(config)
   }
 
   onMount(() => {
@@ -259,12 +296,20 @@ const App = () => {
           }}
           onStop={() => void stopVoiceInput()}
         />
-        <Show when={!defaultUrl.loading}>
-          <Show when={defaultUrl() || completedUrl()} fallback={<Onboarding onComplete={handleOnboardingComplete} />}>
+        <Show when={!defaultConfig.loading}>
+          <Show when={defaultConfig() || completedConfig()} fallback={<Onboarding onComplete={handleOnboardingComplete} />}>
             <AppInterface
               {...(() => {
-                const url = (defaultUrl() || completedUrl())!
-                const conn: ServerConnection.Http = { type: "http", http: { url } }
+                const config = (defaultConfig() || completedConfig())!
+                const conn: ServerConnection.Http = {
+                  type: "http",
+                  displayName: config.displayName,
+                  http: {
+                    url: config.url,
+                    username: config.username,
+                    password: config.password,
+                  },
+                }
                 return { defaultServer: ServerConnection.key(conn), servers: [conn] }
               })()}
             />

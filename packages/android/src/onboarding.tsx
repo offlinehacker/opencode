@@ -6,18 +6,22 @@ import { Logo } from "@opencode-ai/ui/logo"
 import { bridge } from "./bridge"
 
 interface OnboardingProps {
-  onComplete: (url: string) => void
+  onComplete: (server: { url: string; displayName?: string; username?: string; password?: string }) => void
 }
 
 type ScanResult = { host: string; port: number; url: string }
 
-async function checkHealth(url: string): Promise<boolean> {
+async function checkHealth(url: string, username?: string, password?: string): Promise<boolean> {
   const base = url.replace(/\/+$/, "")
-  const primary = await fetch(`${base}/global/health`, { signal: AbortSignal.timeout(3000) })
+  const headers: HeadersInit = {}
+  if (password) {
+    headers["Authorization"] = `Basic ${btoa(`${username || "opencode"}:${password}`)}`
+  }
+  const primary = await fetch(`${base}/global/health`, { headers, signal: AbortSignal.timeout(3000) })
     .then((r) => r.ok)
     .catch(() => false)
   if (primary) return true
-  return fetch(`${base}/health`, { signal: AbortSignal.timeout(3000) })
+  return fetch(`${base}/health`, { headers, signal: AbortSignal.timeout(3000) })
     .then((r) => r.ok)
     .catch(() => false)
 }
@@ -57,6 +61,9 @@ export function Onboarding(props: OnboardingProps) {
   const [servers, setServers] = createSignal<ScanResult[]>([])
   const [selected, setSelected] = createSignal<string | null>(null)
   const [manualUrl, setManualUrl] = createSignal("")
+  const [manualName, setManualName] = createSignal("")
+  const [manualUsername, setManualUsername] = createSignal("")
+  const [manualPassword, setManualPassword] = createSignal("")
   const [manualStatus, setManualStatus] = createSignal<boolean | undefined>(undefined)
   const [selectedHealthy, setSelectedHealthy] = createSignal<boolean | undefined>(undefined)
 
@@ -93,19 +100,21 @@ export function Onboarding(props: OnboardingProps) {
   const selectServer = async (url: string) => {
     setSelected(url)
     setSelectedHealthy(undefined)
-    const healthy = await checkHealth(url)
+    const healthy = await checkHealth(url, manualUsername(), manualPassword())
     if (selected() === url) setSelectedHealthy(healthy)
   }
 
   createEffect(() => {
     const raw = manualUrl()
+    const username = manualUsername()
+    const password = manualPassword()
     const url = raw.trim()
     setManualStatus(undefined)
     if (healthTimer) clearTimeout(healthTimer)
     if (!url) return
     healthTimer = setTimeout(async () => {
       const normalized = url.startsWith("http") ? url : `http://${url}`
-      const healthy = await checkHealth(normalized)
+      const healthy = await checkHealth(normalized, username, password)
       if (manualUrl().trim() === url) setManualStatus(healthy)
     }, 500)
   })
@@ -119,7 +128,12 @@ export function Onboarding(props: OnboardingProps) {
 
   const connect = () => {
     const url = connectUrl()
-    if (url) props.onComplete(url)
+    if (url) {
+      const displayName = manualName().trim() || undefined
+      const username = manualUsername().trim() || undefined
+      const password = manualPassword().trim() || undefined
+      props.onComplete({ url, displayName, username, password })
+    }
   }
 
   return (
@@ -270,6 +284,33 @@ export function Onboarding(props: OnboardingProps) {
                 onChange={setManualUrl}
               />
             </div>
+          </div>
+
+          <div class="w-full">
+            <TextField
+              hideLabel
+              label="Display Name"
+              placeholder="My Server"
+              value={manualName()}
+              onChange={setManualName}
+            />
+          </div>
+          <div class="w-full grid grid-cols-2 gap-2">
+            <TextField
+              hideLabel
+              label="Username"
+              placeholder="username"
+              value={manualUsername()}
+              onChange={setManualUsername}
+            />
+            <TextField
+              hideLabel
+              label="Password"
+              type="password"
+              placeholder="password"
+              value={manualPassword()}
+              onChange={setManualPassword}
+            />
           </div>
 
           <div class="flex gap-3 w-full mt-2">
