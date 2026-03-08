@@ -171,6 +171,7 @@ const App = () => {
   }
 
   onMount(() => {
+    document.documentElement.dataset.platform = "ios"
     void refreshVoice()
 
     const handleClick = (event: MouseEvent) => {
