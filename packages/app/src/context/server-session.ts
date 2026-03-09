@@ -1129,6 +1129,11 @@ export function createServerSession(client: OpencodeClient, options?: { retry?: 
         setData(produce((draft) => deleteMessageParts(draft, input.messageID)))
       },
     },
+    status() {
+      return retry(() => client.session.status()).then((result) => {
+        setData("session_status", reconcile(result.data ?? {}))
+      })
+    },
     diff(sessionID: string, options?: { force?: boolean }) {
       touch(sessionID)
       if (data.session_diff[sessionID] !== undefined && !options?.force) return Promise.resolve()

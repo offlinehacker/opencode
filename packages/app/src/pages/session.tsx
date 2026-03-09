@@ -417,6 +417,7 @@ export default function Page() {
     if (now - lastResumeSync < RESUME_SYNC_COOLDOWN_MS) return
     lastResumeSync = now
     void sync().session.sync(id, { force: true })
+    void sync().session.status()
   }
 
   createEffect(

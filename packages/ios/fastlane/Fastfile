@@ -1,0 +1,57 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and upload a private TestFlight build"
+  lane :beam do
+    proj = "WhisperCode/WhisperCode.xcodeproj"
+    sch = "WhisperCode"
+    bid = ENV["IOS_BUNDLE_ID"] || "com.devgriffin.whispercode"
+    out = "build"
+    ipa = "#{out}/WhisperCode.ipa"
+    num = Time.now.utc.strftime("%Y%m%d%H%M")
+
+    kid = ENV["ASC_KEY_ID"]
+    iid = ENV["ASC_ISSUER_ID"]
+    key = ENV["ASC_KEY_PATH"]
+    vals = [kid, iid, key]
+    bad = vals.any? { |v| v.nil? || v.strip.empty? }
+
+    if bad
+      UI.user_error!("Set ASC_KEY_ID, ASC_ISSUER_ID, and ASC_KEY_PATH before running beam.")
+    end
+
+    unless File.file?(key)
+      UI.user_error!("ASC_KEY_PATH does not point to a file: #{key}")
+    end
+
+    sh("bun run build")
+
+    build_app(
+      project: proj,
+      scheme: sch,
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: out,
+      output_name: "WhisperCode.ipa",
+      xcargs: "CURRENT_PROJECT_VERSION=#{num}"
+    )
+
+    api = app_store_connect_api_key(
+      key_id: kid,
+      issuer_id: iid,
+      key_filepath: key
+    )
+
+    upload_to_testflight(
+      api_key: api,
+      ipa: ipa,
+      app_identifier: bid,
+      changelog: ENV["BEAM_NOTES"] || "Beam build #{num}",
+      skip_submission: true,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false,
+      uses_non_exempt_encryption: false
+    )
+  end
+end

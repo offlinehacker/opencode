@@ -35,3 +35,4 @@ tsconfig.tsbuildinfo
 packages/android/src-tauri/**/build/
 packages/android/src-tauri/gen/
 packages/android/release.keystore
+todo.md

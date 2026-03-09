@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+env="$dir/.beam.env"
+
+if [ -f "$env" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$env"
+  set +a
+fi
+
+if ! command -v fastlane >/dev/null 2>&1; then
+  printf "fastlane is required. Install it with: brew install fastlane\n" >&2
+  exit 1
+fi
+
+cd "$dir"
+exec fastlane ios beam "$@"
