@@ -1,3 +1,9 @@
 WebAssets/
 xcuserdata/
 *.xcuserstate
+.beam.env
+build/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
