@@ -6,7 +6,15 @@ const value: Platform = {
   restart: async () => {},
   back() {},
   forward() {},
-  notify: async () => {},
+  notify: async (title, description, href, opts) => {
+    void title
+    void description
+    void href
+    void opts
+  },
+  setPushRelayURL: async (url) => {
+    void url
+  },
   fetch: globalThis.fetch.bind(globalThis),
   parseMarkdown: async (markdown: string) => markdown,
 }

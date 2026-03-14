@@ -18,6 +18,42 @@ type OpenAttachmentPickerOptions = {
 type SaveFilePickerOptions = { title?: string; defaultPath?: string }
 type PlatformName = "web" | "desktop" | "ios" | "android"
 type DesktopOS = "macos" | "windows" | "linux"
+export type PushKind = "complete" | "error" | "approval" | "question" | "test"
+export type PushPerm = "unsupported" | "not-determined" | "denied" | "authorized" | "provisional" | "ephemeral"
+export type PushCred = {
+  channel: string
+  device?: string
+  secret?: string
+}
+export type PairState = "pending" | "claimed" | "active" | "expired" | "failed"
+export type PairInfo = {
+  id: string
+  status: PairState
+  command?: string
+  expires?: string
+  channel?: string
+  device?: string
+  message?: string
+}
+export type PushPrefs = {
+  complete: boolean
+  approval: boolean
+  question: boolean
+  error: boolean
+}
+export type PushState = {
+  supported: boolean
+  permission: PushPerm
+  allowed: boolean
+  registered: boolean
+  paired: boolean
+  generic: boolean
+  channel?: string
+}
+export type NotifyOpts = {
+  kind?: PushKind
+  generic?: boolean
+}
 export type VoiceState = "prewarming" | "ready" | "recording" | "processing" | "error"
 export type VoiceStatus = {
   state: VoiceState
@@ -66,7 +102,7 @@ type PlatformBase = {
   forward(): void
 
   /** Send a system notification (optional deep link) */
-  notify(title: string, description?: string, href?: string): Promise<void>
+  notify(title: string, description?: string, href?: string, opts?: NotifyOpts): Promise<void>
 
   /** Open a native attachment picker and read selected files sequentially (desktop only) */
   openAttachmentPickerDialog?(
@@ -85,6 +121,39 @@ type PlatformBase = {
 
   /** Stable platform window identity for window-scoped persistence */
   windowID?: string
+
+  /** Current push notification state (optional native platforms) */
+  pushState?: Accessor<PushState | undefined>
+
+  /** Read push notification state (optional native platforms) */
+  getPushState?(): Promise<PushState>
+
+  /** Request push notification permission (optional native platforms) */
+  requestPushPermission?(): Promise<PushState>
+
+  /** Open the platform system settings app (optional native platforms) */
+  openSystemSettings?(): Promise<void>
+
+  /** Schedule a test push notification (optional native platforms) */
+  testPush?(href?: string): Promise<boolean>
+
+  /** Begin the hosted push pairing flow (optional native platforms) */
+  beginPushPairing?(): Promise<PairInfo>
+
+  /** Poll the hosted push pairing flow (optional native platforms) */
+  getPushPairing?(): Promise<PairInfo | undefined>
+
+  /** Update relay-backed push delivery preferences (optional native platforms) */
+  setPushPreferences?(prefs: PushPrefs): Promise<void>
+
+  /** Update the relay URL used by native push flows (optional native platforms) */
+  setPushRelayURL?(url?: string): Promise<void>
+
+  /** Store paired push credentials (optional native platforms) */
+  setPushCredentials?(input: PushCred): Promise<PushState>
+
+  /** Clear paired push credentials (optional native platforms) */
+  clearPushPairing?(): Promise<PushState>
 
   /** Application-global desktop updater */
   updater?: UpdaterPlatform

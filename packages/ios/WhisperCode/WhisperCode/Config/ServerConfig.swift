@@ -3,6 +3,7 @@ import Foundation
 final class ServerConfig {
   private let defaults = UserDefaults.standard
   private let defaultServerKey = "opencode.defaultServerUrl"
+  private let pushRelayKey = "opencode.pushRelayUrl"
   private let storagePrefix = "opencode.storage."
 
   func getDefaultServerUrl() -> String? {
@@ -15,6 +16,18 @@ final class ServerConfig {
       return
     }
     defaults.removeObject(forKey: defaultServerKey)
+  }
+
+  func getPushRelayUrl() -> String? {
+    defaults.string(forKey: pushRelayKey)
+  }
+
+  func setPushRelayUrl(_ url: String?) {
+    if let url {
+      defaults.set(url, forKey: pushRelayKey)
+      return
+    }
+    defaults.removeObject(forKey: pushRelayKey)
   }
 
   func storageGet(name: String?, key: String?) -> String? {

@@ -52,6 +52,7 @@ import { ModelsProvider } from "@/context/models"
 import { NotificationProvider } from "@/context/notification"
 import { PermissionProvider } from "@/context/permission"
 import { usePlatform } from "@/context/platform"
+import { PushRelayProvider } from "@/context/push-relay"
 import { PromptProvider } from "@/context/prompt"
 import { ServerConnection, ServerProvider, serverName, useServer } from "@/context/server"
 import { SettingsProvider, useSettings } from "@/context/settings"
@@ -323,10 +324,12 @@ type ServerScopedShellProps = ParentProps<{
 
 function ServerScopedProviders(props: ServerScopedShellProps) {
   return (
-    <LayoutProvider>
-      {props.serverScoped}
-      <ModelsProvider directory={props.directory}>{props.children}</ModelsProvider>
-    </LayoutProvider>
+    <PushRelayProvider>
+      <LayoutProvider>
+        {props.serverScoped}
+        <ModelsProvider directory={props.directory}>{props.children}</ModelsProvider>
+      </LayoutProvider>
+    </PushRelayProvider>
   )
 }
 

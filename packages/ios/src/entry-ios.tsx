@@ -1,7 +1,17 @@
 // @refresh reload
 import { render } from "solid-js/web"
 import { createResource, createSignal, onCleanup, onMount, Show } from "solid-js"
-import { AppBaseProviders, AppInterface, PlatformProvider, ServerConnection, type Platform } from "@opencode-ai/app"
+import {
+  AppBaseProviders,
+  AppInterface,
+  type PairInfo,
+  PlatformProvider,
+  ServerConnection,
+  type Platform,
+  type PushCred,
+  type PushPrefs,
+  type PushState,
+} from "@opencode-ai/app"
 import { showToast } from "@opencode-ai/ui/toast"
 import { bridge } from "./bridge"
 import { createBridgeStorage } from "./ios-storage"
@@ -28,6 +38,15 @@ type VoiceStopResult = {
 
 type ServerConfig = { url: string; displayName?: string; username?: string; password?: string }
 
+const emptyPush: PushState = {
+  supported: false,
+  permission: "unsupported",
+  allowed: false,
+  registered: false,
+  paired: false,
+  generic: true,
+}
+
 const credentialStorage = createBridgeStorage("opencode.settings.dat")
 
 const normalizeServerUrl = (input: string) => {
@@ -44,6 +63,7 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 
 const App = () => {
   const [voice, setVoice] = createSignal<VoiceStatus>({ state: "prewarming", ready: false })
+  const [push, setPush] = createSignal<PushState | undefined>()
 
   const emitTranscription = (text: string, isFinal?: boolean) => {
     if (!text) return
@@ -78,7 +98,75 @@ const App = () => {
     return {
       state,
       ready: (value as { ready?: unknown }).ready === true,
-      message: typeof (value as { message?: unknown }).message === "string" ? (value as { message: string }).message : undefined,
+      message:
+        typeof (value as { message?: unknown }).message === "string"
+          ? (value as { message: string }).message
+          : undefined,
+    }
+  }
+
+  const normalizePush = (value: unknown): PushState | null => {
+    if (!value || typeof value !== "object") return null
+    const permission = (value as { permission?: unknown }).permission
+    if (
+      permission !== "unsupported" &&
+      permission !== "not-determined" &&
+      permission !== "denied" &&
+      permission !== "authorized" &&
+      permission !== "provisional" &&
+      permission !== "ephemeral"
+    ) {
+      return null
+    }
+    return {
+      supported: (value as { supported?: unknown }).supported !== false,
+      permission,
+      allowed: (value as { allowed?: unknown }).allowed === true,
+      registered: (value as { registered?: unknown }).registered === true,
+      paired: (value as { paired?: unknown }).paired === true,
+      generic: (value as { generic?: unknown }).generic !== false,
+      channel:
+        typeof (value as { channel?: unknown }).channel === "string"
+          ? (value as { channel: string }).channel
+          : undefined,
+    }
+  }
+
+  const normalizePair = (value: unknown): PairInfo | null => {
+    if (!value || typeof value !== "object") return null
+    const status = (value as { status?: unknown }).status
+    if (
+      status !== "pending" &&
+      status !== "claimed" &&
+      status !== "active" &&
+      status !== "expired" &&
+      status !== "failed"
+    ) {
+      return null
+    }
+    const id = typeof (value as { id?: unknown }).id === "string" ? (value as { id: string }).id : undefined
+    if (!id && status !== "active") return null
+    return {
+      id: id ?? "active",
+      status,
+      command:
+        typeof (value as { command?: unknown }).command === "string"
+          ? (value as { command: string }).command
+          : undefined,
+      expires:
+        typeof (value as { expires?: unknown }).expires === "string"
+          ? (value as { expires: string }).expires
+          : undefined,
+      channel:
+        typeof (value as { channel?: unknown }).channel === "string"
+          ? (value as { channel: string }).channel
+          : undefined,
+      device:
+        typeof (value as { device?: unknown }).device === "string" ? (value as { device: string }).device : undefined,
+      message:
+        typeof (value as { message?: unknown }).message === "string"
+          ? (value as { message: string }).message
+          : undefined,
     }
   }
 
@@ -87,6 +175,14 @@ const App = () => {
     const status = normalizeStatus(result)
     if (!status) return
     setVoice(status)
+  }
+
+  const refreshPush = async () => {
+    const result = await bridge.sendAsync<PushState>("getPushState")
+    const next = normalizePush(result)
+    if (!next) return push() ?? emptyPush
+    setPush(next)
+    return next
   }
 
   const startVoiceInput = async (): Promise<VoiceStartResult> => {
@@ -133,12 +229,55 @@ const App = () => {
     os: "ios",
     version: pkg.version,
     openLink: (url: string) => bridge.send("openLink", { url }),
-    notify: async (title: string, description?: string, href?: string) => {
-      await bridge.sendAsync("notify", { title, description, href })
+    notify: async (title, description, href, opts) => {
+      await bridge.sendAsync("notify", { title, description, href, opts })
     },
     back: () => window.history.back(),
     forward: () => window.history.forward(),
     restart: async () => bridge.send("reload"),
+    pushState: push,
+    getPushState: async () => refreshPush(),
+    requestPushPermission: async () => {
+      const result = await bridge.sendAsync<PushState>("requestPushPermission")
+      const next = normalizePush(result) ?? push() ?? emptyPush
+      setPush(next)
+      return next
+    },
+    beginPushPairing: async () => {
+      const result = await bridge.sendAsync<PairInfo>("beginPushPairing", { version: pkg.version })
+      const next = normalizePair(result)
+      if (!next) throw new Error("Push pairing unavailable")
+      return next
+    },
+    getPushPairing: async () => {
+      const result = await bridge.sendAsync<PairInfo>("getPushPairing")
+      return normalizePair(result) ?? undefined
+    },
+    setPushPreferences: async (prefs: PushPrefs) => {
+      await bridge.sendAsync("setPushPreferences", prefs)
+    },
+    setPushRelayURL: async (url?: string) => {
+      await bridge.sendAsync("setPushRelayURL", { url })
+    },
+    openSystemSettings: async () => {
+      await bridge.sendAsync("openSystemSettings")
+    },
+    testPush: async (href?: string) => {
+      const result = await bridge.sendAsync<boolean>("testPush", { href })
+      return result ?? false
+    },
+    setPushCredentials: async (input: PushCred) => {
+      const result = await bridge.sendAsync<PushState>("setPushCredentials", input)
+      const next = normalizePush(result) ?? push() ?? emptyPush
+      setPush(next)
+      return next
+    },
+    clearPushPairing: async () => {
+      const result = await bridge.sendAsync<PushState>("clearPushPairing")
+      const next = normalizePush(result) ?? push() ?? emptyPush
+      setPush(next)
+      return next
+    },
     voiceStatus: voice,
     startVoiceInput,
     stopVoiceInput,
@@ -176,7 +315,12 @@ const App = () => {
 
   const [completedConfig, setCompletedConfig] = createSignal<ServerConfig | null>(null)
 
-  const handleOnboardingComplete = async (server: { url: string; displayName?: string; username?: string; password?: string }) => {
+  const handleOnboardingComplete = async (server: {
+    url: string
+    displayName?: string
+    username?: string
+    password?: string
+  }) => {
     const normalized = normalizeServerUrl(server.url)
     if (!normalized) return
     await platform.setDefaultServerUrl?.(normalized)
@@ -186,12 +330,18 @@ const App = () => {
     else await credentialStorage.removeItem("username")
     if (server.password) await credentialStorage.setItem("password", server.password)
     else await credentialStorage.removeItem("password")
-    setCompletedConfig({ url: normalized, displayName: server.displayName, username: server.username, password: server.password })
+    setCompletedConfig({
+      url: normalized,
+      displayName: server.displayName,
+      username: server.username,
+      password: server.password,
+    })
   }
 
   onMount(() => {
     document.documentElement.dataset.platform = "ios"
     void refreshVoice()
+    void refreshPush()
 
     const handleClick = (event: MouseEvent) => {
       const link = (event.target as HTMLElement | null)?.closest("a.external-link") as HTMLAnchorElement | null
@@ -200,10 +350,14 @@ const App = () => {
       platform.openLink(link.href)
     }
 
-    const onFocus = () => emitResume()
+    const onFocus = () => {
+      emitResume()
+      void refreshPush()
+    }
     const onVisible = () => {
       if (document.visibilityState !== "visible") return
       emitResume()
+      void refreshPush()
     }
 
     const stopListening = bridge.on("transcription", (payload) => {
@@ -229,6 +383,13 @@ const App = () => {
             : undefined
       if (state !== "active") return
       emitResume()
+      void refreshPush()
+    })
+
+    const stopPushState = bridge.on("pushStateChanged", (payload) => {
+      const next = normalizePush(payload)
+      if (!next) return
+      setPush(next)
     })
 
     const stopKeyboardNav = bridge.on("keyboardNavigation", (payload) => {
@@ -263,6 +424,7 @@ const App = () => {
       stopListening()
       stopVoiceState()
       stopLifecycle()
+      stopPushState()
       stopKeyboardNav()
       stopKeyboardClear()
       stopKeyboardNewline()

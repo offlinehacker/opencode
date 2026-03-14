@@ -8,6 +8,7 @@ final class PlatformBridge {
   var onEvent: ((String, Any?) -> Void)?
 
   private let haptics = HapticBridge()
+  private let push = PushBridge.shared
   private var whisper: WhisperBridge?
   private let config = ServerConfig()
   private let networkScan = NetworkScanBridge()
@@ -21,7 +22,12 @@ final class PlatformBridge {
       object: nil,
       queue: .main
     ) { [weak self] _ in
-      self?.onEvent?("appLifecycle", ["state": "active"])
+      MainActor.assumeIsolated {
+        self?.onEvent?("appLifecycle", ["state": "active"])
+      }
+      Task { @MainActor in
+        _ = await PushBridge.shared.refresh(emit: true)
+      }
     }
 
     backgroundObserver = NotificationCenter.default.addObserver(
@@ -29,7 +35,13 @@ final class PlatformBridge {
       object: nil,
       queue: .main
     ) { [weak self] _ in
-      self?.onEvent?("appLifecycle", ["state": "background"])
+      MainActor.assumeIsolated {
+        self?.onEvent?("appLifecycle", ["state": "background"])
+      }
+    }
+
+    push.onEvent = { [weak self] type, payload in
+      self?.onEvent?(type, payload)
     }
   }
 
@@ -68,12 +80,103 @@ final class PlatformBridge {
       }
       reply(nil, nil)
     case "notify":
-      reply(nil, nil)
+      let opts = params["opts"] as? [String: Any]
+      let kind = opts?["kind"] as? String
+      let generic = opts?["generic"] as? Bool ?? true
+      Task { @MainActor in
+        _ = await push.notify(
+          title: params["title"] as? String,
+          body: params["description"] as? String,
+          href: params["href"] as? String,
+          kind: kind,
+          generic: generic,
+        )
+        reply(nil, nil)
+      }
     case "haptic":
       if let style = params["style"] as? String {
         haptics.impact(style: style)
       }
       reply(nil, nil)
+    case "getPushState":
+      Task { @MainActor in
+        let result = await push.refresh()
+        reply(result, nil)
+      }
+    case "requestPushPermission":
+      Task { @MainActor in
+        let result = await push.request()
+        reply(result, nil)
+      }
+    case "beginPushPairing":
+      Task { @MainActor in
+        do {
+          let result = try await push.beginPair(version: params["version"] as? String)
+          reply(result, nil)
+        } catch {
+          reply(nil, error.localizedDescription)
+        }
+      }
+    case "getPushPairing":
+      Task { @MainActor in
+        do {
+          let result = try await push.getPair()
+          reply(result, nil)
+        } catch {
+          reply(nil, error.localizedDescription)
+        }
+      }
+    case "openSystemSettings":
+      if let url = URL(string: UIApplication.openSettingsURLString) {
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+      }
+      reply(nil, nil)
+    case "testPush":
+      Task { @MainActor in
+        do {
+          let result = try await push.test(href: params["href"] as? String)
+          reply(result, nil)
+        } catch {
+          reply(nil, error.localizedDescription)
+        }
+      }
+    case "setPushPreferences":
+      Task { @MainActor in
+        do {
+          try await push.setPrefs(
+            complete: params["complete"] as? Bool ?? true,
+            approval: params["approval"] as? Bool ?? true,
+            question: params["question"] as? Bool ?? true,
+            error: params["error"] as? Bool ?? true,
+          )
+          reply(nil, nil)
+        } catch {
+          reply(nil, error.localizedDescription)
+        }
+      }
+    case "setPushRelayURL":
+      push.setRelayURL(params["url"] as? String)
+      reply(nil, nil)
+    case "setPushCredentials":
+      Task { @MainActor in
+        let result = await push.setCredentials(
+          channel: params["channel"] as? String,
+          device: params["device"] as? String,
+          secret: params["secret"] as? String,
+        )
+        reply(result, nil)
+      }
+    case "clearPushPairing":
+      Task { @MainActor in
+        do {
+          let result = try await push.clearPairing()
+          reply(result, nil)
+        } catch {
+          reply(nil, error.localizedDescription)
+        }
+      }
+    case "consumePushOpen":
+      reply(push.consume(), nil)
     case "share":
       reply(share(params: params), nil)
     case "getDefaultServerUrl":

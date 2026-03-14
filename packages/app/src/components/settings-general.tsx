@@ -1,4 +1,5 @@
-import { Component, Show, createMemo, createResource, onMount, type JSX } from "solid-js"
+import { Component, Show, createEffect, createMemo, createResource, onCleanup, onMount, type JSX } from "solid-js"
+import { createStore } from "solid-js/store"
 import { Button } from "@opencode-ai/ui/button"
 import { Icon } from "@opencode-ai/ui/icon"
 import { Select } from "@opencode-ai/ui/select"
@@ -11,7 +12,8 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useParams } from "@solidjs/router"
 import { useLanguage } from "@/context/language"
 import { usePermission } from "@/context/permission"
-import { usePlatform, type DisplayBackend } from "@/context/platform"
+import { usePlatform, type DisplayBackend, type PairInfo, type PairState, type PushState } from "@/context/platform"
+import { usePushRelay } from "@/context/push-relay"
 import { useServerSync } from "@/context/server-sync"
 import { useServerSDK } from "@/context/server-sdk"
 import { useUpdaterAction } from "./updater-action"
@@ -29,6 +31,9 @@ import {
 } from "@/context/settings"
 import { decode64 } from "@/utils/base64"
 import { playSoundById, SOUND_OPTIONS } from "@/utils/sound"
+import { showToast } from "@/utils/toast"
+import { addPush, dropPush, hasPush, installPush } from "@/utils/push-plugin"
+import { Persist, persisted } from "@/utils/persist"
 import { Link } from "./link"
 import { SettingsList } from "./settings-list"
 
@@ -36,6 +41,12 @@ let demoSoundState = {
   cleanup: undefined as (() => void) | undefined,
   timeout: undefined as NodeJS.Timeout | undefined,
   run: 0,
+}
+
+type PushAction = {
+  label: string
+  disabled: boolean
+  run?: () => Promise<void>
 }
 
 type ThemeOption = {
@@ -125,6 +136,325 @@ export const SettingsGeneral: Component = () => {
 
   const serverSync = useServerSync()
   const serverSdk = useServerSDK()
+  const relay = usePushRelay()
+
+  const [store, setStore] = createStore({
+    asking: false,
+    testing: false,
+    clearing: false,
+    pairing: false,
+    installing: false,
+    copying: false,
+    removing: false,
+  })
+  const [pair, setPair, , pairReady] = persisted(
+    Persist.global("push.pair", ["push.pair.v1"]),
+    createStore({
+      id: undefined as string | undefined,
+      status: undefined as PairState | undefined,
+      command: undefined as string | undefined,
+      expires: undefined as string | undefined,
+      channel: undefined as string | undefined,
+      device: undefined as string | undefined,
+      message: undefined as string | undefined,
+      updated: 0,
+    }),
+  )
+
+  const push = createMemo(() => platform.pushState?.())
+  const installed = createMemo(() => hasPush(serverSync().data.config.plugin))
+  const updating = createMemo(() => serverSync().data.reload === "pending")
+
+  const pushDesc = (value?: PushState) => {
+    if (!value) return language.t("settings.general.notifications.push.permission.pending")
+    if (value.allowed && !value.registered) {
+      return language.t("settings.general.notifications.push.permission.registering")
+    }
+    switch (value.permission) {
+      case "authorized":
+        return language.t("settings.general.notifications.push.permission.authorized")
+      case "provisional":
+        return language.t("settings.general.notifications.push.permission.provisional")
+      case "ephemeral":
+        return language.t("settings.general.notifications.push.permission.ephemeral")
+      case "denied":
+        return language.t("settings.general.notifications.push.permission.denied")
+      case "unsupported":
+        return language.t("settings.general.notifications.push.permission.unsupported")
+      default:
+        return language.t("settings.general.notifications.push.permission.notDetermined")
+    }
+  }
+
+  const askPush = async () => {
+    if (!platform.requestPushPermission) return
+    setStore("asking", true)
+    await platform
+      .requestPushPermission()
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      .finally(() => setStore("asking", false))
+  }
+
+  const openPush = async () => {
+    if (!platform.openSystemSettings) return
+    setStore("asking", true)
+    await platform
+      .openSystemSettings()
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      .finally(() => setStore("asking", false))
+  }
+
+  const testPush = async () => {
+    if (!platform.testPush) return
+    setStore("testing", true)
+    await platform
+      .testPush(window.location.pathname + window.location.search + window.location.hash)
+      .then((ok) => {
+        if (!ok) {
+          showToast({
+            title: language.t("settings.general.notifications.push.toast.failed.title"),
+            description: language.t("settings.general.notifications.push.toast.failed.description"),
+            variant: "error",
+          })
+          return
+        }
+        showToast({
+          title: language.t("settings.general.notifications.push.toast.sent.title"),
+          description: language.t("settings.general.notifications.push.toast.sent.description"),
+          variant: "success",
+        })
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      .finally(() => setStore("testing", false))
+  }
+
+  const setPairInfo = (value?: PairInfo) => {
+    setPair({
+      id: value?.id,
+      status: value?.status,
+      command: value?.command,
+      expires: value?.expires,
+      channel: value?.channel,
+      device: value?.device,
+      message: value?.message,
+      updated: value ? Date.now() : 0,
+    })
+  }
+
+  const startPair = async () => {
+    if (!platform.beginPushPairing || store.pairing) return
+    setStore("pairing", true)
+    await platform
+      .beginPushPairing()
+      .then((value) => {
+        setPairInfo(value)
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      .finally(() => setStore("pairing", false))
+  }
+
+  const clearPair = async () => {
+    if (!platform.clearPushPairing) return
+    setStore("clearing", true)
+    await platform
+      .clearPushPairing()
+      .then(() => {
+        showToast({
+          title: language.t("settings.general.notifications.push.pairing.toast.cleared.title"),
+          description: language.t("settings.general.notifications.push.pairing.toast.cleared.description"),
+          variant: "success",
+        })
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      .finally(() => setStore("clearing", false))
+  }
+
+  const installHost = async () => {
+    setStore("installing", true)
+    await serverSync()
+      .updateConfig({ plugin: addPush(serverSync().data.config.plugin) })
+      .then(() => {
+        showToast({
+          title: language.t("settings.general.notifications.push.host.toast.installed.title"),
+          description: language.t("settings.general.notifications.push.host.toast.installed.description"),
+          variant: "success",
+        })
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      .finally(() => setStore("installing", false))
+  }
+
+  const copyHost = async () => {
+    const clip = typeof navigator === "undefined" ? undefined : navigator.clipboard
+    if (!clip?.writeText) {
+      showToast({
+        title: language.t("settings.general.notifications.push.host.toast.copyFailed.title"),
+        description: language.t("settings.general.notifications.push.host.toast.copyFailed.description"),
+        variant: "error",
+      })
+      return
+    }
+    setStore("copying", true)
+    await clip
+      .writeText(pair.command ?? installPush())
+      .then(() => {
+        showToast({
+          title: language.t("settings.general.notifications.push.host.toast.copied.title"),
+          description: language.t("settings.general.notifications.push.host.toast.copied.description"),
+          variant: "success",
+        })
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      .finally(() => setStore("copying", false))
+  }
+
+  const removeHost = async () => {
+    setStore("removing", true)
+    await serverSync()
+      .updateConfig({ plugin: dropPush(serverSync().data.config.plugin) })
+      .then(() => {
+        showToast({
+          title: language.t("settings.general.notifications.push.host.toast.removed.title"),
+          description: language.t("settings.general.notifications.push.host.toast.removed.description"),
+          variant: "success",
+        })
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+      })
+      .finally(() => setStore("removing", false))
+  }
+
+  const hostDesc = createMemo(() => {
+    if (updating()) return language.t("settings.general.notifications.push.host.description.updating")
+    if (installed()) return language.t("settings.general.notifications.push.host.description.installed")
+    return language.t("settings.general.notifications.push.host.description.missing")
+  })
+
+  const relayDesc = createMemo(() => {
+    if (relay.custom()) {
+      return language.t("settings.general.notifications.push.relay.description.custom", {
+        url: relay.current() ?? relay.custom() ?? "",
+      })
+    }
+    if (relay.guess()) {
+      return language.t("settings.general.notifications.push.relay.description.guess", {
+        url: relay.guess() ?? "",
+      })
+    }
+    return language.t("settings.general.notifications.push.relay.description.empty")
+  })
+
+  const pairDesc = createMemo(() => {
+    const value = push()
+    if (store.pairing || !pairReady()) return language.t("home.push.install.status.preparing")
+    if (!value) return language.t("settings.general.notifications.push.pairing.pending")
+    if (value.paired) return language.t("settings.general.notifications.push.pairing.paired")
+    if (pair.status === "claimed") return language.t("home.push.install.status.claimed")
+    if (pair.status === "expired") return language.t("home.push.install.status.expired")
+    if (pair.status === "failed") return pair.message || language.t("home.push.install.status.failed")
+    if (pair.command) return language.t("home.push.install.status.pending")
+    return language.t("settings.general.notifications.push.pairing.unpaired")
+  })
+
+  createEffect(() => {
+    if (push()?.paired) {
+      setPairInfo({
+        id: pair.id ?? "active",
+        status: "active",
+        channel: push()?.channel,
+        device: pair.device,
+      })
+      return
+    }
+    if (pair.status !== "active") return
+    setPairInfo()
+  })
+
+  createEffect(() => {
+    if (!platform.getPushPairing || !pair.id || push()?.paired) return
+    if (pair.status !== "pending" && pair.status !== "claimed") return
+
+    let active = true
+    const tick = async () => {
+      if (!active) return
+      await platform
+        .getPushPairing?.()
+        .then((value) => {
+          if (!active || !value) return
+          setPairInfo(value)
+          if (value.status === "active") {
+            void platform.getPushState?.()
+          }
+        })
+        .catch(() => undefined)
+    }
+
+    void tick()
+    const timer = window.setInterval(() => {
+      void tick()
+    }, 3000)
+    onCleanup(() => {
+      active = false
+      window.clearInterval(timer)
+    })
+  })
+
+  const pushAction = createMemo<PushAction>(() => {
+    const value = push()
+    if (!value) {
+      return {
+        label: language.t("settings.general.notifications.push.action.checking"),
+        disabled: true,
+      }
+    }
+    if (value.permission === "authorized" || value.permission === "provisional" || value.permission === "ephemeral") {
+      return {
+        label: language.t("settings.general.notifications.push.action.enabled"),
+        disabled: true,
+      }
+    }
+    if (value.permission === "denied") {
+      return {
+        label: language.t("settings.general.notifications.push.action.openSettings"),
+        disabled: !platform.openSystemSettings,
+        run: openPush,
+      }
+    }
+    if (value.permission === "unsupported") {
+      return {
+        label: language.t("settings.general.notifications.push.action.unavailable"),
+        disabled: true,
+      }
+    }
+    return {
+      label: language.t("settings.general.notifications.push.action.enable"),
+      disabled: !platform.requestPushPermission,
+      run: askPush,
+    }
+  })
 
   const [shells] = createResource(
     () =>
@@ -611,6 +941,122 @@ export const SettingsGeneral: Component = () => {
             />
           </div>
         </SettingsRow>
+
+        <Show when={platform.platform === "ios" && platform.requestPushPermission}>
+          <SettingsRow
+            title={language.t("settings.general.notifications.push.permission.title")}
+            description={pushDesc(push())}
+          >
+            <div data-action="settings-push-permission">
+              <Button
+                size="small"
+                variant="secondary"
+                disabled={store.asking || pushAction().disabled}
+                onClick={() => void pushAction().run?.()}
+              >
+                {store.asking ? language.t("settings.general.notifications.push.action.checking") : pushAction().label}
+              </Button>
+            </div>
+          </SettingsRow>
+
+          <SettingsRow
+            title={language.t("settings.general.notifications.push.generic.title")}
+            description={language.t("settings.general.notifications.push.generic.description")}
+          >
+            <span class="text-12-medium text-text-dimmed">
+              {language.t("settings.general.notifications.push.generic.value")}
+            </span>
+          </SettingsRow>
+
+          <SettingsRow
+            title={language.t("settings.general.notifications.push.test.title")}
+            description={language.t("settings.general.notifications.push.test.description")}
+          >
+            <div data-action="settings-push-test">
+              <Button
+                size="small"
+                variant="secondary"
+                disabled={store.testing || !platform.testPush || !push()?.allowed}
+                onClick={() => void testPush()}
+              >
+                {store.testing
+                  ? language.t("settings.general.notifications.push.action.sending")
+                  : language.t("settings.general.notifications.push.action.test")}
+              </Button>
+            </div>
+          </SettingsRow>
+
+          <SettingsRow title={language.t("settings.general.notifications.push.relay.title")} description={relayDesc()}>
+            <div class="flex w-full max-w-[460px] items-center justify-end gap-2" data-action="settings-push-relay">
+              <TextField
+                type="text"
+                value={relay.custom() ?? ""}
+                placeholder={relay.guess() ?? "http://host:8787"}
+                onChange={(value) => relay.set(value)}
+                class="w-full min-w-0"
+              />
+              <Button size="small" variant="secondary" disabled={!relay.custom()} onClick={() => relay.clear()}>
+                {language.t("settings.general.notifications.push.relay.action.auto")}
+              </Button>
+            </div>
+          </SettingsRow>
+
+          <SettingsRow title={language.t("settings.general.notifications.push.pairing.title")} description={pairDesc()}>
+            <div class="flex flex-wrap items-center justify-end gap-2" data-action="settings-push-pairing">
+              <Button
+                size="small"
+                variant="secondary"
+                disabled={store.pairing || !platform.beginPushPairing || !push()?.allowed}
+                onClick={() => void startPair()}
+              >
+                {store.pairing
+                  ? language.t("home.push.install.action.preparing")
+                  : language.t("settings.general.notifications.push.pairing.action.repair")}
+              </Button>
+              <Button
+                size="small"
+                variant="secondary"
+                disabled={store.clearing || !platform.clearPushPairing || !push()?.paired}
+                onClick={() => void clearPair()}
+              >
+                {store.clearing
+                  ? language.t("settings.general.notifications.push.pairing.action.clearing")
+                  : language.t("settings.general.notifications.push.pairing.action.clear")}
+              </Button>
+            </div>
+          </SettingsRow>
+
+          <SettingsRow title={language.t("settings.general.notifications.push.host.title")} description={hostDesc()}>
+            <div class="flex flex-wrap items-center justify-end gap-2" data-action="settings-push-host">
+              <Button size="small" variant="secondary" disabled={store.copying} onClick={() => void copyHost()}>
+                {store.copying
+                  ? language.t("settings.general.notifications.push.host.action.copying")
+                  : language.t("settings.general.notifications.push.host.action.copy")}
+              </Button>
+              <Show
+                when={installed()}
+                fallback={
+                  <Button size="small" disabled={store.installing || updating()} onClick={() => void installHost()}>
+                    {store.installing || updating()
+                      ? language.t("settings.general.notifications.push.host.action.installing")
+                      : language.t("settings.general.notifications.push.host.action.install")}
+                  </Button>
+                }
+              >
+                <Button
+                  size="small"
+                  variant="secondary"
+                  disabled={store.removing || updating()}
+                  onClick={() => void removeHost()}
+                >
+                  {store.removing
+                    ? language.t("settings.general.notifications.push.host.action.removing")
+                    : language.t("settings.general.notifications.push.host.action.remove")}
+                </Button>
+              </Show>
+            </div>
+          </SettingsRow>
+        </Show>
       </SettingsList>
     </div>
   )

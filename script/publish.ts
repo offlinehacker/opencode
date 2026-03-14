@@ -47,6 +47,9 @@ await $`bun ./packages/sdk/js/script/publish.ts`
 console.log("\n=== plugin ===\n")
 await $`bun ./packages/plugin/script/publish.ts`
 
+console.log("\n=== push ===\n")
+await $`bun ./packages/push/script/publish.ts`
+
 console.log("\n=== ui ===\n")
 await $`bun ./packages/ui/script/publish.ts`
 

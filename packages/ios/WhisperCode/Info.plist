@@ -35,6 +35,10 @@
 	<string>WhisperCode uses the microphone for voice-to-text input.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>WhisperCode uses speech recognition for voice-to-text input.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -186,6 +186,10 @@ bun run --cwd sdks/vscode test
   - App: `bun run --cwd packages/app dev -- --port 4444`
 - `packages/app`: prefer `createStore` over many `createSignal` calls.
 - `packages/desktop`: never call Tauri `invoke` directly; use `packages/desktop/src/bindings.ts`.
+- `packages/ios`: if a user asks to push, release, or upload a new iOS build, assume they usually want the existing private TestFlight Fastlane flow unless they explicitly ask for an App Store production release.
+- `packages/ios`: run `bun run --cwd packages/ios beam` from repo root for that flow.
+- `packages/ios`: `packages/ios/script/beam` auto-loads App Store Connect credentials from `packages/ios/.beam.env`, then runs the `beam` lane in `packages/ios/fastlane/Fastfile`.
+- `packages/ios`: this flow builds the app and uploads a private TestFlight build; it does not submit to the public App Store.
 
 ## Cursor/Copilot Rules
 

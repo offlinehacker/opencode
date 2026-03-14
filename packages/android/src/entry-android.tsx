@@ -135,7 +135,10 @@ const App = () => {
     return {
       state,
       ready: (value as { ready?: unknown }).ready === true,
-      message: typeof (value as { message?: unknown }).message === "string" ? (value as { message: string }).message : undefined,
+      message:
+        typeof (value as { message?: unknown }).message === "string"
+          ? (value as { message: string }).message
+          : undefined,
     }
   }
 
@@ -193,7 +196,9 @@ const App = () => {
     openLink: (url: string) => {
       void openUrl(url).catch(() => undefined)
     },
-    notify: async (title: string, description?: string) => {
+    notify: async (title: string, description?: string, href?: string, opts?: unknown) => {
+      void href
+      void opts
       const granted = await isPermissionGranted().catch(() => false)
       const permission = granted ? "granted" : await requestPermission().catch(() => "denied")
       if (permission !== "granted") return
@@ -235,10 +240,20 @@ const App = () => {
 
   const [completedConfig, setCompletedConfig] = createSignal<ServerConfig | null>(null)
 
-  const handleOnboardingComplete = async (server: { url: string; displayName?: string; username?: string; password?: string }) => {
+  const handleOnboardingComplete = async (server: {
+    url: string
+    displayName?: string
+    username?: string
+    password?: string
+  }) => {
     const normalized = normalizeServerUrl(server.url)
     if (!normalized) return
-    const config: ServerConfig = { url: normalized, displayName: server.displayName, username: server.username, password: server.password }
+    const config: ServerConfig = {
+      url: normalized,
+      displayName: server.displayName,
+      username: server.username,
+      password: server.password,
+    }
     await setDefaultServerConfig(config)
     setCompletedConfig(config)
   }
@@ -298,7 +313,10 @@ const App = () => {
           onStop={() => void stopVoiceInput()}
         />
         <Show when={!defaultConfig.loading}>
-          <Show when={defaultConfig() || completedConfig()} fallback={<Onboarding onComplete={handleOnboardingComplete} />}>
+          <Show
+            when={defaultConfig() || completedConfig()}
+            fallback={<Onboarding onComplete={handleOnboardingComplete} />}
+          >
             <AppInterface
               {...(() => {
                 const config = (defaultConfig() || completedConfig())!
