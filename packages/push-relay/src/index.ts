@@ -1,12 +1,13 @@
+import { log } from "./log"
 import { listen } from "./server"
 
 const srv = listen({
   port: Number(process.env.PORT || 8787),
-  url: process.env.WHISPERCODE_PUSH_RELAY_URL,
-  file: process.env.WHISPERCODE_PUSH_RELAY_DB,
+  url: process.env.WHISPEROPENCODE_PUSH_RELAY_URL,
+  file: process.env.WHISPEROPENCODE_PUSH_RELAY_DB,
 })
 
-console.log(`whispercode-push-relay listening on ${srv.port}`)
+log("info", "listening", { port: srv.port })
 
 process.on("SIGINT", () => {
   void srv.stop().finally(() => process.exit(0))

@@ -41,7 +41,7 @@ final class KeyboardBridge: NSObject {
     guard let contentView = findContentView(in: webView.scrollView) else { return }
     guard objc_getAssociatedObject(contentView, &kToolbarKey) == nil else { return }
     let toolbar = buildToolbar(width: max(webView.bounds.width, UIScreen.main.bounds.width))
-    let subclass = ensureDynamicSubclass(for: contentView)
+    let subclass: AnyClass = ensureDynamicSubclass(for: contentView)
 
     object_setClass(contentView, subclass)
     objc_setAssociatedObject(contentView, &kToolbarKey, toolbar, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)

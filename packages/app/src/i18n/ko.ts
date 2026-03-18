@@ -105,7 +105,11 @@ export const dict = {
   "dialog.model.empty": "모델 결과 없음",
   "dialog.model.manage": "모델 관리",
   "dialog.model.manage.description": "모델 선택기에 표시할 모델 사용자 지정",
+<<<<<<< HEAD
   "dialog.model.manage.provider.toggle": "모든 {{provider}} 모델 토글",
+=======
+  "dialog.model.manage.provider.toggle": "모든 {{provider}} 모델 전환",
+>>>>>>> 974a5c065 (add notifications)
   "dialog.model.unpaid.freeModels.title": "OpenCode에서 제공하는 무료 모델",
   "dialog.model.unpaid.addMore.title": "인기 공급자의 모델 추가",
   "dialog.provider.viewAll": "더 많은 공급자 보기",
@@ -465,7 +469,11 @@ export const dict = {
   "session.review.loadingChanges": "변경 사항 로드 중...",
   "session.review.empty": "이 세션에 변경 사항이 아직 없습니다",
   "session.review.noVcs": "Git 버전 관리 시스템이 감지되지 않아 변경 사항이 표시되지 않습니다",
+<<<<<<< HEAD
   "session.review.noSnapshot": "구성에서 스냅샷 추적이 비활성화되어 있어 세션 변경 사항을 사용할 수 없습니다",
+=======
+  "session.review.noSnapshot": "설정에서 스냅샷 추적이 비활성화되어 있어 세션 변경 사항을 사용할 수 없습니다",
+>>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "변경 없음",
   "session.files.selectToOpen": "열 파일을 선택하세요",
   "session.files.all": "모든 파일",
@@ -560,8 +568,10 @@ export const dict = {
   "app.name.desktop": "OpenCode Desktop",
   "settings.section.desktop": "데스크톱",
   "settings.section.server": "서버",
+  "settings.section.whispercode": "WhisperCode",
   "settings.tab.general": "일반",
   "settings.tab.shortcuts": "단축키",
+  "settings.tab.phone": "휴대폰",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL 통합",
   "settings.desktop.wsl.description": "Windows의 WSL 내부에서 OpenCode 서버를 실행합니다.",
@@ -579,6 +589,7 @@ export const dict = {
   "settings.general.row.colorScheme.description": "OpenCode가 시스템, 라이트 또는 다크 테마를 따를지 선택하세요",
   "settings.general.row.theme.title": "테마",
   "settings.general.row.theme.description": "OpenCode 테마 사용자 지정",
+<<<<<<< HEAD
   "settings.general.row.font.title": "코드 글꼴",
   "settings.general.row.font.description": "코드 블록에 사용되는 글꼴을 사용자 지정",
   "settings.general.row.terminalFont.title": "터미널 글꼴",
@@ -591,6 +602,12 @@ export const dict = {
   "settings.general.row.followup.option.steer": "조종",
   "settings.general.row.reasoningSummaries.title": "추론 요약 표시",
   "settings.general.row.reasoningSummaries.description": "타임라인에 모델 추론 요약 표시",
+=======
+  "settings.general.row.font.title": "글꼴",
+  "settings.general.row.font.description": "코드 블록에 사용되는 고정폭 글꼴 사용자 지정",
+  "settings.general.row.reasoningSummaries.title": "추론 요약 표시",
+  "settings.general.row.reasoningSummaries.description": "타임라인에 모델 추론 요약을 표시합니다",
+>>>>>>> 974a5c065 (add notifications)
   "settings.general.row.shellToolPartsExpanded.title": "shell 도구 파트 펼치기",
   "settings.general.row.shellToolPartsExpanded.description":
     "타임라인에서 기본적으로 shell 도구 파트를 펼친 상태로 표시합니다",
@@ -663,6 +680,102 @@ export const dict = {
   "settings.general.notifications.permissions.description": "권한이 필요할 때 시스템 알림 표시",
   "settings.general.notifications.errors.title": "오류",
   "settings.general.notifications.errors.description": "오류가 발생했을 때 시스템 알림 표시",
+  "settings.general.notifications.push.permission.title": "푸시 알림 권한",
+  "settings.general.notifications.push.permission.pending":
+    "WhisperCode가 이 iPhone에서 알림을 표시할 수 있는지 확인 중입니다",
+  "settings.general.notifications.push.permission.notDetermined":
+    "응답, 승인, 질문 및 오류에 대한 일반 알림을 활성화합니다",
+  "settings.general.notifications.push.permission.denied": "iPhone 설정 앱에서 WhisperCode 알림을 켜세요",
+  "settings.general.notifications.push.permission.registering":
+    "권한이 부여되었습니다. WhisperCode가 Apple 등록을 완료하고 있습니다.",
+  "settings.general.notifications.push.permission.authorized": "이 iPhone에서 일반 알림을 받을 준비가 되었습니다",
+  "settings.general.notifications.push.permission.provisional":
+    "이 iPhone에서 조용한 일반 알림을 받을 준비가 되었습니다",
+  "settings.general.notifications.push.permission.ephemeral": "이 iPhone에서 임시 일반 알림을 받을 준비가 되었습니다",
+  "settings.general.notifications.push.permission.unsupported": "이 기기에서는 알림을 사용할 수 없습니다",
+  "settings.general.notifications.push.generic.title": "개인정보 보호",
+  "settings.general.notifications.push.generic.description":
+    "알림은 기본적으로 일반 형태입니다. 프롬프트 텍스트, 응답 텍스트, 파일 경로 및 세션 제목은 기기에만 저장됩니다.",
+  "settings.general.notifications.push.generic.value": "일반만",
+  "settings.general.notifications.push.test.title": "테스트 알림 보내기",
+  "settings.general.notifications.push.test.description":
+    "연결된 OpenCode 호스트에서 릴레이 기반 알림을 보내고, 탭하면 WhisperCode로 돌아오는지 확인합니다",
+  "settings.general.notifications.push.relay.title": "푸시 릴레이",
+  "settings.general.notifications.push.relay.description.custom":
+    "페어링 및 백그라운드 푸시 전달에 사용자 지정 릴레이 URL을 사용 중입니다: {url}",
+  "settings.general.notifications.push.relay.description.guess": "연결된 서버 호스트의 포트 8787이 기본값입니다: {url}",
+  "settings.general.notifications.push.relay.description.empty":
+    "먼저 서버에 연결하거나, 페어링 및 백그라운드 푸시 전달을 위한 사용자 지정 릴레이 URL을 입력하세요.",
+  "settings.general.notifications.push.relay.action.auto": "기본값 사용",
+  "settings.general.notifications.push.pairing.title": "휴대폰 페어링",
+  "settings.general.notifications.push.pairing.pending": "이 iPhone이 푸시 채널에 페어링되어 있는지 확인 중입니다.",
+  "settings.general.notifications.push.pairing.server":
+    "WhisperCode가 페어링을 완료할 수 있도록 먼저 OpenCode 서버에 연결하세요.",
+  "settings.general.notifications.push.pairing.unpaired":
+    "설정을 한 번 탭하면 WhisperCode가 권한 요청, 호스트 통합 설치, 이 iPhone 페어링을 자동으로 수행합니다.",
+  "settings.general.notifications.push.pairing.paired":
+    "이 iPhone은 OpenCode 호스트에 페어링되어 있습니다. 연결이 끊어지면 WhisperCode가 자동으로 복구합니다.",
+  "settings.general.notifications.push.pairing.retry":
+    "WhisperCode가 이 iPhone의 호스트 페어링을 완료하고 있으며, 성공할 때까지 계속 재시도합니다.",
+  "settings.general.notifications.push.pairing.step.permission": "iPhone 설정에서 알림 권한을 요청하고 있습니다.",
+  "settings.general.notifications.push.pairing.step.register": "Apple 푸시 등록이 완료되기를 기다리고 있습니다.",
+  "settings.general.notifications.push.pairing.step.begin": "이 iPhone을 위한 보안 페어링 요청을 준비하고 있습니다.",
+  "settings.general.notifications.push.pairing.step.claim": "이 iPhone을 OpenCode 호스트에 연결하고 있습니다.",
+  "settings.general.notifications.push.pairing.step.finish": "이 iPhone에서 페어링을 완료하고 있습니다.",
+  "settings.general.notifications.push.pairing.action.setup": "설정",
+  "settings.general.notifications.push.pairing.action.finish": "설정 완료",
+  "settings.general.notifications.push.pairing.action.repair": "복구",
+  "settings.general.notifications.push.pairing.action.pairing": "페어링 중...",
+  "settings.general.notifications.push.pairing.action.clear": "페어링 제거",
+  "settings.general.notifications.push.pairing.action.clearing": "제거 중...",
+  "settings.general.notifications.push.pairing.toast.cleared.title": "페어링이 제거되었습니다",
+  "settings.general.notifications.push.pairing.toast.cleared.description":
+    "저장된 푸시 채널 자격 증명이 이 iPhone에서 제거되었습니다.",
+  "settings.general.notifications.push.pairing.toast.paired.title": "iPhone이 페어링되었습니다",
+  "settings.general.notifications.push.pairing.toast.paired.description":
+    "WhisperCode가 이제 이 iPhone을 OpenCode 호스트에 연결하여 푸시 전달을 유지할 수 있습니다.",
+  "settings.general.notifications.push.action.enable": "활성화",
+  "settings.general.notifications.push.action.openSettings": "설정 열기",
+  "settings.general.notifications.push.action.enabled": "활성화됨",
+  "settings.general.notifications.push.action.unavailable": "사용 불가",
+  "settings.general.notifications.push.action.checking": "확인 중...",
+  "settings.general.notifications.push.action.test": "테스트 보내기",
+  "settings.general.notifications.push.action.sending": "보내는 중...",
+  "settings.general.notifications.push.host.title": "호스트 통합",
+  "settings.general.notifications.push.host.description.missing":
+    "일반 푸시 대상 이벤트를 전달할 수 있도록 연결된 OpenCode 호스트에 커뮤니티 플러그인을 설치하세요.",
+  "settings.general.notifications.push.host.description.installed":
+    "커뮤니티 플러그인이 이 호스트의 OpenCode 글로벌 구성에 등록되어 있습니다.",
+  "settings.general.notifications.push.host.description.updating":
+    "호스트 플러그인의 OpenCode 글로벌 구성을 업데이트하고 있습니다.",
+  "settings.general.notifications.push.host.action.install": "구성에 추가",
+  "settings.general.notifications.push.host.action.installing": "설치 중...",
+  "settings.general.notifications.push.host.action.copy": "명령어 복사",
+  "settings.general.notifications.push.host.action.copying": "복사 중...",
+  "settings.general.notifications.push.host.action.remove": "제거",
+  "settings.general.notifications.push.host.action.removing": "제거 중...",
+  "settings.general.notifications.push.host.toast.installed.title": "호스트 플러그인이 추가되었습니다",
+  "settings.general.notifications.push.host.toast.installed.description":
+    "OpenCode 글로벌 구성에 WhisperCode 푸시 플러그인이 포함되었습니다.",
+  "settings.general.notifications.push.host.toast.removed.title": "호스트 플러그인이 제거되었습니다",
+  "settings.general.notifications.push.host.toast.removed.description":
+    "OpenCode 글로벌 구성에서 WhisperCode 푸시 플러그인이 제거되었습니다.",
+  "settings.general.notifications.push.host.toast.copied.title": "설치 명령어가 복사되었습니다",
+  "settings.general.notifications.push.host.toast.copied.description":
+    "OpenCode를 호스팅하는 컴퓨터에서 복사한 명령어를 실행하세요.",
+  "settings.general.notifications.push.host.toast.copyFailed.title": "설치 명령어를 복사할 수 없습니다",
+  "settings.general.notifications.push.host.toast.copyFailed.description":
+    "WhisperCode에서 명령어를 수동으로 복사하여 OpenCode 호스트에서 실행하세요.",
+  "settings.general.notifications.push.toast.sent.title": "테스트 알림이 예약되었습니다",
+  "settings.general.notifications.push.toast.sent.description":
+    "iPhone을 잠그거나 앱을 열어둔 채로 배너와 탭 동작을 확인하세요.",
+  "settings.general.notifications.push.toast.failed.title": "테스트 알림을 보낼 수 없습니다",
+  "settings.general.notifications.push.toast.failed.description":
+    "WhisperCode의 iPhone 알림을 활성화하고 다시 시도하세요.",
+  "notification.push.route.title": "OpenCode 알림",
+  "notification.push.route.server": "WhisperCode가 아직 이 알림을 연결된 서버와 매칭하지 못했습니다.",
+  "notification.push.route.session": "WhisperCode가 아직 해당 세션을 복원하지 못하여 서버 홈을 열었습니다.",
+  "settings.whispercode.mobile.unavailable": "이 탭은 WhisperCode 모바일 빌드에서 사용할 수 있습니다.",
   "settings.general.sounds.agent.title": "에이전트",
   "settings.general.sounds.agent.description": "에이전트가 완료되거나 주의가 필요할 때 소리 재생",
   "settings.general.sounds.permissions.title": "권한",

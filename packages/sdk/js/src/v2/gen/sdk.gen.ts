@@ -163,8 +163,13 @@ import type {
   PtyListResponses,
   PtyRemoveErrors,
   PtyRemoveResponses,
+<<<<<<< HEAD
   PtyShellsErrors,
   PtyShellsResponses,
+=======
+  PtyResultErrors,
+  PtyResultResponses,
+>>>>>>> 974a5c065 (add notifications)
   PtyUpdateErrors,
   PtyUpdateResponses,
   QuestionAnswer,
@@ -2911,7 +2916,43 @@ export class Pty extends HeyApiClient {
   }
 
   /**
+<<<<<<< HEAD
    * Create PTY WebSocket token
+=======
+   * Get PTY result
+   *
+   * Retrieve the running or exited result for a pseudo-terminal (PTY) session.
+   */
+  public result<ThrowOnError extends boolean = false>(
+    parameters: {
+      ptyID: string
+      directory?: string
+      workspace?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "ptyID" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "workspace" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<PtyResultResponses, PtyResultErrors, ThrowOnError>({
+      url: "/pty/{ptyID}/result",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Connect to PTY session
+>>>>>>> 974a5c065 (add notifications)
    *
    * Create a short-lived ticket for opening a PTY WebSocket connection.
    */

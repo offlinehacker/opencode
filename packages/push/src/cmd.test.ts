@@ -4,7 +4,7 @@ import os from "os"
 import path from "path"
 import { install, status, test as ping, unpair, type Opts } from "./cmd"
 
-const base = (): Opts => ({ plugin: "@whispercode/opencode-push@0.x", json: true })
+const base = (): Opts => ({ plugin: "@whisperopencode/push@0.2.0", json: true })
 
 async function tmp() {
   return fs.mkdtemp(path.join(os.tmpdir(), "push-"))

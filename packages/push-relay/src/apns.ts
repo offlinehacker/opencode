@@ -26,6 +26,7 @@ export type PushRes = {
 
 export type PushAdapter = {
   send(msg: PushMsg): Promise<PushRes>
+  close(): void
 }
 
 type Mode = "mock" | "disabled" | "live"
@@ -42,6 +43,7 @@ type Opts = {
   env?: "sandbox" | "production"
   dial?: Dial
   now?: () => number
+  timeout?: number
 }
 
 type Live = {
@@ -52,12 +54,34 @@ type Live = {
   root: string
   dial: Dial
   now: () => number
+  timeout: number
+}
+
+function pool(cfg: Live) {
+  let ses: ClientHttp2Session | undefined
+
+  return {
+    get() {
+      if (!ses || ses.destroyed || ses.closed) {
+        ses = cfg.dial(cfg.root)
+        ses.on("error", () => {
+          ses = undefined
+        })
+      }
+      return ses
+    },
+    close() {
+      ses?.close()
+      ses = undefined
+    },
+  }
 }
 
 export function createAdapter(opts?: Opts) {
   const mode = opts?.mode ?? envMode(opts)
   const live = mode === "live" ? cfg(opts) : undefined
   const auth = live ? token(live) : undefined
+  const p = live ? pool(live) : undefined
 
   return {
     async send(msg: PushMsg) {
@@ -68,7 +92,7 @@ export function createAdapter(opts?: Opts) {
           mode,
         }
       }
-      if (!live || !auth) {
+      if (!live || !auth || !p) {
         return {
           sent: false,
           mode: "disabled",
@@ -76,7 +100,10 @@ export function createAdapter(opts?: Opts) {
         }
       }
 
-      return send(live, auth, msg)
+      return send(live, p, auth, msg)
+    },
+    close() {
+      p?.close()
     },
   } satisfies PushAdapter
 }
@@ -113,7 +140,7 @@ function text(msg: PushMsg) {
 }
 
 function envMode(opts?: Opts): Mode {
-  const mode = opts?.mode ?? process.env.WHISPERCODE_PUSH_APNS_MODE
+  const mode = opts?.mode ?? process.env.WHISPEROPENCODE_PUSH_APNS_MODE
   if (mode === "mock" || mode === "disabled" || mode === "live") return mode
   return ready(opts) ? "live" : "disabled"
 }
@@ -136,23 +163,24 @@ function cfg(opts?: Opts): Live | undefined {
     dial: opts?.dial ?? connect,
     now: opts?.now ?? Date.now,
     key: nextKey,
+    timeout: opts?.timeout ?? 15_000,
   }
 }
 
 function team(opts?: Opts) {
-  return opts?.team ?? process.env.WHISPERCODE_PUSH_APNS_TEAM_ID
+  return opts?.team ?? process.env.WHISPEROPENCODE_PUSH_APNS_TEAM_ID
 }
 
 function kid(opts?: Opts) {
-  return opts?.kid ?? process.env.WHISPERCODE_PUSH_APNS_KEY_ID
+  return opts?.kid ?? process.env.WHISPEROPENCODE_PUSH_APNS_KEY_ID
 }
 
 function topic(opts?: Opts) {
-  return opts?.topic ?? process.env.WHISPERCODE_PUSH_APNS_TOPIC
+  return opts?.topic ?? process.env.WHISPEROPENCODE_PUSH_APNS_TOPIC
 }
 
 function kind(opts?: Opts): "sandbox" | "production" {
-  const value = opts?.env ?? process.env.WHISPERCODE_PUSH_APNS_ENV
+  const value = opts?.env ?? process.env.WHISPEROPENCODE_PUSH_APNS_ENV
   if (value === "production") return value
   return "sandbox"
 }
@@ -160,9 +188,9 @@ function kind(opts?: Opts): "sandbox" | "production" {
 function pem(opts?: Opts) {
   if (opts?.key) return opts.key
   if (opts?.keyfile) return fs.readFileSync(opts.keyfile, "utf8")
-  if (process.env.WHISPERCODE_PUSH_APNS_KEY) return process.env.WHISPERCODE_PUSH_APNS_KEY
-  if (process.env.WHISPERCODE_PUSH_APNS_KEY_FILE) {
-    return fs.readFileSync(process.env.WHISPERCODE_PUSH_APNS_KEY_FILE, "utf8")
+  if (process.env.WHISPEROPENCODE_PUSH_APNS_KEY) return process.env.WHISPEROPENCODE_PUSH_APNS_KEY
+  if (process.env.WHISPEROPENCODE_PUSH_APNS_KEY_FILE) {
+    return fs.readFileSync(process.env.WHISPEROPENCODE_PUSH_APNS_KEY_FILE, "utf8")
   }
 }
 
@@ -192,9 +220,17 @@ function token(cfg: Live) {
   }
 }
 
-async function send(cfg: Live, auth: () => string, msg: PushMsg): Promise<PushRes> {
+async function send(cfg: Live, p: ReturnType<typeof pool>, auth: () => string, msg: PushMsg): Promise<PushRes> {
   const url = new URL(`/3/device/${encodeURIComponent(msg.token)}`, cfg.root)
-  const res = await post(cfg, url, auth(), payload(msg))
+  let res: { status: number; reason?: string }
+  try {
+    res = await post(p.get(), cfg.topic, cfg.timeout, url, auth(), payload(msg))
+  } catch (err) {
+    if (err instanceof Error && err.message === "apns_timeout") {
+      return { sent: false, mode: "live", code: "apns_timeout" }
+    }
+    throw err
+  }
   if (res.status >= 200 && res.status < 300) {
     return {
       sent: true,
@@ -211,14 +247,20 @@ async function send(cfg: Live, auth: () => string, msg: PushMsg): Promise<PushRe
   }
 }
 
-async function post(cfg: Live, url: URL, auth: string, body: Record<string, unknown>) {
+async function post(
+  ses: ClientHttp2Session,
+  topic: string,
+  timeout: number,
+  url: URL,
+  auth: string,
+  body: Record<string, unknown>,
+) {
   return await new Promise<{ status: number; reason?: string }>((resolve, reject) => {
-    const ses = cfg.dial(url.origin)
     const head: OutgoingHttpHeaders = {
       [constants.HTTP2_HEADER_METHOD]: "POST",
       [constants.HTTP2_HEADER_PATH]: `${url.pathname}${url.search}`,
       authorization: `bearer ${auth}`,
-      "apns-topic": cfg.topic,
+      "apns-topic": topic,
       "apns-push-type": "alert",
       "apns-priority": "10",
       "content-type": "application/json",
@@ -227,16 +269,16 @@ async function post(cfg: Live, url: URL, auth: string, body: Record<string, unkn
     let code = 0
     let text = ""
     let done = false
+    let timer: ReturnType<typeof setTimeout> | undefined
 
     const stop = (err?: unknown) => {
       if (done) return
       done = true
-      ses.close()
+      clearTimeout(timer)
       if (err) reject(err)
     }
 
     const req = ses.request(head)
-    ses.once("error", (err) => stop(err))
     req.setEncoding("utf8")
     req.on("response", (next: IncomingHttpHeaders) => {
       code = Number(next[constants.HTTP2_HEADER_STATUS] ?? 0)
@@ -248,10 +290,16 @@ async function post(cfg: Live, url: URL, auth: string, body: Record<string, unkn
     req.once("end", () => {
       if (done) return
       done = true
-      ses.close()
+      clearTimeout(timer)
       resolve({ status: code, reason: reason(text) })
     })
     req.end(JSON.stringify(body))
+    timer = setTimeout(() => {
+      if (done) return
+      done = true
+      req.close(constants.NGHTTP2_CANCEL)
+      reject(new Error("apns_timeout"))
+    }, timeout)
   })
 }
 

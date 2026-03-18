@@ -118,7 +118,11 @@ export const dict = {
   "dialog.model.empty": "Ingen modeller fundet",
   "dialog.model.manage": "Administrer modeller",
   "dialog.model.manage.description": "Tilpas hvilke modeller der vises i modelvælgeren.",
+<<<<<<< HEAD
   "dialog.model.manage.provider.toggle": "Skift alle {{provider}}-modeller",
+=======
+  "dialog.model.manage.provider.toggle": "Slå alle {{provider}}-modeller til/fra",
+>>>>>>> 974a5c065 (add notifications)
 
   "dialog.model.unpaid.freeModels.title": "Gratis modeller leveret af OpenCode",
   "dialog.model.unpaid.addMore.title": "Tilføj flere modeller fra populære udbydere",
@@ -339,10 +343,17 @@ export const dict = {
   "dialog.server.add.error": "Kunne ikke forbinde til server",
   "dialog.server.add.checking": "Tjekker...",
   "dialog.server.add.button": "Tilføj server",
+<<<<<<< HEAD
   "dialog.server.add.name": "Servernavn (valgfrit)",
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "Brugernavn (valgfrit)",
   "dialog.server.add.password": "Adgangskode (valgfrit)",
+=======
+  "dialog.server.add.name": "Servernavn (valgfri)",
+  "dialog.server.add.namePlaceholder": "Localhost",
+  "dialog.server.add.username": "Brugernavn (valgfri)",
+  "dialog.server.add.password": "Adgangskode (valgfri)",
+>>>>>>> 974a5c065 (add notifications)
   "dialog.server.edit.title": "Rediger server",
   "dialog.server.default.title": "Standardserver",
   "dialog.server.default.description":
@@ -623,9 +634,15 @@ export const dict = {
   "session.review.change.other": "Ændringer",
   "session.review.loadingChanges": "Indlæser ændringer...",
   "session.review.empty": "Ingen ændringer i denne session endnu",
+<<<<<<< HEAD
   "session.review.noVcs": "Intet Git versionsstyringssystem fundet, ændringer vises ikke",
   "session.review.noSnapshot":
     "Snapshot-sporing er deaktiveret i konfigurationen, så sessionsændringer er ikke tilgængelige",
+=======
+  "session.review.noVcs": "Intet Git versionsstyringssystem registreret, ændringer vises ikke",
+  "session.review.noSnapshot":
+    "Snapshot-sporing er deaktiveret i konfigurationen, så sessionsændringer er utilgængelige",
+>>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Ingen ændringer",
   "session.review.noUncommittedChanges": "Ingen ændringer uden commit endnu",
   "session.review.noBranchChanges": "Ingen grenændringer endnu",
@@ -745,8 +762,10 @@ export const dict = {
   "app.name.desktop": "OpenCode Desktop",
   "settings.section.desktop": "Desktop",
   "settings.section.server": "Server",
+  "settings.section.whispercode": "WhisperCode",
   "settings.tab.general": "Generelt",
   "settings.tab.shortcuts": "Genveje",
+  "settings.tab.phone": "Telefon",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL integration",
   "settings.desktop.wsl.description": "Kør OpenCode-serveren inde i WSL på Windows.",
@@ -805,6 +824,7 @@ export const dict = {
   "settings.general.row.editToolPartsExpanded.title": "Udvid edit-værktøjsdele",
   "settings.general.row.editToolPartsExpanded.description":
     "Vis edit-, write- og patch-værktøjsdele udvidet som standard i tidslinjen",
+<<<<<<< HEAD
   "settings.general.row.newInterface.title": "Nyt layout",
   "settings.general.row.newInterface.badge": "Ny",
   "settings.general.row.newInterface.description":
@@ -814,6 +834,10 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.dismiss": "Afvis",
   "settings.general.row.pinchZoom.title": "Knib for at zoome",
   "settings.general.row.pinchZoom.description": "Tillad knibebevægelser på pegefeltet og Ctrl-rulning for at zoome",
+=======
+  "settings.general.row.reasoningSummaries.title": "Vis ræsonneringsresuméer",
+  "settings.general.row.reasoningSummaries.description": "Vis modellens ræsonneringsresuméer i tidslinjen",
+>>>>>>> 974a5c065 (add notifications)
   "settings.general.row.wayland.title": "Brug native Wayland",
   "settings.general.row.wayland.description": "Deaktiver X11-fallback på Wayland. Kræver genstart.",
   "settings.general.row.wayland.tooltip":
@@ -886,6 +910,106 @@ export const dict = {
   "settings.general.notifications.permissions.description": "Vis systemmeddelelse når en tilladelse er påkrævet",
   "settings.general.notifications.errors.title": "Fejl",
   "settings.general.notifications.errors.description": "Vis systemmeddelelse når der opstår en fejl",
+  "settings.general.notifications.push.permission.title": "Push-tilladelse",
+  "settings.general.notifications.push.permission.pending":
+    "Tjekker om WhisperCode kan vise notifikationer på denne iPhone",
+  "settings.general.notifications.push.permission.notDetermined":
+    "Aktiver generiske advarsler for svar, godkendelser, spørgsmål og fejl",
+  "settings.general.notifications.push.permission.denied":
+    "Slå notifikationer til for WhisperCode i iPhone Indstillinger",
+  "settings.general.notifications.push.permission.registering":
+    "Tilladelse er givet. WhisperCode afslutter registrering hos Apple.",
+  "settings.general.notifications.push.permission.authorized": "Klar til generiske advarsler på denne iPhone",
+  "settings.general.notifications.push.permission.provisional": "Klar til stille generiske advarsler på denne iPhone",
+  "settings.general.notifications.push.permission.ephemeral":
+    "Klar til midlertidige generiske advarsler på denne iPhone",
+  "settings.general.notifications.push.permission.unsupported": "Notifikationer er ikke tilgængelige på denne enhed",
+  "settings.general.notifications.push.generic.title": "Privatliv",
+  "settings.general.notifications.push.generic.description":
+    "Advarsler forbliver generiske som standard. Prompttekst, svartekst, filstier og sessionstitler forbliver på enheden.",
+  "settings.general.notifications.push.generic.value": "Kun generiske",
+  "settings.general.notifications.push.test.title": "Send testnotifikation",
+  "settings.general.notifications.push.test.description":
+    "Send en relay-understøttet advarsel fra den tilsluttede OpenCode-vært og bekræft at tryk på den bringer dig tilbage til WhisperCode",
+  "settings.general.notifications.push.relay.title": "Push-relay",
+  "settings.general.notifications.push.relay.description.custom":
+    "Bruger en brugerdefineret relay-URL til parring og baggrunds-push-levering: {url}",
+  "settings.general.notifications.push.relay.description.guess":
+    "Standardindstillingen er den tilsluttede serverværts port 8787: {url}",
+  "settings.general.notifications.push.relay.description.empty":
+    "Opret forbindelse til en server først, eller indtast en brugerdefineret relay-URL til parring og baggrunds-push-levering.",
+  "settings.general.notifications.push.relay.action.auto": "Brug standard",
+  "settings.general.notifications.push.pairing.title": "Telefonparring",
+  "settings.general.notifications.push.pairing.pending": "Tjekker om denne iPhone er parret til en push-kanal.",
+  "settings.general.notifications.push.pairing.server":
+    "Opret forbindelse til en OpenCode-server først, så WhisperCode kan fuldføre parringen.",
+  "settings.general.notifications.push.pairing.unpaired":
+    "Tryk på Opsæt én gang, og WhisperCode vil anmode om tilladelse, installere værtsintegration og parre denne iPhone automatisk.",
+  "settings.general.notifications.push.pairing.paired":
+    "Denne iPhone er parret til din OpenCode-vært. WhisperCode vil automatisk reparere forbindelsen, hvis den mistes.",
+  "settings.general.notifications.push.pairing.retry":
+    "WhisperCode afslutter værtsparring for denne iPhone og vil fortsætte med at prøve, indtil det lykkes.",
+  "settings.general.notifications.push.pairing.step.permission":
+    "Anmoder om notifikationstilladelse fra iPhone Indstillinger.",
+  "settings.general.notifications.push.pairing.step.register": "Venter på at Apple push-registrering afsluttes.",
+  "settings.general.notifications.push.pairing.step.begin": "Forbereder en sikker parringsanmodning for denne iPhone.",
+  "settings.general.notifications.push.pairing.step.claim": "Forbinder denne iPhone til OpenCode-værten.",
+  "settings.general.notifications.push.pairing.step.finish": "Afslutter parring på denne iPhone.",
+  "settings.general.notifications.push.pairing.action.setup": "Opsæt",
+  "settings.general.notifications.push.pairing.action.finish": "Afslut opsætning",
+  "settings.general.notifications.push.pairing.action.repair": "Reparer",
+  "settings.general.notifications.push.pairing.action.pairing": "Parrer...",
+  "settings.general.notifications.push.pairing.action.clear": "Fjern parring",
+  "settings.general.notifications.push.pairing.action.clearing": "Fjerner...",
+  "settings.general.notifications.push.pairing.toast.cleared.title": "Parring fjernet",
+  "settings.general.notifications.push.pairing.toast.cleared.description":
+    "Gemte push-kanallegitimationsoplysninger blev fjernet fra denne iPhone.",
+  "settings.general.notifications.push.pairing.toast.paired.title": "iPhone parret",
+  "settings.general.notifications.push.pairing.toast.paired.description":
+    "WhisperCode kan nu holde denne iPhone forbundet til OpenCode-værten til push-levering.",
+  "settings.general.notifications.push.action.enable": "Aktiver",
+  "settings.general.notifications.push.action.openSettings": "Åbn Indstillinger",
+  "settings.general.notifications.push.action.enabled": "Aktiveret",
+  "settings.general.notifications.push.action.unavailable": "Ikke tilgængelig",
+  "settings.general.notifications.push.action.checking": "Tjekker...",
+  "settings.general.notifications.push.action.test": "Send test",
+  "settings.general.notifications.push.action.sending": "Sender...",
+  "settings.general.notifications.push.host.title": "Værtsintegration",
+  "settings.general.notifications.push.host.description.missing":
+    "Installer community-pluginet på den tilsluttede OpenCode-vært, så generiske push-værdige hændelser kan videresendes.",
+  "settings.general.notifications.push.host.description.installed":
+    "Community-pluginet er opført i OpenCode global konfiguration for denne vært.",
+  "settings.general.notifications.push.host.description.updating":
+    "Opdaterer OpenCode global konfiguration for værtsplugin.",
+  "settings.general.notifications.push.host.action.install": "Tilføj til konfiguration",
+  "settings.general.notifications.push.host.action.installing": "Installerer...",
+  "settings.general.notifications.push.host.action.copy": "Kopier kommando",
+  "settings.general.notifications.push.host.action.copying": "Kopierer...",
+  "settings.general.notifications.push.host.action.remove": "Fjern",
+  "settings.general.notifications.push.host.action.removing": "Fjerner...",
+  "settings.general.notifications.push.host.toast.installed.title": "Værtsplugin tilføjet",
+  "settings.general.notifications.push.host.toast.installed.description":
+    "OpenCode global konfiguration inkluderer nu WhisperCode push-pluginet.",
+  "settings.general.notifications.push.host.toast.removed.title": "Værtsplugin fjernet",
+  "settings.general.notifications.push.host.toast.removed.description":
+    "OpenCode global konfiguration inkluderer ikke længere WhisperCode push-pluginet.",
+  "settings.general.notifications.push.host.toast.copied.title": "Installationskommando kopieret",
+  "settings.general.notifications.push.host.toast.copied.description":
+    "Kør den kopierede kommando på maskinen der hoster OpenCode.",
+  "settings.general.notifications.push.host.toast.copyFailed.title": "Kunne ikke kopiere installationskommando",
+  "settings.general.notifications.push.host.toast.copyFailed.description":
+    "Kopier kommandoen manuelt fra WhisperCode og kør den på OpenCode-værten.",
+  "settings.general.notifications.push.toast.sent.title": "Testnotifikation planlagt",
+  "settings.general.notifications.push.toast.sent.description":
+    "Lås din iPhone eller hold appen åben for at bekræfte banneret og trykflowet.",
+  "settings.general.notifications.push.toast.failed.title": "Kunne ikke sende testnotifikation",
+  "settings.general.notifications.push.toast.failed.description":
+    "Aktiver iPhone-notifikationer for WhisperCode og prøv igen.",
+  "notification.push.route.title": "OpenCode-notifikation",
+  "notification.push.route.server": "WhisperCode kunne endnu ikke matche denne notifikation til en tilsluttet server.",
+  "notification.push.route.session":
+    "WhisperCode kunne endnu ikke gendanne den session, så den åbnede serverens startside.",
+  "settings.whispercode.mobile.unavailable": "Denne fane er tilgængelig på WhisperCode mobile builds.",
 
   "settings.general.sounds.agent.title": "Agent",
   "settings.general.sounds.agent.description": "Afspil lyd når agenten er færdig eller kræver opmærksomhed",

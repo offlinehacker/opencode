@@ -1,6 +1,8 @@
 import { createAdapter, type Dial } from "./apns"
+import { log } from "./log"
 import { file as dbFile } from "./path"
-import { RelayErr, Store } from "./store"
+import { createRateLimiter, defaultIpExtractor, defaultRateLimitConfig, type RateLimitConfig } from "./ratelimit"
+import { RelayErr, Store, type CleanupConfig, type Send } from "./store"
 
 type Opts = {
   file?: string
@@ -14,6 +16,10 @@ type Opts = {
   keyfile?: string
   env?: "sandbox" | "production"
   dial?: Dial
+  cleanupIntervalMs?: number // default 3_600_000 (1h), 0 disables
+  cleanup?: CleanupConfig
+  rateLimit?: RateLimitConfig | false
+  ipExtractor?: (req: Request) => string
 }
 
 export type Relay = {
@@ -23,23 +29,74 @@ export type Relay = {
 
 export function createRelay(opts?: Opts) {
   const db = new Store({ file: opts?.file ?? dbFile(), pairMs: opts?.pairMs })
-  const apns = createAdapter(opts)
+  const adapters = {
+    sandbox: createAdapter({ ...opts, env: "sandbox" }),
+    production: createAdapter({ ...opts, env: "production" }),
+  }
+
+  const limiter = opts?.rateLimit !== false ? createRateLimiter(opts?.rateLimit ?? defaultRateLimitConfig()) : null
+  const extractIp = opts?.ipExtractor ?? defaultIpExtractor
+
+  const cleanupMs = opts?.cleanupIntervalMs ?? 3_600_000
+  let cleanupTimer: ReturnType<typeof setInterval> | undefined
+  if (cleanupMs > 0) {
+    cleanupTimer = setInterval(() => {
+      try {
+        const result = db.cleanup(opts?.cleanup)
+        const total = result.deliveries + result.pairs + result.devices + result.checkins + result.channels
+        if (total > 0) log("info", "cleanup", result as unknown as Record<string, unknown>)
+      } catch (err) {
+        log("error", "cleanup", { stack: err instanceof Error ? err.stack : String(err) })
+      }
+    }, cleanupMs)
+    cleanupTimer.unref()
+  }
 
   const fetch = async (req: Request) => {
+    const t0 = performance.now()
+    const method = req.method
+    const path = new URL(req.url).pathname
+
+    if (limiter) {
+      const ip = extractIp(req)
+      const rl = limiter.check(ip, method, path)
+      if (!rl.allowed) {
+        const retryAfter = Math.ceil(rl.retryAfterMs / 1000)
+        log("warn", "rate_limited", { method, path, ip })
+        return new Response(JSON.stringify({ error: "rate_limited", retry_after: retryAfter }), {
+          status: 429,
+          headers: {
+            "content-type": "application/json",
+            "retry-after": String(retryAfter),
+          },
+        })
+      }
+    }
+
     try {
-      return await route(db, apns, req, opts?.url)
+      const res = await route(db, adapters, req, opts?.url)
+      log("info", "request", { method, path, status: res.status, ms: Math.round(performance.now() - t0) })
+      return res
     } catch (err) {
       if (err instanceof RelayErr) {
+        log("warn", "request", { method, path, status: err.status, code: err.code })
         return out(err.status, { error: err.code, message: err.message })
       }
-      const message = err instanceof Error ? err.message : String(err)
-      return out(500, { error: "internal_error", message })
+      const stack = err instanceof Error ? err.stack : String(err)
+      log("error", "request", { method, path, stack })
+      return out(500, { error: "internal_error" })
     }
   }
 
   return {
     fetch,
-    stop: () => db.close(),
+    stop: () => {
+      if (cleanupTimer) clearInterval(cleanupTimer)
+      limiter?.stop()
+      adapters.sandbox.close()
+      adapters.production.close()
+      db.close()
+    },
   } satisfies Relay
 }
 
@@ -47,7 +104,16 @@ export function listen(opts?: Opts & { port?: number }) {
   const relay = createRelay(opts)
   const srv = Bun.serve({
     port: opts?.port ?? Number(process.env.PORT || 8787),
-    fetch: relay.fetch,
+    maxRequestBodySize: 64 * 1024,
+    fetch: (req, server) => {
+      const ip = server.requestIP(req)
+      if (ip && !req.headers.get("x-forwarded-for")) {
+        const headers = new Headers(req.headers)
+        headers.set("x-real-ip", ip.address)
+        req = new Request(req, { headers })
+      }
+      return relay.fetch(req)
+    },
   })
   return {
     port: srv.port,
@@ -58,7 +124,9 @@ export function listen(opts?: Opts & { port?: number }) {
   }
 }
 
-async function route(db: Store, apns: ReturnType<typeof createAdapter>, req: Request, root?: string) {
+type Adapters = Record<"sandbox" | "production", ReturnType<typeof createAdapter>>
+
+async function route(db: Store, adapters: Adapters, req: Request, root?: string) {
   const url = new URL(req.url)
   const path = url.pathname
   const base = root ?? url.origin
@@ -94,8 +162,12 @@ async function route(db: Store, apns: ReturnType<typeof createAdapter>, req: Req
   if (req.method === "POST" && path === "/v1/events/publish") {
     const body = await json(req)
     need(body, ["v", "channel_id", "event_id", "kind", "occurred_at", "collapse_id", "sig"])
-    const next = db.publish(body as never)
-    return out(200, await deliver(db, apns, next))
+    const result = db.publish(body as never)
+    if (result.suppressed || result.sends.length === 0) {
+      return out(200, { accepted: true, suppressed: true, reason: result.reason })
+    }
+    const deliveries = await Promise.all(result.sends.map((send) => deliver(db, adapters, send)))
+    return out(200, { accepted: true, device_count: result.sends.length, deliveries })
   }
 
   if (req.method === "PUT" && path === "/v1/device/token") {
@@ -114,13 +186,25 @@ async function route(db: Store, apns: ReturnType<typeof createAdapter>, req: Req
     const body = await json(req)
     need(body, ["channel_id", "device_id", "device_secret"])
     const next = db.test(body as never)
-    return out(200, await deliver(db, apns, next))
+    return out(200, await deliver(db, adapters, next))
   }
 
   if (req.method === "DELETE" && path === "/v1/device") {
     const body = await json(req)
     need(body, ["channel_id", "device_id", "device_secret"])
     return out(200, db.deleteDevice(body as never))
+  }
+
+  if (req.method === "POST" && path === "/v1/channel/devices") {
+    const body = await json(req)
+    need(body, ["channel_id", "channel_secret"])
+    return out(200, { devices: db.listDevices(String(body.channel_id), String(body.channel_secret)) })
+  }
+
+  if (req.method === "POST" && path === "/v1/channel/device/remove") {
+    const body = await json(req)
+    need(body, ["channel_id", "channel_secret", "device_id"])
+    return out(200, db.removeDevice(String(body.channel_id), String(body.channel_secret), String(body.device_id)))
   }
 
   return out(404, { error: "not_found" })
@@ -131,6 +215,8 @@ async function json(req: Request) {
   if (!type.includes("application/json")) {
     throw new RelayErr(415, "bad_type", "expected application/json")
   }
+  const len = Number(req.headers.get("content-length") || 0)
+  if (len > 65_536) throw new RelayErr(413, "body_too_large")
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw new RelayErr(400, "bad_json")
@@ -151,7 +237,7 @@ function out(code: number, body: Record<string, unknown>) {
   return Response.json(body, { status: code })
 }
 
-async function deliver(db: Store, apns: ReturnType<typeof createAdapter>, body: Record<string, unknown>) {
+async function deliver(db: Store, adapters: Adapters, body: Send | Record<string, unknown>) {
   if (body.accepted !== true || body.suppressed === true) {
     return clean(body)
   }
@@ -165,6 +251,8 @@ async function deliver(db: Store, apns: ReturnType<typeof createAdapter>, body: 
   }
 
   const collapse = typeof body.collapse_id === "string" ? body.collapse_id : null
+  const env = body.apns_env === "sandbox" ? "sandbox" : "production"
+  const apns = adapters[env]
   const res = await apns.send({
     delivery: id,
     token,
@@ -174,8 +262,10 @@ async function deliver(db: Store, apns: ReturnType<typeof createAdapter>, body: 
     collapse,
   })
   db.mark(id, res.sent ? "sent" : "failed", res.code)
+  log("info", "deliver", { delivery_id: id, sent: res.sent, mode: res.mode, error: res.code ?? null })
   const did = typeof body.device_id === "string" ? body.device_id : undefined
   if (res.invalid && did) {
+    log("warn", "device_deactivated", { device_id: did, error: res.code })
     db.deactivate(did, res.code)
   }
   return {
@@ -192,5 +282,6 @@ function clean(body: Record<string, unknown>) {
   delete next.channel_id
   delete next.session_id
   delete next.kind
+  delete next.apns_env
   return next
 }

@@ -11,12 +11,15 @@ type PairStart = {
   apns_token: string
   device_name: string
   app_version: string
+  apns_env?: string
 }
 
 type PairClaim = {
   pair_token: string
   plugin_version: string
   server_label: string
+  channel_id?: string
+  channel_secret?: string
 }
 
 type Check = {
@@ -47,6 +50,7 @@ type DeviceAuth = {
 
 type DeviceToken = DeviceAuth & {
   apns_token: string
+  apns_env?: string
 }
 
 type DevicePrefs = DeviceAuth & {
@@ -62,7 +66,7 @@ export type Prefs = {
   error: boolean
 }
 
-type Send = {
+export type Send = {
   accepted: boolean
   suppressed?: boolean
   reason?: string
@@ -73,6 +77,29 @@ type Send = {
   session_id?: string | null
   kind?: string
   collapse_id?: string
+  apns_env?: string
+}
+
+type PublishResult = {
+  accepted: boolean
+  suppressed?: boolean
+  reason?: string
+  sends: Send[]
+}
+
+export type CleanupConfig = {
+  deliveryMaxAge?: number // ms, default 7 days
+  pairMaxAge?: number // ms, default 1 day
+  deviceMaxAge?: number // ms, default 30 days
+  channelMaxAge?: number // ms, default 30 days
+}
+
+export type CleanupResult = {
+  deliveries: number
+  pairs: number
+  devices: number
+  checkins: number
+  channels: number
 }
 
 type Row = Record<string, string | number | null>
@@ -106,6 +133,7 @@ export class Store {
         apns_token TEXT NOT NULL,
         device_name TEXT NOT NULL,
         app_version TEXT NOT NULL,
+        apns_env TEXT,
         status TEXT NOT NULL,
         expires_at INTEGER NOT NULL,
         created_at INTEGER NOT NULL,
@@ -125,6 +153,7 @@ export class Store {
         channel_id TEXT NOT NULL,
         secret TEXT NOT NULL,
         apns_token TEXT NOT NULL,
+        apns_env TEXT,
         prefs_json TEXT NOT NULL,
         error_code TEXT,
         last_seen_at INTEGER,
@@ -145,7 +174,7 @@ export class Store {
         FOREIGN KEY(channel_id) REFERENCES channel(id),
         FOREIGN KEY(device_id) REFERENCES device(id)
       );
-      CREATE UNIQUE INDEX IF NOT EXISTS delivery_event_idx ON delivery(channel_id, event_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS delivery_event_device_idx ON delivery(channel_id, event_id, device_id);
       CREATE TABLE IF NOT EXISTS channel_checkin (
         channel_id TEXT PRIMARY KEY,
         plugin_version TEXT,
@@ -155,6 +184,24 @@ export class Store {
     `)
     try {
       this.db.exec(`ALTER TABLE device ADD COLUMN error_code TEXT`)
+    } catch {}
+    try {
+      this.db.exec(`ALTER TABLE pair_request ADD COLUMN apns_env TEXT`)
+    } catch {}
+    try {
+      this.db.exec(`ALTER TABLE device ADD COLUMN apns_env TEXT`)
+    } catch {}
+    try {
+      this.db.exec(`ALTER TABLE device ADD COLUMN device_name TEXT`)
+    } catch {}
+    try {
+      this.db.exec(`ALTER TABLE device ADD COLUMN created_at INTEGER`)
+    } catch {}
+    try {
+      this.db.exec(`DROP INDEX IF EXISTS delivery_event_idx`)
+      this.db.exec(
+        `CREATE UNIQUE INDEX IF NOT EXISTS delivery_event_device_idx ON delivery(channel_id, event_id, device_id)`,
+      )
     } catch {}
   }
 
@@ -169,10 +216,20 @@ export class Store {
     const exp = now + this.pairMs
     this.db
       .prepare(
-        `INSERT INTO pair_request (id, token_hash, apns_token, device_name, app_version, status, expires_at, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO pair_request (id, token_hash, apns_token, device_name, app_version, apns_env, status, expires_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(pair, hash(token), input.apns_token, input.device_name, input.app_version, "pending", exp, now)
+      .run(
+        pair,
+        hash(token),
+        input.apns_token,
+        input.device_name,
+        input.app_version,
+        input.apns_env ?? null,
+        "pending",
+        exp,
+        now,
+      )
     return {
       pair_id: pair,
       pair_token: token,
@@ -236,6 +293,46 @@ export class Store {
       }
     }
 
+    if (input.channel_id && input.channel_secret) {
+      const chId = input.channel_id
+      const ch = this.row(`SELECT * FROM channel WHERE id = ?`, chId)
+      if (!ch?.secret) throw new RelayErr(404, "channel_not_found")
+      if (ch.revoked_at) throw new RelayErr(410, "channel_revoked")
+      if (!equal(String(ch.secret), input.channel_secret)) throw new RelayErr(401, "bad_channel_secret")
+
+      const device = id("dev")
+      const dsec = id("dsec")
+      const now = Date.now()
+      this.db.transaction(() => {
+        this.db
+          .prepare(
+            `INSERT INTO device (id, channel_id, secret, apns_token, apns_env, device_name, created_at, prefs_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            device,
+            chId,
+            dsec,
+            String(row.apns_token),
+            row.apns_env ?? null,
+            String(row.device_name),
+            now,
+            JSON.stringify(prefs()),
+          )
+        this.db
+          .prepare(`UPDATE pair_request SET status = 'claimed', channel_id = ?, device_id = ? WHERE id = ?`)
+          .run(chId, device, String(row.id))
+        this.db
+          .prepare(`INSERT OR REPLACE INTO channel_checkin (channel_id, plugin_version, last_seen_at) VALUES (?, ?, ?)`)
+          .run(chId, input.plugin_version, 0)
+      })()
+
+      return {
+        relay_url: root,
+        channel_id: String(ch.id),
+        channel_secret: String(ch.secret),
+      }
+    }
+
     const channel = id("ch")
     const secret = id("csec")
     const device = id("dev")
@@ -246,8 +343,19 @@ export class Store {
         .prepare(`INSERT INTO channel (id, secret, server_label, created_at) VALUES (?, ?, ?, ?)`)
         .run(channel, secret, input.server_label, now)
       this.db
-        .prepare(`INSERT INTO device (id, channel_id, secret, apns_token, prefs_json) VALUES (?, ?, ?, ?, ?)`)
-        .run(device, channel, dsec, String(row.apns_token), JSON.stringify(prefs()))
+        .prepare(
+          `INSERT INTO device (id, channel_id, secret, apns_token, apns_env, device_name, created_at, prefs_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          device,
+          channel,
+          dsec,
+          String(row.apns_token),
+          row.apns_env ?? null,
+          String(row.device_name),
+          now,
+          JSON.stringify(prefs()),
+        )
       this.db
         .prepare(`UPDATE pair_request SET status = 'claimed', channel_id = ?, device_id = ? WHERE id = ?`)
         .run(channel, device, String(row.id))
@@ -271,7 +379,9 @@ export class Store {
     const now = Date.now()
     this.db.transaction(() => {
       this.db.prepare(`UPDATE channel SET last_seen_at = ? WHERE id = ?`).run(now, input.channel_id)
-      this.db.prepare(`UPDATE pair_request SET status = 'active' WHERE channel_id = ?`).run(input.channel_id)
+      this.db
+        .prepare(`UPDATE pair_request SET status = 'active' WHERE channel_id = ? AND status IN ('pending', 'claimed')`)
+        .run(input.channel_id)
       this.db
         .prepare(`INSERT OR REPLACE INTO channel_checkin (channel_id, plugin_version, last_seen_at) VALUES (?, ?, ?)`)
         .run(input.channel_id, input.plugin_version ?? null, now)
@@ -280,11 +390,20 @@ export class Store {
   }
 
   putToken(input: DeviceToken) {
-    const dev = this.device(input)
+    const dev = this.deviceIncludingRevoked(input)
     const now = Date.now()
-    this.db
-      .prepare(`UPDATE device SET apns_token = ?, error_code = NULL, last_seen_at = ? WHERE id = ?`)
-      .run(input.apns_token, now, input.device_id)
+    this.db.transaction(() => {
+      this.db
+        .prepare(
+          `UPDATE device SET apns_token = ?, apns_env = COALESCE(?, apns_env), error_code = NULL, revoked_at = NULL, last_seen_at = ? WHERE id = ?`,
+        )
+        .run(input.apns_token, input.apns_env ?? null, now, input.device_id)
+      if (dev.revoked_at) {
+        this.db
+          .prepare(`UPDATE pair_request SET status = 'claimed' WHERE device_id = ? AND status = 'failed'`)
+          .run(input.device_id)
+      }
+    })()
     return {
       ok: true,
       channel_id: String(dev.channel_id),
@@ -324,6 +443,7 @@ export class Store {
       session_id: null,
       kind: "test",
       collapse_id: "test:device",
+      apns_env: typeof dev.apns_env === "string" ? dev.apns_env : "production",
     } satisfies Send
   }
 
@@ -341,27 +461,26 @@ export class Store {
     }
   }
 
-  publish(input: Pub) {
+  publish(input: Pub): PublishResult {
     const body = omit(input)
     const row = this.row(`SELECT * FROM channel WHERE id = ?`, input.channel_id)
     if (!row?.secret) throw new RelayErr(404, "channel_not_found")
     if (!verify(String(row.secret), body, input.sig)) throw new RelayErr(401, "bad_signature")
 
     const dup = this.row(
-      `SELECT id, reason FROM delivery WHERE channel_id = ? AND event_id = ?`,
+      `SELECT id FROM delivery WHERE channel_id = ? AND event_id = ? LIMIT 1`,
       input.channel_id,
       input.event_id,
     )
     if (dup?.id) {
-      return {
-        accepted: true,
-        suppressed: true,
-        reason: "replay",
-      } satisfies Send
+      return { accepted: true, suppressed: true, reason: "replay", sends: [] }
     }
 
-    const dev = this.row(`SELECT * FROM device WHERE channel_id = ? AND revoked_at IS NULL`, input.channel_id)
-    if (!dev?.id) {
+    const devices = this.db
+      .prepare(`SELECT * FROM device WHERE channel_id = ? AND revoked_at IS NULL`)
+      .all(input.channel_id) as Row[]
+
+    if (devices.length === 0) {
       const idd = id("dlv")
       this.db
         .prepare(
@@ -380,67 +499,60 @@ export class Store {
           "no_device",
           Date.now(),
         )
-      return {
-        accepted: true,
-        suppressed: true,
-        reason: "no_device",
-      } satisfies Send
+      return { accepted: true, suppressed: true, reason: "no_device", sends: [] }
     }
 
-    const pref = loadPrefs(dev.prefs_json ?? null)
-    if (!enabled(pref, input.kind)) {
+    const sends: Send[] = []
+    const now = Date.now()
+    for (const dev of devices) {
+      const did = String(dev.id)
+      const pref = loadPrefs(dev.prefs_json ?? null)
+      if (!enabled(pref, input.kind)) {
+        const idd = id("dlv")
+        this.db
+          .prepare(
+            `INSERT INTO delivery (id, channel_id, device_id, event_id, kind, session_id, collapse_id, status, reason, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            idd,
+            input.channel_id,
+            did,
+            input.event_id,
+            input.kind,
+            input.session_id,
+            input.collapse_id,
+            "suppressed",
+            "preferences",
+            now,
+          )
+        continue
+      }
       const idd = id("dlv")
       this.db
         .prepare(
-          `INSERT INTO delivery (id, channel_id, device_id, event_id, kind, session_id, collapse_id, status, reason, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO delivery (id, channel_id, device_id, event_id, kind, session_id, collapse_id, status, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
-        .run(
-          idd,
-          input.channel_id,
-          dev.id,
-          input.event_id,
-          input.kind,
-          input.session_id,
-          input.collapse_id,
-          "suppressed",
-          "preferences",
-          Date.now(),
-        )
-      return {
+        .run(idd, input.channel_id, did, input.event_id, input.kind, input.session_id, input.collapse_id, "queued", now)
+      sends.push({
         accepted: true,
-        suppressed: true,
-        reason: "preferences",
-      } satisfies Send
+        delivery_id: idd,
+        device_id: did,
+        token: String(dev.apns_token),
+        channel_id: input.channel_id,
+        session_id: input.session_id,
+        kind: input.kind,
+        collapse_id: input.collapse_id,
+        apns_env: typeof dev.apns_env === "string" ? dev.apns_env : "production",
+      })
     }
 
-    const idd = id("dlv")
-    this.db
-      .prepare(
-        `INSERT INTO delivery (id, channel_id, device_id, event_id, kind, session_id, collapse_id, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .run(
-        idd,
-        input.channel_id,
-        dev.id,
-        input.event_id,
-        input.kind,
-        input.session_id,
-        input.collapse_id,
-        "queued",
-        Date.now(),
-      )
-    return {
-      accepted: true,
-      delivery_id: idd,
-      device_id: String(dev.id),
-      token: String(dev.apns_token),
-      channel_id: input.channel_id,
-      session_id: input.session_id,
-      kind: input.kind,
-      collapse_id: input.collapse_id,
-    } satisfies Send
+    if (sends.length === 0) {
+      return { accepted: true, suppressed: true, reason: "preferences", sends: [] }
+    }
+
+    return { accepted: true, sends }
   }
 
   mark(id: string, status: "sent" | "failed", reason?: string) {
@@ -452,6 +564,79 @@ export class Store {
     this.db.transaction(() => {
       this.db.prepare(`UPDATE device SET error_code = ?, revoked_at = ? WHERE id = ?`).run(code ?? null, now, id)
       this.db.prepare(`UPDATE pair_request SET status = 'failed' WHERE device_id = ?`).run(id)
+    })()
+  }
+
+  listDevices(channelId: string, channelSecret: string) {
+    const ch = this.row(`SELECT * FROM channel WHERE id = ?`, channelId)
+    if (!ch?.secret) throw new RelayErr(404, "channel_not_found")
+    if (!equal(String(ch.secret), channelSecret)) throw new RelayErr(401, "bad_channel_secret")
+    const rows = this.db.prepare(`SELECT * FROM device WHERE channel_id = ?`).all(channelId) as Row[]
+    return rows.map((d) => ({
+      device_id: String(d.id),
+      device_name: d.device_name != null ? String(d.device_name) : null,
+      apns_env: typeof d.apns_env === "string" ? d.apns_env : "production",
+      prefs: loadPrefs(d.prefs_json ?? null),
+      error_code: d.error_code != null ? String(d.error_code) : null,
+      active: d.revoked_at == null,
+      created_at: d.created_at != null ? Number(d.created_at) : null,
+    }))
+  }
+
+  removeDevice(channelId: string, channelSecret: string, deviceId: string) {
+    const ch = this.row(`SELECT * FROM channel WHERE id = ?`, channelId)
+    if (!ch?.secret) throw new RelayErr(404, "channel_not_found")
+    if (!equal(String(ch.secret), channelSecret)) throw new RelayErr(401, "bad_channel_secret")
+    const dev = this.row(`SELECT * FROM device WHERE id = ? AND channel_id = ?`, deviceId, channelId)
+    if (!dev) throw new RelayErr(404, "device_not_found")
+    const now = Date.now()
+    this.db.transaction(() => {
+      this.db.prepare(`UPDATE device SET revoked_at = ? WHERE id = ?`).run(now, deviceId)
+      this.db.prepare(`UPDATE pair_request SET status = 'failed' WHERE device_id = ?`).run(deviceId)
+    })()
+    return { ok: true, channel_id: channelId, device_id: deviceId }
+  }
+
+  cleanup(config?: CleanupConfig): CleanupResult {
+    const DAY = 86_400_000
+    const deliveryCutoff = Date.now() - (config?.deliveryMaxAge ?? 7 * DAY)
+    const pairCutoff = Date.now() - (config?.pairMaxAge ?? 1 * DAY)
+    const deviceCutoff = Date.now() - (config?.deviceMaxAge ?? 30 * DAY)
+    const channelCutoff = Date.now() - (config?.channelMaxAge ?? 30 * DAY)
+
+    return this.db.transaction(() => {
+      const deliveries = this.db.prepare(`DELETE FROM delivery WHERE created_at < ?`).run(deliveryCutoff).changes
+
+      const pairs = this.db
+        .prepare(`DELETE FROM pair_request WHERE status IN ('expired','failed') AND created_at < ?`)
+        .run(pairCutoff).changes
+
+      const devices = this.db
+        .prepare(
+          `DELETE FROM device WHERE revoked_at IS NOT NULL AND revoked_at < ?
+           AND id NOT IN (SELECT DISTINCT device_id FROM delivery WHERE device_id IS NOT NULL)`,
+        )
+        .run(deviceCutoff).changes
+
+      const checkins = this.db
+        .prepare(
+          `DELETE FROM channel_checkin WHERE channel_id IN (
+             SELECT id FROM channel WHERE revoked_at IS NOT NULL AND revoked_at < ?
+             AND id NOT IN (SELECT DISTINCT channel_id FROM device)
+             AND id NOT IN (SELECT DISTINCT channel_id FROM delivery)
+           )`,
+        )
+        .run(channelCutoff).changes
+
+      const channels = this.db
+        .prepare(
+          `DELETE FROM channel WHERE revoked_at IS NOT NULL AND revoked_at < ?
+           AND id NOT IN (SELECT DISTINCT channel_id FROM device)
+           AND id NOT IN (SELECT DISTINCT channel_id FROM delivery)`,
+        )
+        .run(channelCutoff).changes
+
+      return { deliveries, pairs, devices, checkins, channels }
     })()
   }
 
@@ -477,6 +662,13 @@ export class Store {
     if (!equal(String(dev.secret), input.device_secret)) throw new RelayErr(401, "bad_device_secret")
     return dev
   }
+
+  private deviceIncludingRevoked(input: DeviceAuth) {
+    const dev = this.row(`SELECT * FROM device WHERE id = ? AND channel_id = ?`, input.device_id, input.channel_id)
+    if (!dev?.secret) throw new RelayErr(404, "device_not_found")
+    if (!equal(String(dev.secret), input.device_secret)) throw new RelayErr(401, "bad_device_secret")
+    return dev
+  }
 }
 
 function id(prefix: string) {
@@ -485,8 +677,8 @@ function id(prefix: string) {
 
 function cmd(root: string, token: string) {
   const clean = root.replace(/\/+$/, "")
-  const base = `bunx @whispercode/opencode-push install --pair ${token}`
-  if (clean === "https://push.whispercode.dev") return base
+  const base = `npx --yes --prefix . --package=@whisperopencode/push@0.2.0 opencode-push install --pair ${token}`
+  if (clean === "https://whisper.clankercontext.com") return base
   return `${base} --relay ${clean}`
 }
 

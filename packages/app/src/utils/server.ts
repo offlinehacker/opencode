@@ -17,18 +17,20 @@ export function authFromToken(token: string | null) {
   }
 }
 
+export function serverAuthHeaders(server: ServerConnection.HttpBase) {
+  if (!server.password) return
+  return {
+    Authorization: `Basic ${btoa(`${server.username ?? "opencode"}:${server.password}`)}`,
+  }
+}
+
 export function createSdkForServer({
   server,
   ...config
 }: Omit<NonNullable<Parameters<typeof createOpencodeClient>[0]>, "baseUrl"> & {
   server: ServerConnection.HttpBase
 }) {
-  const auth = (() => {
-    if (!server.password) return
-    return {
-      Authorization: `Basic ${authTokenFromCredentials({ username: server.username, password: server.password })}`,
-    }
-  })()
+  const auth = serverAuthHeaders(server)
 
   return createOpencodeClient({
     ...config,

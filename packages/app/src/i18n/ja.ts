@@ -313,10 +313,17 @@ export const dict = {
   "dialog.server.add.error": "サーバーに接続できませんでした",
   "dialog.server.add.checking": "確認中...",
   "dialog.server.add.button": "サーバーを追加",
+<<<<<<< HEAD
   "dialog.server.add.name": "サーバー名 (オプション)",
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "ユーザー名 (オプション)",
   "dialog.server.add.password": "パスワード (オプション)",
+=======
+  "dialog.server.add.name": "サーバー名（任意）",
+  "dialog.server.add.namePlaceholder": "Localhost",
+  "dialog.server.add.username": "ユーザー名（任意）",
+  "dialog.server.add.password": "パスワード（任意）",
+>>>>>>> 974a5c065 (add notifications)
   "dialog.server.edit.title": "サーバーを編集",
   "dialog.server.default.title": "デフォルトサーバー",
   "dialog.server.default.description":
@@ -572,7 +579,11 @@ export const dict = {
   "session.review.loadingChanges": "変更を読み込み中...",
   "session.review.empty": "このセッションでの変更はまだありません",
   "session.review.noVcs": "Gitバージョン管理システムが検出されないため、変更は表示されません",
+<<<<<<< HEAD
   "session.review.noSnapshot": "設定でスナップショット追跡が無効になっているため、セッションの変更は利用できません",
+=======
+  "session.review.noSnapshot": "設定でスナップショット追跡が無効になっているため、セッションの変更を利用できません",
+>>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "変更なし",
   "session.review.noUncommittedChanges": "コミットされていない変更はまだありません",
   "session.review.noBranchChanges": "ブランチの変更はまだありません",
@@ -683,8 +694,10 @@ export const dict = {
   "app.name.desktop": "OpenCode Desktop",
   "settings.section.desktop": "デスクトップ",
   "settings.section.server": "サーバー",
+  "settings.section.whispercode": "WhisperCode",
   "settings.tab.general": "一般",
   "settings.tab.shortcuts": "ショートカット",
+  "settings.tab.phone": "スマートフォン",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL連携",
   "settings.desktop.wsl.description": "WindowsのWSL環境でOpenCodeサーバーを実行します。",
@@ -708,6 +721,7 @@ export const dict = {
   "settings.general.row.colorScheme.description": "OpenCodeがシステム、ライト、またはダークテーマに従うかを選択します",
   "settings.general.row.theme.title": "テーマ",
   "settings.general.row.theme.description": "OpenCodeのテーマをカスタマイズします。",
+<<<<<<< HEAD
   "settings.general.row.font.title": "コードフォント",
   "settings.general.row.font.description": "コードブロックで使用するフォントをカスタマイズします",
   "settings.general.row.terminalFont.title": "ターミナルのフォント",
@@ -736,6 +750,12 @@ export const dict = {
   "settings.general.row.showCustomAgents.description": "コンポーザーにエージェント選択を表示します",
   "settings.general.row.reasoningSummaries.title": "推論の要約を表示",
   "settings.general.row.reasoningSummaries.description": "タイムラインにモデルの推論の要約を表示します",
+=======
+  "settings.general.row.font.title": "フォント",
+  "settings.general.row.font.description": "コードブロックで使用する等幅フォントをカスタマイズします",
+  "settings.general.row.reasoningSummaries.title": "推論サマリーを表示",
+  "settings.general.row.reasoningSummaries.description": "タイムラインにモデルの推論サマリーを表示します",
+>>>>>>> 974a5c065 (add notifications)
   "settings.general.row.shellToolPartsExpanded.title": "shell ツールパーツを展開",
   "settings.general.row.shellToolPartsExpanded.description":
     "タイムラインで shell ツールパーツをデフォルトで展開して表示します",
@@ -821,6 +841,104 @@ export const dict = {
   "settings.general.notifications.permissions.description": "権限が必要な場合にシステム通知を表示します",
   "settings.general.notifications.errors.title": "エラー",
   "settings.general.notifications.errors.description": "エラーが発生した場合にシステム通知を表示します",
+  "settings.general.notifications.push.permission.title": "プッシュ通知の許可",
+  "settings.general.notifications.push.permission.pending": "WhisperCodeがこのiPhoneで通知を表示できるか確認中です",
+  "settings.general.notifications.push.permission.notDetermined":
+    "応答、承認、質問、エラーの汎用アラートを有効にします",
+  "settings.general.notifications.push.permission.denied": "iPhoneの設定アプリでWhisperCodeの通知をオンにしてください",
+  "settings.general.notifications.push.permission.registering":
+    "許可が付与されました。WhisperCodeがAppleへの登録を完了しています。",
+  "settings.general.notifications.push.permission.authorized": "このiPhoneで汎用アラートの準備ができています",
+  "settings.general.notifications.push.permission.provisional": "このiPhoneで静かな汎用アラートの準備ができています",
+  "settings.general.notifications.push.permission.ephemeral": "このiPhoneで一時的な汎用アラートの準備ができています",
+  "settings.general.notifications.push.permission.unsupported": "このデバイスでは通知を利用できません",
+  "settings.general.notifications.push.generic.title": "プライバシー",
+  "settings.general.notifications.push.generic.description":
+    "アラートはデフォルトで汎用的です。プロンプトテキスト、応答テキスト、ファイルパス、セッションタイトルはデバイス上に保持されます。",
+  "settings.general.notifications.push.generic.value": "汎用のみ",
+  "settings.general.notifications.push.test.title": "テスト通知を送信",
+  "settings.general.notifications.push.test.description":
+    "接続されたOpenCodeホストからリレー経由のアラートを送信し、タップするとWhisperCodeに戻ることを確認します",
+  "settings.general.notifications.push.relay.title": "プッシュリレー",
+  "settings.general.notifications.push.relay.description.custom":
+    "ペアリングとバックグラウンドプッシュ配信にカスタムリレーURLを使用しています: {url}",
+  "settings.general.notifications.push.relay.description.guess":
+    "接続されたサーバーホストのポート8787がデフォルトです: {url}",
+  "settings.general.notifications.push.relay.description.empty":
+    "まずサーバーに接続するか、ペアリングとバックグラウンドプッシュ配信用のカスタムリレーURLを入力してください。",
+  "settings.general.notifications.push.relay.action.auto": "デフォルトを使用",
+  "settings.general.notifications.push.pairing.title": "スマートフォンのペアリング",
+  "settings.general.notifications.push.pairing.pending":
+    "このiPhoneがプッシュチャネルにペアリングされているか確認中です。",
+  "settings.general.notifications.push.pairing.server":
+    "WhisperCodeがペアリングを完了できるよう、まずOpenCodeサーバーに接続してください。",
+  "settings.general.notifications.push.pairing.unpaired":
+    "「セットアップ」を一度タップすると、WhisperCodeが許可の要求、ホスト連携のインストール、このiPhoneのペアリングを自動的に行います。",
+  "settings.general.notifications.push.pairing.paired":
+    "このiPhoneはOpenCodeホストにペアリングされています。接続がずれた場合、WhisperCodeが自動的に修復します。",
+  "settings.general.notifications.push.pairing.retry":
+    "WhisperCodeはこのiPhoneのホストペアリングを完了中で、定着するまで再試行を続けます。",
+  "settings.general.notifications.push.pairing.step.permission": "iPhoneの設定から通知許可を要求しています。",
+  "settings.general.notifications.push.pairing.step.register": "Appleプッシュ登録の完了を待っています。",
+  "settings.general.notifications.push.pairing.step.begin":
+    "このiPhoneのための安全なペアリングリクエストを準備しています。",
+  "settings.general.notifications.push.pairing.step.claim": "このiPhoneをOpenCodeホストに接続しています。",
+  "settings.general.notifications.push.pairing.step.finish": "このiPhoneでペアリングを完了しています。",
+  "settings.general.notifications.push.pairing.action.setup": "セットアップ",
+  "settings.general.notifications.push.pairing.action.finish": "セットアップを完了",
+  "settings.general.notifications.push.pairing.action.repair": "修復",
+  "settings.general.notifications.push.pairing.action.pairing": "ペアリング中...",
+  "settings.general.notifications.push.pairing.action.clear": "ペアリングを削除",
+  "settings.general.notifications.push.pairing.action.clearing": "削除中...",
+  "settings.general.notifications.push.pairing.toast.cleared.title": "ペアリングが削除されました",
+  "settings.general.notifications.push.pairing.toast.cleared.description":
+    "保存されたプッシュチャネルの認証情報がこのiPhoneから削除されました。",
+  "settings.general.notifications.push.pairing.toast.paired.title": "iPhoneがペアリングされました",
+  "settings.general.notifications.push.pairing.toast.paired.description":
+    "WhisperCodeはこのiPhoneをOpenCodeホストに接続してプッシュ配信を維持できるようになりました。",
+  "settings.general.notifications.push.action.enable": "有効にする",
+  "settings.general.notifications.push.action.openSettings": "設定を開く",
+  "settings.general.notifications.push.action.enabled": "有効",
+  "settings.general.notifications.push.action.unavailable": "利用不可",
+  "settings.general.notifications.push.action.checking": "確認中...",
+  "settings.general.notifications.push.action.test": "テスト送信",
+  "settings.general.notifications.push.action.sending": "送信中...",
+  "settings.general.notifications.push.host.title": "ホスト連携",
+  "settings.general.notifications.push.host.description.missing":
+    "汎用のプッシュ対象イベントを転送できるよう、接続されたOpenCodeホストにコミュニティプラグインをインストールしてください。",
+  "settings.general.notifications.push.host.description.installed":
+    "コミュニティプラグインがこのホストのOpenCodeグローバル設定に登録されています。",
+  "settings.general.notifications.push.host.description.updating":
+    "ホストプラグインのOpenCodeグローバル設定を更新しています。",
+  "settings.general.notifications.push.host.action.install": "設定に追加",
+  "settings.general.notifications.push.host.action.installing": "インストール中...",
+  "settings.general.notifications.push.host.action.copy": "コマンドをコピー",
+  "settings.general.notifications.push.host.action.copying": "コピー中...",
+  "settings.general.notifications.push.host.action.remove": "削除",
+  "settings.general.notifications.push.host.action.removing": "削除中...",
+  "settings.general.notifications.push.host.toast.installed.title": "ホストプラグインが追加されました",
+  "settings.general.notifications.push.host.toast.installed.description":
+    "OpenCodeグローバル設定にWhisperCodeプッシュプラグインが含まれるようになりました。",
+  "settings.general.notifications.push.host.toast.removed.title": "ホストプラグインが削除されました",
+  "settings.general.notifications.push.host.toast.removed.description":
+    "OpenCodeグローバル設定からWhisperCodeプッシュプラグインが削除されました。",
+  "settings.general.notifications.push.host.toast.copied.title": "インストーラーコマンドがコピーされました",
+  "settings.general.notifications.push.host.toast.copied.description":
+    "OpenCodeをホストしているマシンでコピーしたコマンドを実行してください。",
+  "settings.general.notifications.push.host.toast.copyFailed.title": "インストーラーコマンドをコピーできませんでした",
+  "settings.general.notifications.push.host.toast.copyFailed.description":
+    "WhisperCodeからコマンドを手動でコピーし、OpenCodeホストで実行してください。",
+  "settings.general.notifications.push.toast.sent.title": "テスト通知がスケジュールされました",
+  "settings.general.notifications.push.toast.sent.description":
+    "iPhoneをロックするかアプリを開いたままにして、バナーとタップの動作を確認してください。",
+  "settings.general.notifications.push.toast.failed.title": "テスト通知を送信できませんでした",
+  "settings.general.notifications.push.toast.failed.description":
+    "WhisperCodeのiPhone通知を有効にしてから再度お試しください。",
+  "notification.push.route.title": "OpenCode通知",
+  "notification.push.route.server": "WhisperCodeはまだこの通知を接続済みサーバーに関連付けることができませんでした。",
+  "notification.push.route.session":
+    "WhisperCodeはまだそのセッションを復元できなかったため、サーバーホームを開きました。",
+  "settings.whispercode.mobile.unavailable": "このタブはWhisperCodeモバイルビルドで利用可能です。",
   "settings.general.sounds.agent.title": "エージェント",
   "settings.general.sounds.agent.description": "エージェントが完了したか、注意が必要な場合に音を再生します",
   "settings.general.sounds.permissions.title": "権限",

@@ -1,11 +1,15 @@
+<<<<<<< HEAD
 import { Component, Show, createEffect, createMemo, createResource, onCleanup, onMount, type JSX } from "solid-js"
+=======
+import { Component, Show, createMemo, createResource, type JSX } from "solid-js"
+>>>>>>> 974a5c065 (add notifications)
 import { createStore } from "solid-js/store"
 import { Button } from "@opencode-ai/ui/button"
 import { Icon } from "@opencode-ai/ui/icon"
 import { Select } from "@opencode-ai/ui/select"
 import { Switch } from "@opencode-ai/ui/switch"
-import { TextField } from "@opencode-ai/ui/text-field"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
+<<<<<<< HEAD
 import { Tag } from "@opencode-ai/ui/v2/badge-v2"
 import { useTheme, type ColorScheme } from "@opencode-ai/ui/theme/context"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
@@ -34,6 +38,14 @@ import { playSoundById, SOUND_OPTIONS } from "@/utils/sound"
 import { showToast } from "@/utils/toast"
 import { addPush, dropPush, hasPush, installPush } from "@/utils/push-plugin"
 import { Persist, persisted } from "@/utils/persist"
+=======
+import { useTheme, type ColorScheme } from "@opencode-ai/ui/theme"
+import { showToast } from "@opencode-ai/ui/toast"
+import { useLanguage } from "@/context/language"
+import { usePlatform } from "@/context/platform"
+import { useSettings, monoFontFamily } from "@/context/settings"
+import { playSound, SOUND_OPTIONS } from "@/utils/sound"
+>>>>>>> 974a5c065 (add notifications)
 import { Link } from "./link"
 import { SettingsList } from "./settings-list"
 
@@ -43,6 +55,7 @@ let demoSoundState = {
   run: 0,
 }
 
+<<<<<<< HEAD
 type PushAction = {
   label: string
   disabled: boolean
@@ -93,11 +106,14 @@ const playDemoSound = (id: string | undefined) => {
   }, 100)
 }
 
+=======
+>>>>>>> 974a5c065 (add notifications)
 export const SettingsGeneral: Component = () => {
   const theme = useTheme()
   const language = useLanguage()
   const permission = usePermission()
   const platform = usePlatform()
+<<<<<<< HEAD
   const dialog = useDialog()
   const params = useParams()
   const settings = useSettings()
@@ -146,21 +162,15 @@ export const SettingsGeneral: Component = () => {
     installing: false,
     copying: false,
     removing: false,
-  })
-  const [pair, setPair, , pairReady] = persisted(
-    Persist.global("push.pair", ["push.pair.v1"]),
-    createStore({
-      id: undefined as string | undefined,
-      status: undefined as PairState | undefined,
-      command: undefined as string | undefined,
-      expires: undefined as string | undefined,
-      channel: undefined as string | undefined,
-      device: undefined as string | undefined,
-      message: undefined as string | undefined,
-      updated: 0,
-    }),
-  )
+=======
+  const settings = useSettings()
 
+  const [store, setStore] = createStore({
+    checking: false,
+>>>>>>> 974a5c065 (add notifications)
+  })
+
+<<<<<<< HEAD
   const push = createMemo(() => platform.pushState?.())
   const installed = createMemo(() => hasPush(serverSync().data.config.plugin))
   const updating = createMemo(() => serverSync().data.reload === "pending")
@@ -464,6 +474,12 @@ export const SettingsGeneral: Component = () => {
         .catch(() => [] as ShellOption[]),
     { initialValue: [] as ShellOption[] },
   )
+=======
+  const linux = createMemo(() => platform.platform === "desktop" && platform.os === "linux")
+  const check = () => {
+    if (!platform.checkUpdate) return
+    setStore("checking", true)
+>>>>>>> 974a5c065 (add notifications)
 
   const [displayBackend, { refetch: refetchDisplayBackend }] = createResource(
     () => (linux() && platform.getDisplayBackend ? true : false),
@@ -941,6 +957,7 @@ export const SettingsGeneral: Component = () => {
             />
           </div>
         </SettingsRow>
+<<<<<<< HEAD
 
         <Show when={platform.platform === "ios" && platform.requestPushPermission}>
           <SettingsRow
@@ -1058,6 +1075,9 @@ export const SettingsGeneral: Component = () => {
           </SettingsRow>
         </Show>
       </SettingsList>
+=======
+      </div>
+>>>>>>> 974a5c065 (add notifications)
     </div>
   )
 

@@ -3,12 +3,12 @@ import { cut, merge } from "./config"
 
 describe("push config", () => {
   test("dedupes package entries by package name", () => {
-    const list = merge(["@whispercode/opencode-push@0.1.0"], "@whispercode/opencode-push@0.x")
-    expect(list).toEqual(["@whispercode/opencode-push@0.x"])
+    const list = merge(["@whisperopencode/push@0.1.0"], "@whisperopencode/push@0.x")
+    expect(list).toEqual(["@whisperopencode/push@0.x"])
   })
 
   test("removes package entries by package name", () => {
-    const list = cut(["@whispercode/opencode-push@0.x", "foo@1.0.0"], "@whispercode/opencode-push")
+    const list = cut(["@whisperopencode/push@0.x", "foo@1.0.0"], "@whisperopencode/push")
     expect(list).toEqual(["foo@1.0.0"])
   })
 })

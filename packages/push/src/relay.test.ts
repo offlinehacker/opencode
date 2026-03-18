@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
-import { claim, checkin, publish } from "./relay"
+import { claim, checkin, publish, RELAY_TIMEOUT_MS } from "./relay"
 import type { Data } from "./state"
 
 const seen: Array<{ path: string; body: Record<string, unknown> }> = []
@@ -80,9 +80,33 @@ describe("push relay", () => {
       occurred_at: 1,
       collapse_id: "complete:ses_1",
     })
-    expect(res.delivery_id).toBe("dlv_1")
+    expect((res as any).delivery_id).toBe("dlv_1")
     const body = seen.at(-1)?.body
     expect(body?.event_id).toBe("evt_1")
     expect(typeof body?.sig).toBe("string")
+  })
+
+  test(
+    "rejects when server does not respond within timeout",
+    async () => {
+      const hanging = Bun.serve({
+        port: 0,
+        fetch: () => new Promise(() => {}), // never responds
+      })
+      try {
+        const next = data()
+        next.relay!.url = `http://127.0.0.1:${hanging.port}`
+        await expect(checkin(next)).rejects.toThrow()
+      } finally {
+        hanging.stop()
+      }
+    },
+    RELAY_TIMEOUT_MS + 5_000,
+  )
+})
+
+describe("relay timeout constant", () => {
+  test("RELAY_TIMEOUT_MS is 15 seconds", () => {
+    expect(RELAY_TIMEOUT_MS).toBe(15_000)
   })
 })

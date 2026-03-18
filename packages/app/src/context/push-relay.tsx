@@ -2,15 +2,13 @@ import { createSimpleContext } from "@opencode-ai/ui/context"
 import { createEffect, createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
 import { usePlatform } from "@/context/platform"
-import { useServer } from "@/context/server"
 import { Persist, persisted } from "@/utils/persist"
-import { guessPushRelayURL, normalizePushRelayURL } from "@/utils/push-relay-url"
+import { DEFAULT_PUSH_RELAY_URL, normalizePushRelayURL } from "@/utils/push-relay-url"
 
 export const { use: usePushRelay, provider: PushRelayProvider } = createSimpleContext({
   name: "PushRelay",
   init: () => {
     const platform = usePlatform()
-    const server = useServer()
 
     const [store, setStore, , ready] = persisted(
       Persist.global("push.relay", ["push.relay.v1"]),
@@ -19,8 +17,7 @@ export const { use: usePushRelay, provider: PushRelayProvider } = createSimpleCo
       }),
     )
 
-    const guess = createMemo(() => guessPushRelayURL(server.current?.http.url))
-    const current = createMemo(() => store.url ?? guess())
+    const current = createMemo(() => store.url ?? DEFAULT_PUSH_RELAY_URL)
     let last: string | undefined
 
     createEffect(() => {
@@ -33,7 +30,6 @@ export const { use: usePushRelay, provider: PushRelayProvider } = createSimpleCo
     return {
       ready,
       current,
-      guess,
       custom: () => store.url,
       set(value?: string) {
         setStore("url", normalizePushRelayURL(value))

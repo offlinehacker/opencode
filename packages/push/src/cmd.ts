@@ -1,12 +1,12 @@
 import fs from "fs/promises"
 import os from "os"
-import pkg from "../package.json"
-import { cut, merge, name, read, write } from "./config"
-import { logFile, stateFile } from "./path"
-import { checkin, claim } from "./relay"
-import { append, load, next, save } from "./state"
+import pkg from "../package.json" with { type: "json" }
+import { cut, merge, name, read, write } from "./config.js"
+import { logFile, stateFile } from "./path.js"
+import { checkin, claim, devices as relayDevices, removeDevice as relayRemoveDevice } from "./relay.js"
+import { append, load, next, save } from "./state.js"
 
-export type Cmd = "install" | "status" | "test" | "unpair"
+export type Cmd = "install" | "status" | "test" | "unpair" | "devices" | "remove-device"
 
 export type Opts = {
   plugin: string
@@ -14,6 +14,7 @@ export type Opts = {
   pair?: string
   relay?: string
   server?: string
+  device?: string
 }
 
 export async function run(cmd: string | undefined, opts: Opts) {
@@ -26,6 +27,10 @@ export async function run(cmd: string | undefined, opts: Opts) {
       return test(opts)
     case "unpair":
       return unpair(opts)
+    case "devices":
+      return listDevices(opts)
+    case "remove-device":
+      return removeDevice(opts)
     default:
       help()
       process.exitCode = 1
@@ -40,7 +45,11 @@ export async function install(opts: Opts) {
   if (opts.pair) {
     const server = opts.server ?? os.hostname()
     const root = opts.relay ?? envRelay()
-    const res = await claim(root, opts.pair, server, pkg.version)
+    const existing =
+      data.mode === "relay" && data.relay && data.relay.url === root
+        ? { channel_id: data.relay.channel, channel_secret: data.relay.secret }
+        : undefined
+    const res = await claim(root, opts.pair, server, pkg.version, existing)
     data.mode = "relay"
     data.relay = {
       url: res.relay_url,
@@ -52,6 +61,11 @@ export async function install(opts: Opts) {
 
   data.updated_at = Date.now()
   await save(data)
+
+  if (opts.pair && data.mode === "relay" && data.relay) {
+    await checkin(data).catch(() => undefined)
+  }
+
   await write(cfg.src, cfg.text, list)
 
   return out(opts, {
@@ -158,9 +172,30 @@ export async function unpair(opts: Opts) {
   })
 }
 
+export async function listDevices(opts: Opts) {
+  const data = await load()
+  if (data.mode !== "relay" || !data.relay) {
+    return out(opts, { ok: false, error: "not_paired" })
+  }
+  const list = await relayDevices(data)
+  return out(opts, { ok: true, cmd: "devices", devices: list })
+}
+
+export async function removeDevice(opts: Opts) {
+  const data = await load()
+  if (data.mode !== "relay" || !data.relay) {
+    return out(opts, { ok: false, error: "not_paired" })
+  }
+  if (!opts.device) {
+    return out(opts, { ok: false, error: "missing_device_id" })
+  }
+  const res = await relayRemoveDevice(data, opts.device)
+  return out(opts, { ...res, ok: true, cmd: "remove-device" })
+}
+
 export function parse(args: string[]): Opts {
   const opts: Opts = {
-    plugin: "@whispercode/opencode-push@0.x",
+    plugin: "@whisperopencode/push@0.2.0",
     json: false,
   }
 
@@ -200,6 +235,15 @@ export function parse(args: string[]): Opts {
         opts.server = next
         i += 1
       }
+      continue
+    }
+    if (arg === "--device") {
+      const next = args[i + 1]
+      if (next) {
+        opts.device = next
+        i += 1
+      }
+      continue
     }
   }
 
@@ -219,12 +263,16 @@ export function print(opts: Opts, data: Record<string, unknown>) {
 
 export function help() {
   console.log(
-    "opencode-push <install|status|test|unpair> [--pair <token>] [--relay <url>] [--server <label>] [--plugin <spec>] [--json]",
+    "opencode-push <install|status|test|unpair|devices|remove-device> [--pair <token>] [--relay <url>] [--server <label>] [--plugin <spec>] [--device <id>] [--json]",
   )
 }
 
 function envRelay() {
-  return process.env.WHISPERCODE_PUSH_RELAY_URL ?? process.env.OPENCODE_PUSH_RELAY_URL ?? "https://push.whispercode.dev"
+  return (
+    process.env.WHISPEROPENCODE_PUSH_RELAY_URL ??
+    process.env.OPENCODE_PUSH_RELAY_URL ??
+    "https://whisper.clankercontext.com"
+  )
 }
 
 function out(opts: Opts, data: Record<string, unknown>) {

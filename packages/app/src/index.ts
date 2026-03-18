@@ -18,6 +18,7 @@ export {
   type PairState,
   type Platform,
   type PushCred,
+  type PushDiag,
   type PushKind,
   type PushPerm,
   type PushPrefs,

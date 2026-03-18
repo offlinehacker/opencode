@@ -26,7 +26,7 @@ final class PlatformBridge {
         self?.onEvent?("appLifecycle", ["state": "active"])
       }
       Task { @MainActor in
-        _ = await PushBridge.shared.refresh(emit: true)
+        _ = await self?.push.refresh(emit: true)
       }
     }
 

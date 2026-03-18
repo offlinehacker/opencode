@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@whispercode/opencode-push",
-  "version": "0.1.0",
+  "name": "@whisperopencode/push",
+  "version": "0.2.0",
   "type": "module",
   "license": "MIT",
   "bin": {

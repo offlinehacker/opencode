@@ -144,7 +144,8 @@ export function Onboarding(props: OnboardingProps) {
           <div class="flex flex-col gap-2">
             <h1 class="text-2xl font-semibold text-text-strong">Welcome to WhisperCode</h1>
             <p class="text-text-weak text-14-regular leading-relaxed">
-              WhisperCode connects to an OpenCode server running on your development machine. We&apos;ll help you get set up.
+              WhisperCode connects to an OpenCode server running on your development machine. We&apos;ll help you get
+              set up.
             </p>
           </div>
           <Button variant="primary" size="large" class="w-full mt-4" onClick={() => setStep(1)}>

@@ -318,7 +318,11 @@ export const dict = {
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "اسم المستخدم (اختياري)",
   "dialog.server.add.password": "كلمة المرور (اختياري)",
+<<<<<<< HEAD
   "dialog.server.edit.title": "تحرير الخادم",
+=======
+  "dialog.server.edit.title": "تعديل الخادم",
+>>>>>>> 974a5c065 (add notifications)
   "dialog.server.default.title": "الخادم الافتراضي",
   "dialog.server.default.description":
     "الاتصال بهذا الخادم عند بدء تشغيل التطبيق بدلاً من بدء خادم محلي. يتطلب إعادة التشغيل.",
@@ -569,6 +573,8 @@ export const dict = {
   "session.review.change.other": "تغييرات",
   "session.review.loadingChanges": "جارٍ تحميل التغييرات...",
   "session.review.empty": "لا توجد تغييرات في هذه الجلسة بعد",
+  "session.review.noVcs": "لم يتم اكتشاف نظام التحكم بالإصدارات Git، لا يتم عرض التغييرات",
+  "session.review.noSnapshot": "تتبع اللقطات معطل في الإعدادات، لذا تغييرات الجلسة غير متاحة",
   "session.review.noChanges": "لا توجد تغييرات",
   "session.review.noUncommittedChanges": "لا توجد تغييرات غير مُودَعة بعد",
   "session.review.noBranchChanges": "لا توجد تغييرات في الفرع بعد",
@@ -678,8 +684,10 @@ export const dict = {
   "app.name.desktop": "OpenCode Desktop",
   "settings.section.desktop": "سطح المكتب",
   "settings.section.server": "الخادم",
+  "settings.section.whispercode": "WhisperCode",
   "settings.tab.general": "عام",
   "settings.tab.shortcuts": "اختصارات",
+  "settings.tab.phone": "الهاتف",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "تكامل WSL",
   "settings.desktop.wsl.description": "تشغيل خادم OpenCode داخل WSL على Windows.",
@@ -736,6 +744,7 @@ export const dict = {
   "settings.general.row.editToolPartsExpanded.title": "توسيع أجزاء أداة edit",
   "settings.general.row.editToolPartsExpanded.description":
     "إظهار أجزاء أدوات edit و write و patch موسعة بشكل افتراضي في الشريط الزمني",
+<<<<<<< HEAD
   "settings.general.row.newInterface.title": "التخطيط الجديد",
   "settings.general.row.newInterface.badge": "جديد",
   "settings.general.row.newInterface.description":
@@ -745,6 +754,10 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.dismiss": "رفض",
   "settings.general.row.pinchZoom.title": "التكبير بإيماءة القرص",
   "settings.general.row.pinchZoom.description": "السماح بإيماءة القرص على لوحة اللمس وإيماءة Ctrl-scroll للتكبير",
+=======
+  "settings.general.row.reasoningSummaries.title": "إظهار ملخصات الاستنتاج",
+  "settings.general.row.reasoningSummaries.description": "عرض ملخصات استنتاج النموذج في الشريط الزمني",
+>>>>>>> 974a5c065 (add notifications)
   "settings.general.row.wayland.title": "استخدام Wayland الأصلي",
   "settings.general.row.wayland.description": "تعطيل التراجع إلى X11 على Wayland. يتطلب إعادة التشغيل.",
   "settings.general.row.wayland.tooltip":
@@ -813,6 +826,102 @@ export const dict = {
   "settings.general.notifications.permissions.description": "عرض إشعار النظام عند الحاجة إلى إذن",
   "settings.general.notifications.errors.title": "أخطاء",
   "settings.general.notifications.errors.description": "عرض إشعار النظام عند حدوث خطأ",
+  "settings.general.notifications.push.permission.title": "إذن الإشعارات الفورية",
+  "settings.general.notifications.push.permission.pending":
+    "جارٍ التحقق مما إذا كان WhisperCode يمكنه عرض الإشعارات على هذا iPhone",
+  "settings.general.notifications.push.permission.notDetermined":
+    "تفعيل التنبيهات العامة للردود والموافقات والأسئلة والأخطاء",
+  "settings.general.notifications.push.permission.denied": "قم بتشغيل الإشعارات لتطبيق WhisperCode في إعدادات iPhone",
+  "settings.general.notifications.push.permission.registering":
+    "تم منح الإذن. WhisperCode يقوم بإنهاء التسجيل مع Apple.",
+  "settings.general.notifications.push.permission.authorized": "جاهز للتنبيهات العامة على هذا iPhone",
+  "settings.general.notifications.push.permission.provisional": "جاهز للتنبيهات العامة الهادئة على هذا iPhone",
+  "settings.general.notifications.push.permission.ephemeral": "جاهز للتنبيهات العامة المؤقتة على هذا iPhone",
+  "settings.general.notifications.push.permission.unsupported": "الإشعارات غير متاحة على هذا الجهاز",
+  "settings.general.notifications.push.generic.title": "الخصوصية",
+  "settings.general.notifications.push.generic.description":
+    "تبقى التنبيهات عامة بشكل افتراضي. نص الموجه ونص الاستجابة ومسارات الملفات وعناوين الجلسات تبقى على الجهاز.",
+  "settings.general.notifications.push.generic.value": "عامة فقط",
+  "settings.general.notifications.push.test.title": "إرسال إشعار تجريبي",
+  "settings.general.notifications.push.test.description":
+    "أرسل تنبيهًا عبر المرحّل من مضيف OpenCode المتصل وتحقق من أن النقر عليه يعيدك إلى WhisperCode",
+  "settings.general.notifications.push.relay.title": "مرحّل الإشعارات الفورية",
+  "settings.general.notifications.push.relay.description.custom":
+    "استخدام عنوان URL مخصص للمرحّل للإقران وتسليم الإشعارات الفورية في الخلفية: {url}",
+  "settings.general.notifications.push.relay.description.guess":
+    "يتم الافتراض إلى مضيف الخادم المتصل على المنفذ 8787: {url}",
+  "settings.general.notifications.push.relay.description.empty":
+    "اتصل بخادم أولاً، أو أدخل عنوان URL مخصصًا للمرحّل للإقران وتسليم الإشعارات الفورية في الخلفية.",
+  "settings.general.notifications.push.relay.action.auto": "استخدام الافتراضي",
+  "settings.general.notifications.push.pairing.title": "إقران الهاتف",
+  "settings.general.notifications.push.pairing.pending":
+    "جارٍ التحقق مما إذا كان هذا iPhone مقترنًا بقناة إشعارات فورية.",
+  "settings.general.notifications.push.pairing.server":
+    "اتصل بخادم OpenCode أولاً حتى يتمكن WhisperCode من إنهاء الإقران.",
+  "settings.general.notifications.push.pairing.unpaired":
+    "انقر على إعداد مرة واحدة وسيطلب WhisperCode الإذن ويثبّت تكامل المضيف ويقرن هذا iPhone تلقائيًا.",
+  "settings.general.notifications.push.pairing.paired":
+    "هذا iPhone مقترن بمضيف OpenCode الخاص بك. سيقوم WhisperCode بإصلاح الاتصال تلقائيًا إذا انحرف.",
+  "settings.general.notifications.push.pairing.retry":
+    "WhisperCode يقوم بإنهاء إقران المضيف لهذا iPhone وسيستمر في إعادة المحاولة حتى ينجح.",
+  "settings.general.notifications.push.pairing.step.permission": "طلب إذن الإشعارات من إعدادات iPhone.",
+  "settings.general.notifications.push.pairing.step.register": "في انتظار اكتمال تسجيل إشعارات Apple الفورية.",
+  "settings.general.notifications.push.pairing.step.begin": "تحضير طلب إقران آمن لهذا iPhone.",
+  "settings.general.notifications.push.pairing.step.claim": "توصيل هذا iPhone بمضيف OpenCode.",
+  "settings.general.notifications.push.pairing.step.finish": "إنهاء الإقران على هذا iPhone.",
+  "settings.general.notifications.push.pairing.action.setup": "إعداد",
+  "settings.general.notifications.push.pairing.action.finish": "إنهاء الإعداد",
+  "settings.general.notifications.push.pairing.action.repair": "إصلاح",
+  "settings.general.notifications.push.pairing.action.pairing": "جارٍ الإقران...",
+  "settings.general.notifications.push.pairing.action.clear": "إزالة الإقران",
+  "settings.general.notifications.push.pairing.action.clearing": "جارٍ الإزالة...",
+  "settings.general.notifications.push.pairing.toast.cleared.title": "تمت إزالة الإقران",
+  "settings.general.notifications.push.pairing.toast.cleared.description":
+    "تمت إزالة بيانات اعتماد قناة الإشعارات الفورية المخزنة من هذا iPhone.",
+  "settings.general.notifications.push.pairing.toast.paired.title": "تم إقران iPhone",
+  "settings.general.notifications.push.pairing.toast.paired.description":
+    "يمكن لـ WhisperCode الآن الحفاظ على اتصال هذا iPhone بمضيف OpenCode لتسليم الإشعارات الفورية.",
+  "settings.general.notifications.push.action.enable": "تفعيل",
+  "settings.general.notifications.push.action.openSettings": "فتح الإعدادات",
+  "settings.general.notifications.push.action.enabled": "مُفعّل",
+  "settings.general.notifications.push.action.unavailable": "غير متاح",
+  "settings.general.notifications.push.action.checking": "جارٍ التحقق...",
+  "settings.general.notifications.push.action.test": "إرسال تجريبي",
+  "settings.general.notifications.push.action.sending": "جارٍ الإرسال...",
+  "settings.general.notifications.push.host.title": "تكامل المضيف",
+  "settings.general.notifications.push.host.description.missing":
+    "ثبّت الإضافة المجتمعية على مضيف OpenCode المتصل حتى يمكن إعادة توجيه الأحداث العامة الجديرة بالإشعار.",
+  "settings.general.notifications.push.host.description.installed":
+    "الإضافة المجتمعية مدرجة في إعدادات OpenCode العامة لهذا المضيف.",
+  "settings.general.notifications.push.host.description.updating": "جارٍ تحديث إعدادات OpenCode العامة لإضافة المضيف.",
+  "settings.general.notifications.push.host.action.install": "إضافة إلى الإعدادات",
+  "settings.general.notifications.push.host.action.installing": "جارٍ التثبيت...",
+  "settings.general.notifications.push.host.action.copy": "نسخ الأمر",
+  "settings.general.notifications.push.host.action.copying": "جارٍ النسخ...",
+  "settings.general.notifications.push.host.action.remove": "إزالة",
+  "settings.general.notifications.push.host.action.removing": "جارٍ الإزالة...",
+  "settings.general.notifications.push.host.toast.installed.title": "تمت إضافة إضافة المضيف",
+  "settings.general.notifications.push.host.toast.installed.description":
+    "تتضمن إعدادات OpenCode العامة الآن إضافة WhisperCode للإشعارات الفورية.",
+  "settings.general.notifications.push.host.toast.removed.title": "تمت إزالة إضافة المضيف",
+  "settings.general.notifications.push.host.toast.removed.description":
+    "لم تعد إعدادات OpenCode العامة تتضمن إضافة WhisperCode للإشعارات الفورية.",
+  "settings.general.notifications.push.host.toast.copied.title": "تم نسخ أمر التثبيت",
+  "settings.general.notifications.push.host.toast.copied.description":
+    "شغّل الأمر المنسوخ على الجهاز الذي يستضيف OpenCode.",
+  "settings.general.notifications.push.host.toast.copyFailed.title": "تعذر نسخ أمر التثبيت",
+  "settings.general.notifications.push.host.toast.copyFailed.description":
+    "انسخ الأمر يدويًا من WhisperCode وشغّله على مضيف OpenCode.",
+  "settings.general.notifications.push.toast.sent.title": "تمت جدولة إشعار تجريبي",
+  "settings.general.notifications.push.toast.sent.description":
+    "اقفل iPhone أو اترك التطبيق مفتوحًا للتحقق من الشعار وتدفق النقر.",
+  "settings.general.notifications.push.toast.failed.title": "تعذر إرسال إشعار تجريبي",
+  "settings.general.notifications.push.toast.failed.description":
+    "فعّل إشعارات iPhone لتطبيق WhisperCode وحاول مرة أخرى.",
+  "notification.push.route.title": "إشعار OpenCode",
+  "notification.push.route.server": "لم يتمكن WhisperCode من مطابقة هذا الإشعار مع خادم متصل بعد.",
+  "notification.push.route.session": "لم يتمكن WhisperCode من استعادة تلك الجلسة بعد، لذا فتح الصفحة الرئيسية للخادم.",
+  "settings.whispercode.mobile.unavailable": "هذا التبويب متاح في إصدارات WhisperCode للأجهزة المحمولة.",
   "settings.general.sounds.agent.title": "وكيل",
   "settings.general.sounds.agent.description": "تشغيل صوت عندما يكتمل الوكيل أو يحتاج إلى اهتمام",
   "settings.general.sounds.permissions.title": "أذونات",

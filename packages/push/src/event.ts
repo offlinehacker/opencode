@@ -1,5 +1,5 @@
 import type { Event } from "@opencode-ai/sdk"
-import { append, type Data, type Item, next, type Kind } from "./state"
+import { append, type Data, type Item, next, type Kind } from "./state.js"
 
 type Status = { type: "idle" | "busy" | "retry" }
 

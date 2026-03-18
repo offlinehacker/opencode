@@ -1,7 +1,7 @@
 import fs from "fs/promises"
 import path from "path"
 import { applyEdits, modify, parse } from "jsonc-parser"
-import { cfgDir } from "./path"
+import { cfgDir } from "./path.js"
 
 const files = ["opencode.jsonc", "opencode.json", "config.json"]
 

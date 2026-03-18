@@ -29,6 +29,7 @@ export type PairState = "pending" | "claimed" | "active" | "expired" | "failed"
 export type PairInfo = {
   id: string
   status: PairState
+  token?: string
   command?: string
   expires?: string
   channel?: string
@@ -41,6 +42,15 @@ export type PushPrefs = {
   question: boolean
   error: boolean
 }
+export type PushDiag = {
+  token?: boolean
+  relay?: string
+  device?: string
+  pairID?: string
+  pairStatus?: PairState
+  pairExpires?: string
+  lastError?: string
+}
 export type PushState = {
   supported: boolean
   permission: PushPerm
@@ -49,6 +59,7 @@ export type PushState = {
   paired: boolean
   generic: boolean
   channel?: string
+  diag?: PushDiag
 }
 export type NotifyOpts = {
   kind?: PushKind

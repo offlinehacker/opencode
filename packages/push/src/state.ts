@@ -1,6 +1,6 @@
 import fs from "fs/promises"
 import { randomUUID } from "crypto"
-import { logFile, stateDir, stateFile } from "./path"
+import { logFile, stateDir, stateFile } from "./path.js"
 
 export type Kind = "complete" | "error" | "approval" | "question" | "test"
 
@@ -64,14 +64,18 @@ export async function save(data: Data) {
   await fs.mkdir(stateDir(), { recursive: true })
   const file = stateFile()
   await fs.writeFile(file, JSON.stringify(data, null, 2) + "\n", "utf8")
-  await fs.chmod(file, 0o600).catch(() => undefined)
+  await fs.chmod(file, 0o600).catch((e) => {
+    console.warn(`push: failed to set permissions on ${file}: ${(e as Error).message}`)
+  })
 }
 
 export async function append(item: Item) {
   await fs.mkdir(stateDir(), { recursive: true })
   const file = logFile()
   await fs.appendFile(file, JSON.stringify(item) + "\n", "utf8")
-  await fs.chmod(file, 0o600).catch(() => undefined)
+  await fs.chmod(file, 0o600).catch((e) => {
+    console.warn(`push: failed to set permissions on ${file}: ${(e as Error).message}`)
+  })
 }
 
 export function next(kind: Kind, session?: string | null, req?: string | null): Item {

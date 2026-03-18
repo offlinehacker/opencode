@@ -2025,6 +2025,16 @@ export type Config = {
   }
 }
 
+export type PtyResult =
+  | {
+      status: "running"
+    }
+  | {
+      status: "exited"
+      exitCode: number
+      output: string
+    }
+
 export type Model = {
   id: string
   providerID: string
@@ -7247,7 +7257,41 @@ export type GlobalHealthResponses = {
 
 export type GlobalHealthResponse = GlobalHealthResponses[keyof GlobalHealthResponses]
 
+<<<<<<< HEAD
 export type GlobalEventData = {
+=======
+export type PtyResultData = {
+  body?: never
+  path: {
+    ptyID: string
+  }
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/pty/{ptyID}/result"
+}
+
+export type PtyResultErrors = {
+  /**
+   * Not found
+   */
+  404: NotFoundError
+}
+
+export type PtyResultError = PtyResultErrors[keyof PtyResultErrors]
+
+export type PtyResultResponses = {
+  /**
+   * PTY result
+   */
+  200: PtyResult
+}
+
+export type PtyResultResponse = PtyResultResponses[keyof PtyResultResponses]
+
+export type PtyConnectData = {
+>>>>>>> 974a5c065 (add notifications)
   body?: never
   path?: never
   query?: never

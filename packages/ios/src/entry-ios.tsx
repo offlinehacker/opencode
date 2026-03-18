@@ -8,6 +8,7 @@ import {
   PlatformProvider,
   ServerConnection,
   type Platform,
+  type PushDiag,
   type PushCred,
   type PushPrefs,
   type PushState,
@@ -129,6 +130,32 @@ const App = () => {
         typeof (value as { channel?: unknown }).channel === "string"
           ? (value as { channel: string }).channel
           : undefined,
+      diag: normalizeDiag((value as { diag?: unknown }).diag) ?? undefined,
+    }
+  }
+
+  const normalizeDiag = (value: unknown): PushDiag | null => {
+    if (!value || typeof value !== "object") return null
+    const pair = (value as { pairStatus?: unknown }).pairStatus
+    return {
+      token: (value as { token?: unknown }).token === true,
+      relay: typeof (value as { relay?: unknown }).relay === "string" ? (value as { relay: string }).relay : undefined,
+      device:
+        typeof (value as { device?: unknown }).device === "string" ? (value as { device: string }).device : undefined,
+      pairID:
+        typeof (value as { pairID?: unknown }).pairID === "string" ? (value as { pairID: string }).pairID : undefined,
+      pairStatus:
+        pair === "pending" || pair === "claimed" || pair === "active" || pair === "expired" || pair === "failed"
+          ? pair
+          : undefined,
+      pairExpires:
+        typeof (value as { pairExpires?: unknown }).pairExpires === "string"
+          ? (value as { pairExpires: string }).pairExpires
+          : undefined,
+      lastError:
+        typeof (value as { lastError?: unknown }).lastError === "string"
+          ? (value as { lastError: string }).lastError
+          : undefined,
     }
   }
 
@@ -149,6 +176,7 @@ const App = () => {
     return {
       id: id ?? "active",
       status,
+      token: typeof (value as { token?: unknown }).token === "string" ? (value as { token: string }).token : undefined,
       command:
         typeof (value as { command?: unknown }).command === "string"
           ? (value as { command: string }).command
@@ -350,16 +378,6 @@ const App = () => {
       platform.openLink(link.href)
     }
 
-    const onFocus = () => {
-      emitResume()
-      void refreshPush()
-    }
-    const onVisible = () => {
-      if (document.visibilityState !== "visible") return
-      emitResume()
-      void refreshPush()
-    }
-
     const stopListening = bridge.on("transcription", (payload) => {
       if (!payload || typeof payload !== "object") return
       const detail = payload as { text?: string; isFinal?: boolean }
@@ -383,7 +401,6 @@ const App = () => {
             : undefined
       if (state !== "active") return
       emitResume()
-      void refreshPush()
     })
 
     const stopPushState = bridge.on("pushStateChanged", (payload) => {
@@ -415,12 +432,8 @@ const App = () => {
     })
 
     document.addEventListener("click", handleClick)
-    window.addEventListener("focus", onFocus)
-    document.addEventListener("visibilitychange", onVisible)
     onCleanup(() => {
       document.removeEventListener("click", handleClick)
-      window.removeEventListener("focus", onFocus)
-      document.removeEventListener("visibilitychange", onVisible)
       stopListening()
       stopVoiceState()
       stopLifecycle()

@@ -109,7 +109,11 @@ export const dict = {
   "dialog.model.empty": "Aucun résultat de modèle",
   "dialog.model.manage": "Gérer les modèles",
   "dialog.model.manage.description": "Personnalisez les modèles qui apparaissent dans le sélecteur.",
+<<<<<<< HEAD
   "dialog.model.manage.provider.toggle": "Basculer tous les modèles {{provider}}",
+=======
+  "dialog.model.manage.provider.toggle": "Activer/désactiver tous les modèles {{provider}}",
+>>>>>>> 974a5c065 (add notifications)
   "dialog.model.unpaid.freeModels.title": "Modèles gratuits fournis par OpenCode",
   "dialog.model.unpaid.addMore.title": "Ajouter plus de modèles de fournisseurs populaires",
   "dialog.provider.viewAll": "Voir plus de fournisseurs",
@@ -579,6 +583,9 @@ export const dict = {
   "session.review.change.other": "Modifications",
   "session.review.loadingChanges": "Chargement des modifications...",
   "session.review.empty": "Aucune modification dans cette session pour l'instant",
+  "session.review.noVcs": "Aucun système de contrôle de version Git détecté, les modifications ne sont pas affichées",
+  "session.review.noSnapshot":
+    "Le suivi des instantanés est désactivé dans la configuration, les modifications de session ne sont donc pas disponibles",
   "session.review.noChanges": "Aucune modification",
   "session.review.noUncommittedChanges": "Aucune modification non validée pour l'instant",
   "session.review.noBranchChanges": "Aucune modification de branche pour l'instant",
@@ -694,8 +701,10 @@ export const dict = {
   "app.name.desktop": "OpenCode Desktop",
   "settings.section.desktop": "Bureau",
   "settings.section.server": "Serveur",
+  "settings.section.whispercode": "WhisperCode",
   "settings.tab.general": "Général",
   "settings.tab.shortcuts": "Raccourcis",
+  "settings.tab.phone": "Téléphone",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "Intégration WSL",
   "settings.desktop.wsl.description": "Exécuter le serveur OpenCode dans WSL sur Windows.",
@@ -719,6 +728,7 @@ export const dict = {
   "settings.general.row.colorScheme.description": "Choisissez si OpenCode suit le thème système, clair ou sombre",
   "settings.general.row.theme.title": "Thème",
   "settings.general.row.theme.description": "Personnaliser le thème d'OpenCode.",
+<<<<<<< HEAD
   "settings.general.row.font.title": "Police de code",
   "settings.general.row.font.description": "Personnaliser la police utilisée dans les blocs de code",
   "settings.general.row.terminalFont.title": "Police du terminal",
@@ -748,6 +758,10 @@ export const dict = {
     "Placer la barre de titre et les onglets de session en bas de l'écran sur mobile",
   "settings.general.row.showCustomAgents.title": "Agents personnalisés",
   "settings.general.row.showCustomAgents.description": "Afficher le sélecteur d'agent dans la zone de saisie",
+=======
+  "settings.general.row.font.title": "Police",
+  "settings.general.row.font.description": "Personnaliser la police mono utilisée dans les blocs de code",
+>>>>>>> 974a5c065 (add notifications)
   "settings.general.row.reasoningSummaries.title": "Afficher les résumés de raisonnement",
   "settings.general.row.reasoningSummaries.description":
     "Afficher les résumés de raisonnement du modèle dans la chronologie",
@@ -837,6 +851,109 @@ export const dict = {
     "Afficher une notification système lorsqu'une permission est requise",
   "settings.general.notifications.errors.title": "Erreurs",
   "settings.general.notifications.errors.description": "Afficher une notification système lorsqu'une erreur se produit",
+  "settings.general.notifications.push.permission.title": "Autorisation push",
+  "settings.general.notifications.push.permission.pending":
+    "Vérification de la capacité de WhisperCode à afficher des notifications sur cet iPhone",
+  "settings.general.notifications.push.permission.notDetermined":
+    "Activer les alertes génériques pour les réponses, approbations, questions et erreurs",
+  "settings.general.notifications.push.permission.denied":
+    "Activez les notifications pour WhisperCode dans les Réglages de l'iPhone",
+  "settings.general.notifications.push.permission.registering":
+    "L'autorisation est accordée. WhisperCode finalise l'inscription auprès d'Apple.",
+  "settings.general.notifications.push.permission.authorized": "Prêt pour les alertes génériques sur cet iPhone",
+  "settings.general.notifications.push.permission.provisional":
+    "Prêt pour les alertes génériques silencieuses sur cet iPhone",
+  "settings.general.notifications.push.permission.ephemeral":
+    "Prêt pour les alertes génériques temporaires sur cet iPhone",
+  "settings.general.notifications.push.permission.unsupported":
+    "Les notifications ne sont pas disponibles sur cet appareil",
+  "settings.general.notifications.push.generic.title": "Confidentialité",
+  "settings.general.notifications.push.generic.description":
+    "Les alertes restent génériques par défaut. Le texte du prompt, le texte de la réponse, les chemins de fichiers et les titres de session restent sur l'appareil.",
+  "settings.general.notifications.push.generic.value": "Génériques uniquement",
+  "settings.general.notifications.push.test.title": "Envoyer une notification de test",
+  "settings.general.notifications.push.test.description":
+    "Envoyer une alerte relayée depuis l'hôte OpenCode connecté et vérifier que le tapotement vous ramène vers WhisperCode",
+  "settings.general.notifications.push.relay.title": "Relais push",
+  "settings.general.notifications.push.relay.description.custom":
+    "Utilisation d'une URL de relais personnalisée pour l'appairage et la livraison push en arrière-plan : {url}",
+  "settings.general.notifications.push.relay.description.guess":
+    "Par défaut, utilise l'hôte du serveur connecté sur le port 8787 : {url}",
+  "settings.general.notifications.push.relay.description.empty":
+    "Connectez-vous d'abord à un serveur, ou entrez une URL de relais personnalisée pour l'appairage et la livraison push en arrière-plan.",
+  "settings.general.notifications.push.relay.action.auto": "Utiliser par défaut",
+  "settings.general.notifications.push.pairing.title": "Appairage du téléphone",
+  "settings.general.notifications.push.pairing.pending": "Vérification de l'appairage de cet iPhone à un canal push.",
+  "settings.general.notifications.push.pairing.server":
+    "Connectez-vous d'abord à un serveur OpenCode pour que WhisperCode puisse finaliser l'appairage.",
+  "settings.general.notifications.push.pairing.unpaired":
+    "Appuyez une fois sur Configurer et WhisperCode demandera l'autorisation, installera l'intégration hôte et appairera cet iPhone automatiquement.",
+  "settings.general.notifications.push.pairing.paired":
+    "Cet iPhone est appairé à votre hôte OpenCode. WhisperCode réparera automatiquement la connexion si elle se dégrade.",
+  "settings.general.notifications.push.pairing.retry":
+    "WhisperCode finalise l'appairage hôte de cet iPhone et continuera de réessayer jusqu'à ce que cela fonctionne.",
+  "settings.general.notifications.push.pairing.step.permission":
+    "Demande de l'autorisation de notification depuis les Réglages de l'iPhone.",
+  "settings.general.notifications.push.pairing.step.register": "En attente de la fin de l'inscription push Apple.",
+  "settings.general.notifications.push.pairing.step.begin":
+    "Préparation d'une demande d'appairage sécurisée pour cet iPhone.",
+  "settings.general.notifications.push.pairing.step.claim": "Connexion de cet iPhone à l'hôte OpenCode.",
+  "settings.general.notifications.push.pairing.step.finish": "Finalisation de l'appairage sur cet iPhone.",
+  "settings.general.notifications.push.pairing.action.setup": "Configurer",
+  "settings.general.notifications.push.pairing.action.finish": "Terminer la configuration",
+  "settings.general.notifications.push.pairing.action.repair": "Réparer",
+  "settings.general.notifications.push.pairing.action.pairing": "Appairage...",
+  "settings.general.notifications.push.pairing.action.clear": "Supprimer l'appairage",
+  "settings.general.notifications.push.pairing.action.clearing": "Suppression...",
+  "settings.general.notifications.push.pairing.toast.cleared.title": "Appairage supprimé",
+  "settings.general.notifications.push.pairing.toast.cleared.description":
+    "Les identifiants du canal push stockés ont été supprimés de cet iPhone.",
+  "settings.general.notifications.push.pairing.toast.paired.title": "iPhone appairé",
+  "settings.general.notifications.push.pairing.toast.paired.description":
+    "WhisperCode peut maintenant maintenir cet iPhone connecté à l'hôte OpenCode pour la livraison push.",
+  "settings.general.notifications.push.action.enable": "Activer",
+  "settings.general.notifications.push.action.openSettings": "Ouvrir les Réglages",
+  "settings.general.notifications.push.action.enabled": "Activé",
+  "settings.general.notifications.push.action.unavailable": "Indisponible",
+  "settings.general.notifications.push.action.checking": "Vérification...",
+  "settings.general.notifications.push.action.test": "Envoyer un test",
+  "settings.general.notifications.push.action.sending": "Envoi...",
+  "settings.general.notifications.push.host.title": "Intégration hôte",
+  "settings.general.notifications.push.host.description.missing":
+    "Installez le plugin communautaire sur l'hôte OpenCode connecté pour que les événements push génériques puissent être transmis.",
+  "settings.general.notifications.push.host.description.installed":
+    "Le plugin communautaire est listé dans la configuration globale OpenCode pour cet hôte.",
+  "settings.general.notifications.push.host.description.updating":
+    "Mise à jour de la configuration globale OpenCode pour le plugin hôte.",
+  "settings.general.notifications.push.host.action.install": "Ajouter à la configuration",
+  "settings.general.notifications.push.host.action.installing": "Installation...",
+  "settings.general.notifications.push.host.action.copy": "Copier la commande",
+  "settings.general.notifications.push.host.action.copying": "Copie...",
+  "settings.general.notifications.push.host.action.remove": "Supprimer",
+  "settings.general.notifications.push.host.action.removing": "Suppression...",
+  "settings.general.notifications.push.host.toast.installed.title": "Plugin hôte ajouté",
+  "settings.general.notifications.push.host.toast.installed.description":
+    "La configuration globale OpenCode inclut maintenant le plugin push WhisperCode.",
+  "settings.general.notifications.push.host.toast.removed.title": "Plugin hôte supprimé",
+  "settings.general.notifications.push.host.toast.removed.description":
+    "La configuration globale OpenCode n'inclut plus le plugin push WhisperCode.",
+  "settings.general.notifications.push.host.toast.copied.title": "Commande d'installation copiée",
+  "settings.general.notifications.push.host.toast.copied.description":
+    "Exécutez la commande copiée sur la machine hébergeant OpenCode.",
+  "settings.general.notifications.push.host.toast.copyFailed.title": "Impossible de copier la commande d'installation",
+  "settings.general.notifications.push.host.toast.copyFailed.description":
+    "Copiez la commande manuellement depuis WhisperCode et exécutez-la sur l'hôte OpenCode.",
+  "settings.general.notifications.push.toast.sent.title": "Notification de test programmée",
+  "settings.general.notifications.push.toast.sent.description":
+    "Verrouillez votre iPhone ou laissez l'application ouverte pour vérifier la bannière et le flux de tapotement.",
+  "settings.general.notifications.push.toast.failed.title": "Impossible d'envoyer la notification de test",
+  "settings.general.notifications.push.toast.failed.description":
+    "Activez les notifications iPhone pour WhisperCode et réessayez.",
+  "notification.push.route.title": "Notification OpenCode",
+  "notification.push.route.server": "WhisperCode n'a pas encore pu associer cette notification à un serveur connecté.",
+  "notification.push.route.session":
+    "WhisperCode n'a pas encore pu restaurer cette session et a ouvert l'accueil du serveur.",
+  "settings.whispercode.mobile.unavailable": "Cet onglet est disponible sur les versions mobiles de WhisperCode.",
   "settings.general.sounds.agent.title": "Agent",
   "settings.general.sounds.agent.description": "Jouer un son lorsque l'agent a terminé ou nécessite une attention",
   "settings.general.sounds.permissions.title": "Permissions",

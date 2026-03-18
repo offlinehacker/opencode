@@ -523,7 +523,11 @@ export const dict = {
   "session.review.empty": "Ingen endringer i denne sesjonen ennå",
   "session.review.noVcs": "Ingen Git-versjonskontrollsystem oppdaget, endringer vises ikke",
   "session.review.noSnapshot":
+<<<<<<< HEAD
     "Snapshot-sporing er deaktivert i konfigurasjonen, så sesjonsendringer er ikke tilgjengelige",
+=======
+    "Øyeblikksbildesporing er deaktivert i konfigurasjonen, så sesjonsendringer er utilgjengelige",
+>>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Ingen endringer",
 
   "session.files.selectToOpen": "Velg en fil å åpne",
@@ -632,8 +636,10 @@ export const dict = {
 
   "settings.section.desktop": "Skrivebord",
   "settings.section.server": "Server",
+  "settings.section.whispercode": "WhisperCode",
   "settings.tab.general": "Generelt",
   "settings.tab.shortcuts": "Snarveier",
+  "settings.tab.phone": "Telefon",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL-integrasjon",
   "settings.desktop.wsl.description": "Kjør OpenCode-serveren i WSL på Windows.",
@@ -653,6 +659,7 @@ export const dict = {
   "settings.general.row.colorScheme.description": "Velg om OpenCode skal følge systemets, lyst eller mørkt tema",
   "settings.general.row.theme.title": "Tema",
   "settings.general.row.theme.description": "Tilpass hvordan OpenCode er tematisert.",
+<<<<<<< HEAD
   "settings.general.row.font.title": "Kodefont",
   "settings.general.row.font.description": "Tilpass skrifttypen som brukes i kodeblokker",
   "settings.general.row.terminalFont.title": "Terminalskrift",
@@ -665,6 +672,13 @@ export const dict = {
   "settings.general.row.followup.option.steer": "Styr",
   "settings.general.row.reasoningSummaries.title": "Vis resonneringssammendrag",
   "settings.general.row.reasoningSummaries.description": "Vis sammendrag av modellresonnering i tidslinjen",
+=======
+  "settings.general.row.font.title": "Skrift",
+  "settings.general.row.font.description": "Tilpass mono-skriften som brukes i kodeblokker",
+  "settings.general.row.reasoningSummaries.title": "Vis resonneringssammendrag",
+  "settings.general.row.reasoningSummaries.description": "Vis modellens resonneringssammendrag i tidslinjen",
+
+>>>>>>> 974a5c065 (add notifications)
   "settings.general.row.shellToolPartsExpanded.title": "Utvid shell-verktøydeler",
   "settings.general.row.shellToolPartsExpanded.description": "Vis shell-verktøydeler utvidet som standard i tidslinjen",
   "settings.general.row.editToolPartsExpanded.title": "Utvid edit-verktøydeler",
@@ -740,6 +754,103 @@ export const dict = {
   "settings.general.notifications.permissions.description": "Vis systemvarsel når en tillatelse er påkrevd",
   "settings.general.notifications.errors.title": "Feil",
   "settings.general.notifications.errors.description": "Vis systemvarsel når det oppstår en feil",
+  "settings.general.notifications.push.permission.title": "Push-tillatelse",
+  "settings.general.notifications.push.permission.pending": "Sjekker om WhisperCode kan vise varsler på denne iPhone",
+  "settings.general.notifications.push.permission.notDetermined":
+    "Aktiver generiske varsler for svar, godkjenninger, spørsmål og feil",
+  "settings.general.notifications.push.permission.denied":
+    "Slå på varsler for WhisperCode i iPhone Innstillinger-appen",
+  "settings.general.notifications.push.permission.registering":
+    "Tillatelse er gitt. WhisperCode fullfører registreringen hos Apple.",
+  "settings.general.notifications.push.permission.authorized": "Klar for generiske varsler på denne iPhone",
+  "settings.general.notifications.push.permission.provisional": "Klar for stille generiske varsler på denne iPhone",
+  "settings.general.notifications.push.permission.ephemeral": "Klar for midlertidige generiske varsler på denne iPhone",
+  "settings.general.notifications.push.permission.unsupported": "Varsler er ikke tilgjengelig på denne enheten",
+  "settings.general.notifications.push.generic.title": "Personvern",
+  "settings.general.notifications.push.generic.description":
+    "Varsler forblir generiske som standard. Prompttekst, svartekst, filstier og sesjontitler forblir på enheten.",
+  "settings.general.notifications.push.generic.value": "Kun generiske",
+  "settings.general.notifications.push.test.title": "Send testvarsel",
+  "settings.general.notifications.push.test.description":
+    "Send et relé-støttet varsel fra den tilkoblede OpenCode-verten og bekreft at trykk tar deg tilbake til WhisperCode",
+  "settings.general.notifications.push.relay.title": "Push-relé",
+  "settings.general.notifications.push.relay.description.custom":
+    "Bruker en tilpasset relé-URL for paring og push-levering i bakgrunnen: {url}",
+  "settings.general.notifications.push.relay.description.guess":
+    "Bruker som standard den tilkoblede serverens vert på port 8787: {url}",
+  "settings.general.notifications.push.relay.description.empty":
+    "Koble til en server først, eller skriv inn en tilpasset relé-URL for paring og push-levering i bakgrunnen.",
+  "settings.general.notifications.push.relay.action.auto": "Bruk standard",
+  "settings.general.notifications.push.pairing.title": "Telefonparing",
+  "settings.general.notifications.push.pairing.pending": "Sjekker om denne iPhone er paret til en push-kanal.",
+  "settings.general.notifications.push.pairing.server":
+    "Koble til en OpenCode-server først slik at WhisperCode kan fullføre paringen.",
+  "settings.general.notifications.push.pairing.unpaired":
+    "Trykk Konfigurer én gang, og WhisperCode vil be om tillatelse, installere vertsintegrasjon og pare denne iPhone automatisk.",
+  "settings.general.notifications.push.pairing.paired":
+    "Denne iPhone er paret til din OpenCode-vert. WhisperCode vil reparere tilkoblingen automatisk hvis den svikter.",
+  "settings.general.notifications.push.pairing.retry":
+    "WhisperCode fullfører vertsparing for denne iPhone og vil fortsette å prøve til det fungerer.",
+  "settings.general.notifications.push.pairing.step.permission": "Ber om varslingstillatelse fra iPhone Innstillinger.",
+  "settings.general.notifications.push.pairing.step.register": "Venter på at Apple push-registrering skal fullføres.",
+  "settings.general.notifications.push.pairing.step.begin": "Forbereder en sikker paringsforespørsel for denne iPhone.",
+  "settings.general.notifications.push.pairing.step.claim": "Kobler denne iPhone til OpenCode-verten.",
+  "settings.general.notifications.push.pairing.step.finish": "Fullfører paring på denne iPhone.",
+  "settings.general.notifications.push.pairing.action.setup": "Konfigurer",
+  "settings.general.notifications.push.pairing.action.finish": "Fullfør oppsett",
+  "settings.general.notifications.push.pairing.action.repair": "Reparer",
+  "settings.general.notifications.push.pairing.action.pairing": "Parer...",
+  "settings.general.notifications.push.pairing.action.clear": "Fjern paring",
+  "settings.general.notifications.push.pairing.action.clearing": "Fjerner...",
+  "settings.general.notifications.push.pairing.toast.cleared.title": "Paring fjernet",
+  "settings.general.notifications.push.pairing.toast.cleared.description":
+    "Lagrede push-kanallegitimasjoner ble fjernet fra denne iPhone.",
+  "settings.general.notifications.push.pairing.toast.paired.title": "iPhone paret",
+  "settings.general.notifications.push.pairing.toast.paired.description":
+    "WhisperCode kan nå holde denne iPhone tilkoblet OpenCode-verten for push-levering.",
+  "settings.general.notifications.push.action.enable": "Aktiver",
+  "settings.general.notifications.push.action.openSettings": "Åpne innstillinger",
+  "settings.general.notifications.push.action.enabled": "Aktivert",
+  "settings.general.notifications.push.action.unavailable": "Utilgjengelig",
+  "settings.general.notifications.push.action.checking": "Sjekker...",
+  "settings.general.notifications.push.action.test": "Send test",
+  "settings.general.notifications.push.action.sending": "Sender...",
+  "settings.general.notifications.push.host.title": "Vertsintegrasjon",
+  "settings.general.notifications.push.host.description.missing":
+    "Installer community-pluginen på den tilkoblede OpenCode-verten slik at generiske push-hendelser kan videresendes.",
+  "settings.general.notifications.push.host.description.installed":
+    "Community-pluginen er oppført i OpenCode global konfigurasjon for denne verten.",
+  "settings.general.notifications.push.host.description.updating":
+    "Oppdaterer OpenCode global konfigurasjon for vertsplugin.",
+  "settings.general.notifications.push.host.action.install": "Legg til i konfigurasjon",
+  "settings.general.notifications.push.host.action.installing": "Installerer...",
+  "settings.general.notifications.push.host.action.copy": "Kopier kommando",
+  "settings.general.notifications.push.host.action.copying": "Kopierer...",
+  "settings.general.notifications.push.host.action.remove": "Fjern",
+  "settings.general.notifications.push.host.action.removing": "Fjerner...",
+  "settings.general.notifications.push.host.toast.installed.title": "Vertsplugin lagt til",
+  "settings.general.notifications.push.host.toast.installed.description":
+    "OpenCode global konfigurasjon inkluderer nå WhisperCode push-pluginen.",
+  "settings.general.notifications.push.host.toast.removed.title": "Vertsplugin fjernet",
+  "settings.general.notifications.push.host.toast.removed.description":
+    "OpenCode global konfigurasjon inkluderer ikke lenger WhisperCode push-pluginen.",
+  "settings.general.notifications.push.host.toast.copied.title": "Installeringskommando kopiert",
+  "settings.general.notifications.push.host.toast.copied.description":
+    "Kjør den kopierte kommandoen på maskinen som kjører OpenCode.",
+  "settings.general.notifications.push.host.toast.copyFailed.title": "Kunne ikke kopiere installeringskommando",
+  "settings.general.notifications.push.host.toast.copyFailed.description":
+    "Kopier kommandoen manuelt fra WhisperCode og kjør den på OpenCode-verten.",
+  "settings.general.notifications.push.toast.sent.title": "Testvarsel planlagt",
+  "settings.general.notifications.push.toast.sent.description":
+    "Lås iPhone eller la appen stå åpen for å verifisere banneret og trykk-flyten.",
+  "settings.general.notifications.push.toast.failed.title": "Kunne ikke sende testvarsel",
+  "settings.general.notifications.push.toast.failed.description":
+    "Aktiver iPhone-varsler for WhisperCode og prøv igjen.",
+  "notification.push.route.title": "OpenCode-varsel",
+  "notification.push.route.server": "WhisperCode kunne ikke matche dette varselet til en tilkoblet server ennå.",
+  "notification.push.route.session":
+    "WhisperCode kunne ikke gjenopprette den sesjonen ennå, så den åpnet serverens startside.",
+  "settings.whispercode.mobile.unavailable": "Denne fanen er tilgjengelig på WhisperCode mobile bygg.",
 
   "settings.general.sounds.agent.title": "Agent",
   "settings.general.sounds.agent.description": "Spill av lyd når agenten er ferdig eller trenger oppmerksomhet",

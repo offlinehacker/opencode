@@ -14,6 +14,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     return true
   }
 
+  func applicationDidBecomeActive(_ application: UIApplication) {
+    UNUserNotificationCenter.current().setBadgeCount(0)
+  }
+
   func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
     Task { @MainActor in
       PushBridge.shared.tokenDidUpdate(deviceToken)

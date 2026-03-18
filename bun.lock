@@ -705,10 +705,19 @@
         "@typescript/native-preview": "catalog:",
         "typescript": "catalog:",
       },
+<<<<<<< HEAD
       "peerDependencies": {
         "@opentui/core": ">=0.4.5",
         "@opentui/keymap": ">=0.4.5",
         "@opentui/solid": ">=0.4.5",
+=======
+    },
+    "packages/push": {
+      "name": "@whisperopencode/push",
+      "version": "0.2.0",
+      "bin": {
+        "opencode-push": "./src/cli.ts",
+>>>>>>> 974a5c065 (add notifications)
       },
       "optionalPeers": [
         "@opentui/core",
@@ -3037,7 +3046,15 @@
 
     "@webgpu/types": ["@webgpu/types@0.1.54", "", {}, "sha512-81oaalC8LFrXjhsczomEQ0u3jG+TqE6V9QHLA8GNZq/Rnot0KDugu3LhSYSlie8tSdooAN1Hov05asrUUp9qgg=="],
 
+<<<<<<< HEAD
     "@xmldom/xmldom": ["@xmldom/xmldom@0.8.13", "", {}, "sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw=="],
+=======
+    "@whispercode/push-relay": ["@whispercode/push-relay@workspace:packages/push-relay"],
+
+    "@whisperopencode/push": ["@whisperopencode/push@workspace:packages/push"],
+
+    "@xmldom/xmldom": ["@xmldom/xmldom@0.8.11", "", {}, "sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw=="],
+>>>>>>> 974a5c065 (add notifications)
 
     "@zip.js/zip.js": ["@zip.js/zip.js@2.7.62", "", {}, "sha512-OaLvZ8j4gCkLn048ypkZu29KX30r8/OfFF2w4Jo5WXFr+J04J+lzJ5TKZBVgFXhlvSkqNFQdfnY1Q8TMTCyBVA=="],
 

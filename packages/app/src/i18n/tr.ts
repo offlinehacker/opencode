@@ -344,11 +344,18 @@ export const dict = {
   "dialog.server.add.placeholder": "http://localhost:4096",
   "dialog.server.add.error": "Sunucuya bağlanılamadı",
   "dialog.server.add.checking": "Kontrol ediliyor...",
+  "dialog.server.add.name": "Sunucu adı (isteğe bağlı)",
+  "dialog.server.add.namePlaceholder": "Localhost",
+  "dialog.server.add.username": "Kullanıcı adı (isteğe bağlı)",
+  "dialog.server.add.password": "Parola (isteğe bağlı)",
   "dialog.server.add.button": "Sunucu ekle",
+<<<<<<< HEAD
   "dialog.server.add.name": "Sunucu adı (isteğe bağlı)",
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "Kullanıcı adı (isteğe bağlı)",
   "dialog.server.add.password": "Şifre (isteğe bağlı)",
+=======
+>>>>>>> 974a5c065 (add notifications)
   "dialog.server.edit.title": "Sunucuyu düzenle",
   "dialog.server.default.title": "Varsayılan sunucu",
   "dialog.server.default.description":
@@ -632,7 +639,11 @@ export const dict = {
   "session.review.empty": "Bu oturumda henüz değişiklik yok",
   "session.review.noVcs": "Git VCS algılanamadı, oturum değişiklikleri tespit edilemeyecek",
   "session.review.noSnapshot":
+<<<<<<< HEAD
     "Yapılandırmada anlık görüntü takibi devre dışı bırakıldı, bu nedenle oturum değişiklikleri kullanılamıyor",
+=======
+    "Anlık görüntü takibi yapılandırmada devre dışı bırakıldığı için oturum değişiklikleri kullanılamıyor",
+>>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Değişiklik yok",
   "session.review.noUncommittedChanges": "Henüz commit edilmemiş değişiklik yok",
   "session.review.noBranchChanges": "Henüz dal değişikliği yok",
@@ -641,6 +652,7 @@ export const dict = {
   "session.files.all": "Tüm dosyalar",
   "session.files.empty": "Dosya yok",
   "session.files.binaryContent": "İkili dosya (içerik görüntülenemiyor)",
+  "session.files.empty": "Dosya yok",
 
   "session.messages.renderEarlier": "Önceki mesajları göster",
   "session.messages.loadingEarlier": "Önceki mesajlar yükleniyor...",
@@ -753,10 +765,12 @@ export const dict = {
 
   "app.name.desktop": "OpenCode Masaüstü",
 
+  "settings.section.whispercode": "WhisperCode",
   "settings.section.desktop": "Masaüstü",
   "settings.section.server": "Sunucu",
   "settings.tab.general": "Genel",
   "settings.tab.shortcuts": "Kısayollar",
+  "settings.tab.phone": "Telefon",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL entegrasyonu",
   "settings.desktop.wsl.description": "OpenCode sunucusunu Windows'ta WSL içinde çalıştırın.",
@@ -902,6 +916,108 @@ export const dict = {
   "settings.general.notifications.permissions.description": "İzin gerektiğinde sistem bildirimi göster",
   "settings.general.notifications.errors.title": "Hatalar",
   "settings.general.notifications.errors.description": "Hata oluştuğunda sistem bildirimi göster",
+
+  "settings.general.notifications.push.permission.title": "Push izni",
+  "settings.general.notifications.push.permission.pending":
+    "WhisperCode'un bu iPhone'da bildirim gösterip gösteremeyeceği kontrol ediliyor",
+  "settings.general.notifications.push.permission.notDetermined":
+    "Yanıtlar, onaylar, sorular ve hatalar için genel bildirimleri etkinleştirin",
+  "settings.general.notifications.push.permission.denied":
+    "iPhone Ayarlar uygulamasından WhisperCode için bildirimleri açın",
+  "settings.general.notifications.push.permission.registering":
+    "İzin verildi. WhisperCode, Apple ile kaydı tamamlıyor.",
+  "settings.general.notifications.push.permission.authorized": "Bu iPhone'da genel bildirimler için hazır",
+  "settings.general.notifications.push.permission.provisional": "Bu iPhone'da sessiz genel bildirimler için hazır",
+  "settings.general.notifications.push.permission.ephemeral": "Bu iPhone'da geçici genel bildirimler için hazır",
+  "settings.general.notifications.push.permission.unsupported": "Bu cihazda bildirimler kullanılamıyor",
+  "settings.general.notifications.push.generic.title": "Gizlilik",
+  "settings.general.notifications.push.generic.description":
+    "Bildirimler varsayılan olarak geneldir. Komut metni, yanıt metni, dosya yolları ve oturum başlıkları cihazda kalır.",
+  "settings.general.notifications.push.generic.value": "Yalnızca genel",
+  "settings.general.notifications.push.test.title": "Test bildirimi gönder",
+  "settings.general.notifications.push.test.description":
+    "Bağlı OpenCode ana bilgisayarından röle destekli bir bildirim gönderin ve dokunduğunuzda WhisperCode'a geri dönüp dönmediğini doğrulayın",
+  "settings.general.notifications.push.relay.title": "Push rölesi",
+  "settings.general.notifications.push.relay.description.custom":
+    "Eşleştirme ve arka plan push teslimi için özel bir röle URL'si kullanılıyor: {url}",
+  "settings.general.notifications.push.relay.description.guess":
+    "Bağlı sunucu ana bilgisayarının 8787 portundaki varsayılan değeri kullanılıyor: {url}",
+  "settings.general.notifications.push.relay.description.empty":
+    "Önce bir sunucuya bağlanın veya eşleştirme ve arka plan push teslimi için özel bir röle URL'si girin.",
+  "settings.general.notifications.push.relay.action.auto": "Varsayılanı Kullan",
+  "settings.general.notifications.push.pairing.title": "Telefon eşleştirme",
+  "settings.general.notifications.push.pairing.pending":
+    "Bu iPhone'un bir push kanalına eşleştirilip eşleştirilmediği kontrol ediliyor.",
+  "settings.general.notifications.push.pairing.server":
+    "WhisperCode'un eşleştirmeyi tamamlayabilmesi için önce bir OpenCode sunucusuna bağlanın.",
+  "settings.general.notifications.push.pairing.unpaired":
+    "Bir kez Kur'a dokunun; WhisperCode izin isteyecek, ana bilgisayar entegrasyonunu yükleyecek ve bu iPhone'u otomatik olarak eşleştirecektir.",
+  "settings.general.notifications.push.pairing.paired":
+    "Bu iPhone, OpenCode ana bilgisayarınıza eşleştirildi. Bağlantı kayarsa WhisperCode otomatik olarak onaracaktır.",
+  "settings.general.notifications.push.pairing.retry":
+    "WhisperCode bu iPhone için ana bilgisayar eşleştirmesini tamamlıyor ve başarılı olana kadar yeniden denemeye devam edecek.",
+  "settings.general.notifications.push.pairing.step.permission": "iPhone Ayarlarından bildirim izni isteniyor.",
+  "settings.general.notifications.push.pairing.step.register": "Apple push kaydının tamamlanması bekleniyor.",
+  "settings.general.notifications.push.pairing.step.begin":
+    "Bu iPhone için güvenli bir eşleştirme isteği hazırlanıyor.",
+  "settings.general.notifications.push.pairing.step.claim": "Bu iPhone, OpenCode ana bilgisayarına bağlanıyor.",
+  "settings.general.notifications.push.pairing.step.finish": "Bu iPhone'da eşleştirme tamamlanıyor.",
+  "settings.general.notifications.push.pairing.action.setup": "Kur",
+  "settings.general.notifications.push.pairing.action.finish": "Kurulumu Tamamla",
+  "settings.general.notifications.push.pairing.action.repair": "Onar",
+  "settings.general.notifications.push.pairing.action.pairing": "Eşleştiriliyor...",
+  "settings.general.notifications.push.pairing.action.clear": "Eşleştirmeyi Kaldır",
+  "settings.general.notifications.push.pairing.action.clearing": "Kaldırılıyor...",
+  "settings.general.notifications.push.pairing.toast.cleared.title": "Eşleştirme kaldırıldı",
+  "settings.general.notifications.push.pairing.toast.cleared.description":
+    "Bu iPhone'dan depolanan push kanal kimlik bilgileri kaldırıldı.",
+  "settings.general.notifications.push.pairing.toast.paired.title": "iPhone eşleştirildi",
+  "settings.general.notifications.push.pairing.toast.paired.description":
+    "WhisperCode artık bu iPhone'u push teslimi için OpenCode ana bilgisayarına bağlı tutabilir.",
+  "settings.general.notifications.push.action.enable": "Etkinleştir",
+  "settings.general.notifications.push.action.openSettings": "Ayarları Aç",
+  "settings.general.notifications.push.action.enabled": "Etkin",
+  "settings.general.notifications.push.action.unavailable": "Kullanılamıyor",
+  "settings.general.notifications.push.action.checking": "Kontrol ediliyor...",
+  "settings.general.notifications.push.action.test": "Test gönder",
+  "settings.general.notifications.push.action.sending": "Gönderiliyor...",
+  "settings.general.notifications.push.host.title": "Ana bilgisayar entegrasyonu",
+  "settings.general.notifications.push.host.description.missing":
+    "Genel push olaylarının iletilebilmesi için bağlı OpenCode ana bilgisayarına topluluk eklentisini yükleyin.",
+  "settings.general.notifications.push.host.description.installed":
+    "Topluluk eklentisi bu ana bilgisayar için OpenCode genel yapılandırmasında listelenmiş.",
+  "settings.general.notifications.push.host.description.updating":
+    "Ana bilgisayar eklentisi için OpenCode genel yapılandırması güncelleniyor.",
+  "settings.general.notifications.push.host.action.install": "Yapılandırmaya Ekle",
+  "settings.general.notifications.push.host.action.installing": "Yükleniyor...",
+  "settings.general.notifications.push.host.action.copy": "Komutu Kopyala",
+  "settings.general.notifications.push.host.action.copying": "Kopyalanıyor...",
+  "settings.general.notifications.push.host.action.remove": "Kaldır",
+  "settings.general.notifications.push.host.action.removing": "Kaldırılıyor...",
+  "settings.general.notifications.push.host.toast.installed.title": "Ana bilgisayar eklentisi eklendi",
+  "settings.general.notifications.push.host.toast.installed.description":
+    "OpenCode genel yapılandırması artık WhisperCode push eklentisini içeriyor.",
+  "settings.general.notifications.push.host.toast.removed.title": "Ana bilgisayar eklentisi kaldırıldı",
+  "settings.general.notifications.push.host.toast.removed.description":
+    "OpenCode genel yapılandırması artık WhisperCode push eklentisini içermiyor.",
+  "settings.general.notifications.push.host.toast.copied.title": "Yükleyici komutu kopyalandı",
+  "settings.general.notifications.push.host.toast.copied.description":
+    "Kopyalanan komutu OpenCode'u barındıran makinede çalıştırın.",
+  "settings.general.notifications.push.host.toast.copyFailed.title": "Yükleyici komutu kopyalanamadı",
+  "settings.general.notifications.push.host.toast.copyFailed.description":
+    "Komutu WhisperCode'dan elle kopyalayın ve OpenCode ana bilgisayarında çalıştırın.",
+  "settings.general.notifications.push.toast.sent.title": "Test bildirimi planlandı",
+  "settings.general.notifications.push.toast.sent.description":
+    "Başlığı ve dokunma akışını doğrulamak için iPhone'unuzu kilitleyin veya uygulamayı açık tutun.",
+  "settings.general.notifications.push.toast.failed.title": "Test bildirimi gönderilemedi",
+  "settings.general.notifications.push.toast.failed.description":
+    "WhisperCode için iPhone bildirimlerini etkinleştirin ve tekrar deneyin.",
+
+  "notification.push.route.title": "OpenCode bildirimi",
+  "notification.push.route.server": "WhisperCode bu bildirimi henüz bağlı bir sunucuyla eşleştiremedi.",
+  "notification.push.route.session":
+    "WhisperCode o oturumu henüz geri yükleyemedi, bu yüzden sunucu ana sayfasını açtı.",
+  "settings.whispercode.mobile.unavailable": "Bu sekme WhisperCode mobil yapılarında kullanılabilir.",
 
   "settings.general.sounds.agent.title": "Ajan",
   "settings.general.sounds.agent.description": "Ajan tamamlandığında veya dikkat gerektirdiğinde ses çal",

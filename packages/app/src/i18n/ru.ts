@@ -628,7 +628,11 @@ export const dict = {
   "session.review.loadingChanges": "Загрузка изменений...",
   "session.review.empty": "Изменений в этой сессии пока нет",
   "session.review.noVcs": "Система контроля версий Git не обнаружена, изменения не отображаются",
+<<<<<<< HEAD
   "session.review.noSnapshot": "Отслеживание снимков отключено в настройках, поэтому изменения сессии недоступны",
+=======
+  "session.review.noSnapshot": "Отслеживание снимков отключено в конфигурации, поэтому изменения сессии недоступны",
+>>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Нет изменений",
   "session.review.noUncommittedChanges": "Пока нет незафиксированных изменений",
   "session.review.noBranchChanges": "Пока нет изменений в ветке",
@@ -750,8 +754,10 @@ export const dict = {
   "app.name.desktop": "OpenCode Desktop",
   "settings.section.desktop": "Приложение",
   "settings.section.server": "Сервер",
+  "settings.section.whispercode": "WhisperCode",
   "settings.tab.general": "Основные",
   "settings.tab.shortcuts": "Горячие клавиши",
+  "settings.tab.phone": "Телефон",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "Интеграция с WSL",
   "settings.desktop.wsl.description": "Запускать сервер OpenCode внутри WSL на Windows.",
@@ -807,6 +813,8 @@ export const dict = {
   "settings.general.row.reasoningSummaries.title": "Показывать сводки рассуждений",
   "settings.general.row.reasoningSummaries.description": "Отображать сводки рассуждений модели в ленте",
 
+  "settings.general.row.reasoningSummaries.title": "Показывать сводки рассуждений",
+  "settings.general.row.reasoningSummaries.description": "Отображать сводки рассуждений модели на ленте",
   "settings.general.row.shellToolPartsExpanded.title": "Разворачивать элементы инструмента shell",
   "settings.general.row.shellToolPartsExpanded.description":
     "Показывать элементы инструмента shell в ленте развернутыми по умолчанию",
@@ -896,6 +904,104 @@ export const dict = {
     "Показывать системное уведомление когда требуется разрешение",
   "settings.general.notifications.errors.title": "Ошибки",
   "settings.general.notifications.errors.description": "Показывать системное уведомление когда происходит ошибка",
+  "settings.general.notifications.push.permission.title": "Разрешение на push-уведомления",
+  "settings.general.notifications.push.permission.pending":
+    "Проверка, может ли WhisperCode показывать уведомления на этом iPhone",
+  "settings.general.notifications.push.permission.notDetermined":
+    "Включить общие оповещения для ответов, подтверждений, вопросов и ошибок",
+  "settings.general.notifications.push.permission.denied": "Включите уведомления для WhisperCode в настройках iPhone",
+  "settings.general.notifications.push.permission.registering":
+    "Разрешение получено. WhisperCode завершает регистрацию в Apple.",
+  "settings.general.notifications.push.permission.authorized": "Готово к общим оповещениям на этом iPhone",
+  "settings.general.notifications.push.permission.provisional": "Готово к тихим общим оповещениям на этом iPhone",
+  "settings.general.notifications.push.permission.ephemeral": "Готово к временным общим оповещениям на этом iPhone",
+  "settings.general.notifications.push.permission.unsupported": "Уведомления недоступны на этом устройстве",
+  "settings.general.notifications.push.generic.title": "Конфиденциальность",
+  "settings.general.notifications.push.generic.description":
+    "Оповещения по умолчанию остаются общими. Текст промпта, текст ответа, пути к файлам и заголовки сессий остаются на устройстве.",
+  "settings.general.notifications.push.generic.value": "Только общие",
+  "settings.general.notifications.push.test.title": "Отправить тестовое уведомление",
+  "settings.general.notifications.push.test.description":
+    "Отправить оповещение через relay с подключённого хоста OpenCode и проверить, что нажатие на него возвращает в WhisperCode",
+  "settings.general.notifications.push.relay.title": "Push-relay",
+  "settings.general.notifications.push.relay.description.custom":
+    "Используется пользовательский URL relay для сопряжения и фоновой доставки push: {url}",
+  "settings.general.notifications.push.relay.description.guess":
+    "По умолчанию хост подключённого сервера на порту 8787: {url}",
+  "settings.general.notifications.push.relay.description.empty":
+    "Сначала подключитесь к серверу или введите пользовательский URL relay для сопряжения и фоновой доставки push.",
+  "settings.general.notifications.push.relay.action.auto": "Использовать по умолчанию",
+  "settings.general.notifications.push.pairing.title": "Сопряжение телефона",
+  "settings.general.notifications.push.pairing.pending": "Проверка, сопряжён ли этот iPhone с push-каналом.",
+  "settings.general.notifications.push.pairing.server":
+    "Сначала подключитесь к серверу OpenCode, чтобы WhisperCode мог завершить сопряжение.",
+  "settings.general.notifications.push.pairing.unpaired":
+    "Нажмите Настроить один раз, и WhisperCode запросит разрешение, установит интеграцию с хостом и автоматически сопряжёт этот iPhone.",
+  "settings.general.notifications.push.pairing.paired":
+    "Этот iPhone сопряжён с вашим хостом OpenCode. WhisperCode автоматически восстановит соединение, если оно нарушится.",
+  "settings.general.notifications.push.pairing.retry":
+    "WhisperCode завершает сопряжение хоста для этого iPhone и будет повторять попытки, пока не закрепится.",
+  "settings.general.notifications.push.pairing.step.permission": "Запрос разрешения на уведомления из настроек iPhone.",
+  "settings.general.notifications.push.pairing.step.register": "Ожидание завершения регистрации push Apple.",
+  "settings.general.notifications.push.pairing.step.begin":
+    "Подготовка безопасного запроса на сопряжение для этого iPhone.",
+  "settings.general.notifications.push.pairing.step.claim": "Подключение этого iPhone к хосту OpenCode.",
+  "settings.general.notifications.push.pairing.step.finish": "Завершение сопряжения на этом iPhone.",
+  "settings.general.notifications.push.pairing.action.setup": "Настроить",
+  "settings.general.notifications.push.pairing.action.finish": "Завершить настройку",
+  "settings.general.notifications.push.pairing.action.repair": "Восстановить",
+  "settings.general.notifications.push.pairing.action.pairing": "Сопряжение...",
+  "settings.general.notifications.push.pairing.action.clear": "Удалить сопряжение",
+  "settings.general.notifications.push.pairing.action.clearing": "Удаление...",
+  "settings.general.notifications.push.pairing.toast.cleared.title": "Сопряжение удалено",
+  "settings.general.notifications.push.pairing.toast.cleared.description":
+    "Сохранённые учётные данные push-канала были удалены с этого iPhone.",
+  "settings.general.notifications.push.pairing.toast.paired.title": "iPhone сопряжён",
+  "settings.general.notifications.push.pairing.toast.paired.description":
+    "WhisperCode теперь может поддерживать подключение этого iPhone к хосту OpenCode для доставки push.",
+  "settings.general.notifications.push.action.enable": "Включить",
+  "settings.general.notifications.push.action.openSettings": "Открыть настройки",
+  "settings.general.notifications.push.action.enabled": "Включено",
+  "settings.general.notifications.push.action.unavailable": "Недоступно",
+  "settings.general.notifications.push.action.checking": "Проверка...",
+  "settings.general.notifications.push.action.test": "Отправить тест",
+  "settings.general.notifications.push.action.sending": "Отправка...",
+  "settings.general.notifications.push.host.title": "Интеграция с хостом",
+  "settings.general.notifications.push.host.description.missing":
+    "Установите плагин сообщества на подключённом хосте OpenCode, чтобы общие push-события могли пересылаться.",
+  "settings.general.notifications.push.host.description.installed":
+    "Плагин сообщества указан в глобальной конфигурации OpenCode для этого хоста.",
+  "settings.general.notifications.push.host.description.updating":
+    "Обновление глобальной конфигурации OpenCode для плагина хоста.",
+  "settings.general.notifications.push.host.action.install": "Добавить в конфигурацию",
+  "settings.general.notifications.push.host.action.installing": "Установка...",
+  "settings.general.notifications.push.host.action.copy": "Копировать команду",
+  "settings.general.notifications.push.host.action.copying": "Копирование...",
+  "settings.general.notifications.push.host.action.remove": "Удалить",
+  "settings.general.notifications.push.host.action.removing": "Удаление...",
+  "settings.general.notifications.push.host.toast.installed.title": "Плагин хоста добавлен",
+  "settings.general.notifications.push.host.toast.installed.description":
+    "Глобальная конфигурация OpenCode теперь включает плагин push WhisperCode.",
+  "settings.general.notifications.push.host.toast.removed.title": "Плагин хоста удалён",
+  "settings.general.notifications.push.host.toast.removed.description":
+    "Глобальная конфигурация OpenCode больше не включает плагин push WhisperCode.",
+  "settings.general.notifications.push.host.toast.copied.title": "Команда установки скопирована",
+  "settings.general.notifications.push.host.toast.copied.description":
+    "Запустите скопированную команду на машине, на которой размещён OpenCode.",
+  "settings.general.notifications.push.host.toast.copyFailed.title": "Не удалось скопировать команду установки",
+  "settings.general.notifications.push.host.toast.copyFailed.description":
+    "Скопируйте команду вручную из WhisperCode и запустите её на хосте OpenCode.",
+  "settings.general.notifications.push.toast.sent.title": "Тестовое уведомление запланировано",
+  "settings.general.notifications.push.toast.sent.description":
+    "Заблокируйте iPhone или оставьте приложение открытым, чтобы проверить баннер и поток нажатия.",
+  "settings.general.notifications.push.toast.failed.title": "Не удалось отправить тестовое уведомление",
+  "settings.general.notifications.push.toast.failed.description":
+    "Включите уведомления iPhone для WhisperCode и попробуйте снова.",
+  "notification.push.route.title": "Уведомление OpenCode",
+  "notification.push.route.server": "WhisperCode пока не смог сопоставить это уведомление с подключённым сервером.",
+  "notification.push.route.session":
+    "WhisperCode пока не смог восстановить эту сессию, поэтому открыл главную страницу сервера.",
+  "settings.whispercode.mobile.unavailable": "Эта вкладка доступна в мобильных сборках WhisperCode.",
 
   "settings.general.sounds.agent.title": "Агент",
   "settings.general.sounds.agent.description": "Воспроизводить звук когда агент завершён или требует внимания",

@@ -30,10 +30,13 @@ function CopyBlock(props: { code: string }) {
   const [copied, setCopied] = createSignal(false)
 
   const copy = () => {
-    navigator.clipboard.writeText(props.code).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }).catch(() => {})
+    navigator.clipboard
+      .writeText(props.code)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch(() => {})
   }
 
   return (
@@ -123,13 +126,21 @@ export function Onboarding(props: OnboardingProps) {
     return null
   }
 
+  const [pendingServer, setPendingServer] = createSignal<{
+    url: string
+    displayName?: string
+    username?: string
+    password?: string
+  } | null>(null)
+
   const connect = () => {
     const url = connectUrl()
     if (url) {
       const displayName = manualName().trim() || undefined
       const username = manualUsername().trim() || undefined
       const password = manualPassword().trim() || undefined
-      props.onComplete({ url, displayName, username, password })
+      setPendingServer({ url, displayName, username, password })
+      setStep(4)
     }
   }
 
@@ -152,14 +163,17 @@ export function Onboarding(props: OnboardingProps) {
 
       <Show when={step() === 1}>
         <div class="flex flex-col items-center max-w-sm w-full gap-6">
-          <StepIndicator current={1} total={3} />
+          <StepIndicator current={1} total={4} />
           <div class="flex flex-col gap-2 text-center">
             <h2 class="text-xl font-semibold text-text-strong">Install OpenCode</h2>
             <p class="text-text-weak text-14-regular leading-relaxed">
               Install the OpenCode CLI on your development machine.
             </p>
           </div>
-          <a href="https://opencode.ai/" class="external-link flex items-center justify-center gap-2 w-full px-4 py-3 rounded-md bg-surface-raised-base text-text-strong text-14-regular hover:bg-surface-base-hover transition-colors">
+          <a
+            href="https://opencode.ai/"
+            class="external-link flex items-center justify-center gap-2 w-full px-4 py-3 rounded-md bg-surface-raised-base text-text-strong text-14-regular hover:bg-surface-base-hover transition-colors"
+          >
             <span>opencode.ai</span>
             <Icon name="square-arrow-top-right" size="small" />
           </a>
@@ -176,7 +190,7 @@ export function Onboarding(props: OnboardingProps) {
 
       <Show when={step() === 2}>
         <div class="flex flex-col items-center max-w-sm w-full gap-6">
-          <StepIndicator current={2} total={3} />
+          <StepIndicator current={2} total={4} />
           <div class="flex flex-col gap-2 text-center">
             <h2 class="text-xl font-semibold text-text-strong">Start the Server</h2>
             <p class="text-text-weak text-14-regular leading-relaxed">
@@ -197,7 +211,7 @@ export function Onboarding(props: OnboardingProps) {
 
       <Show when={step() === 3}>
         <div class="flex flex-col items-center max-w-sm w-full gap-5">
-          <StepIndicator current={3} total={3} />
+          <StepIndicator current={3} total={4} />
           <div class="flex flex-col gap-2 text-center">
             <h2 class="text-xl font-semibold text-text-strong">Connect</h2>
             <p class="text-text-weak text-14-regular leading-relaxed">
@@ -313,6 +327,45 @@ export function Onboarding(props: OnboardingProps) {
             </Button>
             <Button variant="primary" size="large" class="flex-1" disabled={!connectUrl()} onClick={connect}>
               Connect
+            </Button>
+          </div>
+        </div>
+      </Show>
+
+      <Show when={step() === 4}>
+        <div class="flex flex-col items-center max-w-sm w-full gap-6">
+          <StepIndicator current={4} total={4} />
+          <div class="flex flex-col gap-2 text-center">
+            <h2 class="text-xl font-semibold text-text-strong">Enable Notifications</h2>
+            <p class="text-text-weak text-14-regular leading-relaxed">
+              Get notified when your agent needs attention or finishes a task. To deliver notifications, WhisperCode
+              installs an OpenCode plugin on your server. You can skip this for now and enable it later in Settings.
+            </p>
+          </div>
+          <div class="flex gap-3 w-full mt-2">
+            <Button
+              variant="secondary"
+              size="large"
+              class="flex-1"
+              onClick={() => {
+                const server = pendingServer()
+                if (server) props.onComplete(server)
+              }}
+            >
+              Skip
+            </Button>
+            <Button
+              variant="primary"
+              size="large"
+              class="flex-1"
+              onClick={() => {
+                void bridge.sendAsync("requestPushPermission").finally(() => {
+                  const server = pendingServer()
+                  if (server) props.onComplete(server)
+                })
+              }}
+            >
+              Enable
             </Button>
           </div>
         </div>

@@ -109,7 +109,11 @@ export const dict = {
   "dialog.model.empty": "Nenhum resultado de modelo",
   "dialog.model.manage": "Gerenciar modelos",
   "dialog.model.manage.description": "Personalizar quais modelos aparecem no seletor de modelos.",
+<<<<<<< HEAD
   "dialog.model.manage.provider.toggle": "Alternar todos os modelos {{provider}}",
+=======
+  "dialog.model.manage.provider.toggle": "Alternar todos os modelos de {{provider}}",
+>>>>>>> 974a5c065 (add notifications)
   "dialog.model.unpaid.freeModels.title": "Modelos gratuitos fornecidos pelo OpenCode",
   "dialog.model.unpaid.addMore.title": "Adicionar mais modelos de provedores populares",
   "dialog.provider.viewAll": "Ver mais provedores",
@@ -574,9 +578,15 @@ export const dict = {
   "session.review.change.other": "Alterações",
   "session.review.loadingChanges": "Carregando alterações...",
   "session.review.empty": "Nenhuma alteração nesta sessão ainda",
+<<<<<<< HEAD
   "session.review.noVcs": "Nenhum Sistema de Controle de Versão Git detectado, alterações não exibidas",
   "session.review.noSnapshot":
     "O rastreamento de snapshot está desabilitado na configuração, então as alterações da sessão estão indisponíveis",
+=======
+  "session.review.noVcs": "Nenhum sistema de controle de versão Git detectado, alterações não exibidas",
+  "session.review.noSnapshot":
+    "O rastreamento de snapshots está desabilitado na configuração, então as alterações da sessão estão indisponíveis",
+>>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Sem alterações",
   "session.review.noUncommittedChanges": "Ainda não há alterações sem commit",
   "session.review.noBranchChanges": "Ainda não há alterações na branch",
@@ -687,8 +697,10 @@ export const dict = {
   "app.name.desktop": "OpenCode Desktop",
   "settings.section.desktop": "Desktop",
   "settings.section.server": "Servidor",
+  "settings.section.whispercode": "WhisperCode",
   "settings.tab.general": "Geral",
   "settings.tab.shortcuts": "Atalhos",
+  "settings.tab.phone": "Telefone",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "Integração com WSL",
   "settings.desktop.wsl.description": "Executar o servidor OpenCode dentro do WSL no Windows.",
@@ -747,6 +759,7 @@ export const dict = {
   "settings.general.row.editToolPartsExpanded.title": "Expandir partes da ferramenta de edição",
   "settings.general.row.editToolPartsExpanded.description":
     "Mostrar partes das ferramentas de edição, escrita e patch expandidas por padrão na linha do tempo",
+<<<<<<< HEAD
   "settings.general.row.newInterface.title": "Novo layout",
   "settings.general.row.newInterface.badge": "Novo",
   "settings.general.row.newInterface.description":
@@ -757,6 +770,10 @@ export const dict = {
   "settings.general.row.pinchZoom.title": "Zoom com gesto de pinça",
   "settings.general.row.pinchZoom.description":
     "Permitir gestos de pinça no trackpad e de Ctrl+rolagem para aplicar zoom",
+=======
+  "settings.general.row.reasoningSummaries.title": "Mostrar resumos de raciocínio",
+  "settings.general.row.reasoningSummaries.description": "Exibir resumos de raciocínio do modelo na linha do tempo",
+>>>>>>> 974a5c065 (add notifications)
   "settings.general.row.wayland.title": "Usar Wayland nativo",
   "settings.general.row.wayland.description": "Desabilitar fallback X11 no Wayland. Requer reinicialização.",
   "settings.general.row.wayland.tooltip":
@@ -827,6 +844,108 @@ export const dict = {
     "Mostrar notificação do sistema quando uma permissão for necessária",
   "settings.general.notifications.errors.title": "Erros",
   "settings.general.notifications.errors.description": "Mostrar notificação do sistema quando ocorrer um erro",
+  "settings.general.notifications.push.permission.title": "Permissão de push",
+  "settings.general.notifications.push.permission.pending":
+    "Verificando se o WhisperCode pode exibir notificações neste iPhone",
+  "settings.general.notifications.push.permission.notDetermined":
+    "Ativar alertas genéricos para respostas, aprovações, perguntas e erros",
+  "settings.general.notifications.push.permission.denied":
+    "Ative as notificações do WhisperCode no app Ajustes do iPhone",
+  "settings.general.notifications.push.permission.registering":
+    "Permissão concedida. O WhisperCode está finalizando o registro com a Apple.",
+  "settings.general.notifications.push.permission.authorized": "Pronto para alertas genéricos neste iPhone",
+  "settings.general.notifications.push.permission.provisional":
+    "Pronto para alertas genéricos silenciosos neste iPhone",
+  "settings.general.notifications.push.permission.ephemeral": "Pronto para alertas genéricos temporários neste iPhone",
+  "settings.general.notifications.push.permission.unsupported": "Notificações não estão disponíveis neste dispositivo",
+  "settings.general.notifications.push.generic.title": "Privacidade",
+  "settings.general.notifications.push.generic.description":
+    "Os alertas permanecem genéricos por padrão. Texto do prompt, texto da resposta, caminhos de arquivos e títulos de sessão permanecem no dispositivo.",
+  "settings.general.notifications.push.generic.value": "Apenas genéricos",
+  "settings.general.notifications.push.test.title": "Enviar notificação de teste",
+  "settings.general.notifications.push.test.description":
+    "Enviar um alerta via relay do host OpenCode conectado e verificar se tocar nele te traz de volta ao WhisperCode",
+  "settings.general.notifications.push.relay.title": "Relay de push",
+  "settings.general.notifications.push.relay.description.custom":
+    "Usando uma URL de relay personalizada para pareamento e entrega de push em segundo plano: {url}",
+  "settings.general.notifications.push.relay.description.guess":
+    "Usa por padrão o host do servidor conectado na porta 8787: {url}",
+  "settings.general.notifications.push.relay.description.empty":
+    "Conecte-se a um servidor primeiro ou insira uma URL de relay personalizada para pareamento e entrega de push em segundo plano.",
+  "settings.general.notifications.push.relay.action.auto": "Usar Padrão",
+  "settings.general.notifications.push.pairing.title": "Pareamento do telefone",
+  "settings.general.notifications.push.pairing.pending": "Verificando se este iPhone está pareado a um canal de push.",
+  "settings.general.notifications.push.pairing.server":
+    "Conecte-se a um servidor OpenCode primeiro para que o WhisperCode possa finalizar o pareamento.",
+  "settings.general.notifications.push.pairing.unpaired":
+    "Toque em Configurar uma vez e o WhisperCode solicitará permissão, instalará a integração do host e pareará este iPhone automaticamente.",
+  "settings.general.notifications.push.pairing.paired":
+    "Este iPhone está pareado ao seu host OpenCode. O WhisperCode reparará a conexão automaticamente se ela se desviar.",
+  "settings.general.notifications.push.pairing.retry":
+    "O WhisperCode está finalizando o pareamento do host para este iPhone e continuará tentando até conseguir.",
+  "settings.general.notifications.push.pairing.step.permission":
+    "Solicitando permissão de notificação dos Ajustes do iPhone.",
+  "settings.general.notifications.push.pairing.step.register": "Aguardando o registro de push da Apple finalizar.",
+  "settings.general.notifications.push.pairing.step.begin":
+    "Preparando uma solicitação de pareamento segura para este iPhone.",
+  "settings.general.notifications.push.pairing.step.claim": "Conectando este iPhone ao host OpenCode.",
+  "settings.general.notifications.push.pairing.step.finish": "Finalizando o pareamento neste iPhone.",
+  "settings.general.notifications.push.pairing.action.setup": "Configurar",
+  "settings.general.notifications.push.pairing.action.finish": "Finalizar Configuração",
+  "settings.general.notifications.push.pairing.action.repair": "Reparar",
+  "settings.general.notifications.push.pairing.action.pairing": "Pareando...",
+  "settings.general.notifications.push.pairing.action.clear": "Remover Pareamento",
+  "settings.general.notifications.push.pairing.action.clearing": "Removendo...",
+  "settings.general.notifications.push.pairing.toast.cleared.title": "Pareamento removido",
+  "settings.general.notifications.push.pairing.toast.cleared.description":
+    "As credenciais do canal de push armazenadas foram removidas deste iPhone.",
+  "settings.general.notifications.push.pairing.toast.paired.title": "iPhone pareado",
+  "settings.general.notifications.push.pairing.toast.paired.description":
+    "O WhisperCode agora pode manter este iPhone conectado ao host OpenCode para entrega de push.",
+  "settings.general.notifications.push.action.enable": "Ativar",
+  "settings.general.notifications.push.action.openSettings": "Abrir Ajustes",
+  "settings.general.notifications.push.action.enabled": "Ativado",
+  "settings.general.notifications.push.action.unavailable": "Indisponível",
+  "settings.general.notifications.push.action.checking": "Verificando...",
+  "settings.general.notifications.push.action.test": "Enviar teste",
+  "settings.general.notifications.push.action.sending": "Enviando...",
+  "settings.general.notifications.push.host.title": "Integração do host",
+  "settings.general.notifications.push.host.description.missing":
+    "Instale o plugin da comunidade no host OpenCode conectado para que eventos genéricos dignos de push possam ser encaminhados.",
+  "settings.general.notifications.push.host.description.installed":
+    "O plugin da comunidade está listado na configuração global do OpenCode para este host.",
+  "settings.general.notifications.push.host.description.updating":
+    "Atualizando a configuração global do OpenCode para o plugin do host.",
+  "settings.general.notifications.push.host.action.install": "Adicionar à Configuração",
+  "settings.general.notifications.push.host.action.installing": "Instalando...",
+  "settings.general.notifications.push.host.action.copy": "Copiar Comando",
+  "settings.general.notifications.push.host.action.copying": "Copiando...",
+  "settings.general.notifications.push.host.action.remove": "Remover",
+  "settings.general.notifications.push.host.action.removing": "Removendo...",
+  "settings.general.notifications.push.host.toast.installed.title": "Plugin do host adicionado",
+  "settings.general.notifications.push.host.toast.installed.description":
+    "A configuração global do OpenCode agora inclui o plugin de push do WhisperCode.",
+  "settings.general.notifications.push.host.toast.removed.title": "Plugin do host removido",
+  "settings.general.notifications.push.host.toast.removed.description":
+    "A configuração global do OpenCode não inclui mais o plugin de push do WhisperCode.",
+  "settings.general.notifications.push.host.toast.copied.title": "Comando de instalação copiado",
+  "settings.general.notifications.push.host.toast.copied.description":
+    "Execute o comando copiado na máquina que hospeda o OpenCode.",
+  "settings.general.notifications.push.host.toast.copyFailed.title": "Não foi possível copiar o comando de instalação",
+  "settings.general.notifications.push.host.toast.copyFailed.description":
+    "Copie o comando manualmente do WhisperCode e execute-o no host OpenCode.",
+  "settings.general.notifications.push.toast.sent.title": "Notificação de teste agendada",
+  "settings.general.notifications.push.toast.sent.description":
+    "Bloqueie seu iPhone ou deixe o app aberto para verificar o banner e o fluxo de toque.",
+  "settings.general.notifications.push.toast.failed.title": "Não foi possível enviar notificação de teste",
+  "settings.general.notifications.push.toast.failed.description":
+    "Ative as notificações do iPhone para o WhisperCode e tente novamente.",
+  "notification.push.route.title": "Notificação do OpenCode",
+  "notification.push.route.server":
+    "O WhisperCode ainda não conseguiu associar esta notificação a um servidor conectado.",
+  "notification.push.route.session":
+    "O WhisperCode ainda não conseguiu restaurar essa sessão, então abriu a página inicial do servidor.",
+  "settings.whispercode.mobile.unavailable": "Esta aba está disponível nas versões móveis do WhisperCode.",
   "settings.general.sounds.agent.title": "Agente",
   "settings.general.sounds.agent.description": "Reproduzir som quando o agente estiver completo ou precisar de atenção",
   "settings.general.sounds.permissions.title": "Permissões",

@@ -5,6 +5,8 @@ import UserNotifications
 @MainActor
 final class PushBridge {
   static let shared = PushBridge()
+  private static let reqTimeout: TimeInterval = 10
+  private static let resTimeout: TimeInterval = 15
 
   var onEvent: ((String, Any?) -> Void)?
 
@@ -17,17 +19,57 @@ final class PushBridge {
   private let deviceKey = "opencode.push.device"
   private let secretKey = "opencode.push.secret"
   private let pairIDKey = "opencode.push.pair.id"
+  private let pairTokKey = "opencode.push.pair.tok"
   private let pairCmdKey = "opencode.push.pair.cmd"
   private let pairExpKey = "opencode.push.pair.exp"
+  private let tokenPendingKey = "opencode.push.token.pending"
   private var last: String?
+  private var perm: PushPerm?
+  private var task: Task<[String: Any], Never>?
+  private var emit = false
+  private var didRegister = false
+  private var registerAt = Date.distantPast
+  private let registerGap: TimeInterval = 30
+  private var lastErr: String?
+  private let session: URLSession = {
+    let cfg = URLSessionConfiguration.default
+    cfg.timeoutIntervalForRequest = PushBridge.reqTimeout
+    cfg.timeoutIntervalForResource = PushBridge.resTimeout
+    return URLSession(configuration: cfg)
+  }()
+
+  private static var apnsEnv: String {
+    #if targetEnvironment(simulator)
+    return "sandbox"
+    #else
+    // embedded.mobileprovision exists in Xcode builds but is stripped
+    // from TestFlight/App Store builds. Read its aps-environment to
+    // determine sandbox vs production. Use isoLatin1 because the file
+    // is binary CMS with an embedded ASCII plist.
+    guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+          let data = try? Data(contentsOf: url),
+          let text = String(data: data, encoding: .isoLatin1) else {
+      return "production"
+    }
+    guard let range = text.range(of: "<key>aps-environment</key>") else {
+      return "production"
+    }
+    let after = text[range.upperBound...]
+    if let valStart = after.range(of: "<string>"),
+       let valEnd = after.range(of: "</string>"),
+       valStart.upperBound < valEnd.lowerBound {
+      let value = text[valStart.upperBound..<valEnd.lowerBound]
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      return value == "production" ? "production" : "sandbox"
+    }
+    return "production"
+    #endif
+  }
 
   private init() {}
 
-  func state() async -> [String: Any] {
-    let perm = await permission()
-    if perm.allowed {
-      register()
-    }
+  private func state(perm: PushPerm? = nil) -> [String: Any] {
+    let perm = perm ?? self.perm ?? .notDetermined
     let channel = channel()
     var next: [String: Any] = [
       "supported": true,
@@ -40,23 +82,32 @@ final class PushBridge {
     if let channel {
       next["channel"] = channel
     }
+    let diag = diag()
+    if !diag.isEmpty {
+      next["diag"] = diag
+    }
     return next
   }
 
   func refresh(emit: Bool = false) async -> [String: Any] {
-    let next = await state()
-    let stamp = [
-      next["permission"] as? String ?? "",
-      (next["registered"] as? Bool) == true ? "registered" : "unregistered",
-      (next["paired"] as? Bool) == true ? "paired" : "unpaired",
-      next["channel"] as? String ?? "",
-    ].joined(separator: ":")
-    let changed = stamp != last
-    last = stamp
-    if emit, changed {
-      onEvent?("pushStateChanged", next)
+    self.emit = self.emit || emit
+    if let task {
+      return await task.value
     }
-    return next
+
+    let task = Task { @MainActor [self] in
+      let perm = await permission()
+      self.perm = perm
+      register(perm: perm)
+      await retryPendingToken()
+      let next = state(perm: perm)
+      let emit = self.emit
+      self.emit = false
+      self.task = nil
+      return finish(next, emit: emit)
+    }
+    self.task = task
+    return await task.value
   }
 
   func request() async -> [String: Any] {
@@ -65,9 +116,13 @@ final class PushBridge {
   }
 
   func notify(title: String?, body: String?, href: String?, kind: String?, generic: Bool, force: Bool = false) async -> Bool {
-    let next = await refresh()
+    if perm == nil {
+      _ = await refresh()
+    }
+    let next = state()
     guard (next["allowed"] as? Bool) == true else { return false }
     if !force, UIApplication.shared.applicationState == .active { return false }
+    if !force, paired() { return false }
 
     let copy = text(kind: kind, title: title, body: body, generic: generic)
     let content = UNMutableNotificationContent()
@@ -112,9 +167,17 @@ final class PushBridge {
     let text = data.map { String(format: "%02x", $0) }.joined()
     guard !text.isEmpty else { return }
     _ = keychain.set(Data(text.utf8), key: tokenKey)
+    note(nil)
     Task { @MainActor in
       if paired() {
-        try? await putToken(text)
+        do {
+          try await putToken(text)
+          keychain.remove(tokenPendingKey)
+        } catch {
+          if !isRepair(error) {
+            _ = keychain.set(Data("1".utf8), key: tokenPendingKey)
+          }
+        }
       }
       _ = await refresh(emit: true)
     }
@@ -122,6 +185,9 @@ final class PushBridge {
 
   func tokenDidFail() {
     keychain.remove(tokenKey)
+    didRegister = false
+    registerAt = .distantPast
+    note("APNs registration failed")
     Task { @MainActor in
       _ = await refresh(emit: true)
     }
@@ -143,15 +209,25 @@ final class PushBridge {
     } else {
       keychain.remove(secretKey)
     }
+    keychain.remove(tokenPendingKey)
+    note(nil)
     return await refresh(emit: true)
   }
 
   func clearPairing() async throws -> [String: Any] {
     if paired() {
-      try await deleteDevice()
+      do {
+        try await deleteDevice()
+      } catch {
+        if !isRepair(error) {
+          throw error
+        }
+      }
     }
     clearCredentials()
     clearPendingPair()
+    keychain.remove(tokenPendingKey)
+    lastErr = nil
     return await refresh(emit: true)
   }
 
@@ -168,26 +244,41 @@ final class PushBridge {
   }
 
   func setRelayURL(_ url: String?) {
+    let prev = relay()
     config.setPushRelayUrl(url)
+    if relay() == prev { return }
+    clearCredentials()
+    clearPendingPair()
+    keychain.remove(tokenPendingKey)
+    lastErr = nil
+    _ = finish(state(), emit: true)
   }
 
   func beginPair(version: String?) async throws -> [String: Any] {
     guard let token = token(), !token.isEmpty else {
+      note(PushErr.missingToken.localizedDescription)
       throw PushErr.missingToken
     }
 
     let req = PairStartReq(
       apns_token: token,
-      device_name: UIDevice.current.name,
-      app_version: version ?? "unknown"
+      device_name: UIDevice.current.model,
+      app_version: version ?? "unknown",
+      apns_env: PushBridge.apnsEnv
     )
     let res: PairStartRes = try await send(path: "/v1/pair/start", method: "POST", body: req)
     save(res.pair_id, key: pairIDKey)
+    if let token = res.pair_token, !token.isEmpty {
+      save(token, key: pairTokKey)
+    } else {
+      keychain.remove(pairTokKey)
+    }
     save(res.install_command, key: pairCmdKey)
     save(res.expires_at, key: pairExpKey)
     return pair(
       id: res.pair_id,
       status: "pending",
+      token: res.pair_token,
       command: res.install_command,
       expires: res.expires_at,
       channel: nil,
@@ -197,10 +288,63 @@ final class PushBridge {
   }
 
   func getPair() async throws -> [String: Any]? {
+    if let id = text(pairIDKey), !id.isEmpty {
+      let token = text(pairTokKey)
+      let command = text(pairCmdKey)
+      let expires = text(pairExpKey)
+      let path = "/v1/pair/\(id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id)"
+      let res: PairPollRes = try await send(path: path, method: "GET")
+
+      switch res.status {
+      case "active":
+        guard let channel = res.channel_id,
+              let device = res.device_id,
+              let secret = res.device_secret else {
+          throw PushErr.badPair
+        }
+        _ = await setCredentials(channel: channel, device: device, secret: secret)
+        clearPendingPair()
+        return pair(
+          id: id,
+          status: "active",
+          token: nil,
+          command: nil,
+          expires: nil,
+          channel: channel,
+          device: device,
+          message: nil
+        )
+      case "expired", "failed":
+        clearPendingPair()
+        return pair(
+          id: id,
+          status: res.status,
+          token: token,
+          command: command,
+          expires: expires,
+          channel: nil,
+          device: nil,
+          message: res.message
+        )
+      default:
+        return pair(
+          id: id,
+          status: res.status,
+          token: token,
+          command: command,
+          expires: expires,
+          channel: nil,
+          device: nil,
+          message: res.message
+        )
+      }
+    }
+
     if paired() {
       return pair(
-        id: text(pairIDKey),
+        id: nil,
         status: "active",
+        token: nil,
         command: nil,
         expires: nil,
         channel: channel(),
@@ -209,52 +353,7 @@ final class PushBridge {
       )
     }
 
-    guard let id = text(pairIDKey), !id.isEmpty else { return nil }
-    let command = text(pairCmdKey)
-    let expires = text(pairExpKey)
-    let path = "/v1/pair/\(id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id)"
-    let res: PairPollRes = try await send(path: path, method: "GET")
-
-    switch res.status {
-    case "active":
-      guard let channel = res.channel_id,
-            let device = res.device_id,
-            let secret = res.device_secret else {
-        throw PushErr.badPair
-      }
-      _ = await setCredentials(channel: channel, device: device, secret: secret)
-      clearPendingPair()
-      return pair(
-        id: id,
-        status: "active",
-        command: nil,
-        expires: nil,
-        channel: channel,
-        device: device,
-        message: nil
-      )
-    case "expired", "failed":
-      clearPendingPair()
-      return pair(
-        id: id,
-        status: res.status,
-        command: command,
-        expires: expires,
-        channel: nil,
-        device: nil,
-        message: res.message
-      )
-    default:
-      return pair(
-        id: id,
-        status: res.status,
-        command: command,
-        expires: expires,
-        channel: nil,
-        device: nil,
-        message: res.message
-      )
-    }
+    return nil
   }
 
   private func requestAuth() async {
@@ -263,7 +362,9 @@ final class PushBridge {
         cont.resume()
       }
     }
-    register()
+    let perm = await permission()
+    self.perm = perm
+    register(force: true, perm: perm)
   }
 
   private func settings() async -> UNNotificationSettings {
@@ -300,8 +401,45 @@ final class PushBridge {
     }
   }
 
-  private func register() {
+  private func register(force: Bool = false, perm: PushPerm? = nil) {
+    let perm = perm ?? self.perm
+    guard perm?.allowed == true else { return }
+    let now = Date()
+    if didRegister && !force {
+      if token() != nil { return }
+      if now.timeIntervalSince(registerAt) < registerGap { return }
+    }
+    didRegister = true
+    registerAt = now
     UIApplication.shared.registerForRemoteNotifications()
+  }
+
+  private func retryPendingToken() async {
+    guard keychain.get(tokenPendingKey) != nil else { return }
+    guard paired(), let tok = token(), !tok.isEmpty else { return }
+    do {
+      try await putToken(tok)
+      keychain.remove(tokenPendingKey)
+    } catch {}
+  }
+
+  private func finish(_ next: [String: Any], emit: Bool) -> [String: Any] {
+    let diag = next["diag"] as? [String: Any]
+    let stamp = [
+      next["permission"] as? String ?? "",
+      (next["registered"] as? Bool) == true ? "registered" : "unregistered",
+      (next["paired"] as? Bool) == true ? "paired" : "unpaired",
+      next["channel"] as? String ?? "",
+      diag?["device"] as? String ?? "",
+      diag?["pairStatus"] as? String ?? "",
+      diag?["lastError"] as? String ?? "",
+    ].joined(separator: ":")
+    let changed = stamp != last
+    last = stamp
+    if emit, changed {
+      onEvent?("pushStateChanged", next)
+    }
+    return next
   }
 
   private func token() -> String? {
@@ -323,6 +461,81 @@ final class PushBridge {
 
   private func paired() -> Bool {
     channel() != nil && device() != nil && secret() != nil
+  }
+
+  private func diag() -> [String: Any] {
+    var next: [String: Any] = [
+      "token": token() != nil,
+      "relay": relay(),
+    ]
+    if let device = device(), !device.isEmpty {
+      next["device"] = device
+    }
+    if paired() {
+      next["pairStatus"] = "active"
+    } else if let id = text(pairIDKey), !id.isEmpty {
+      next["pairID"] = id
+      next["pairStatus"] = "pending"
+      if let expires = text(pairExpKey), !expires.isEmpty {
+        next["pairExpires"] = expires
+      }
+    }
+    if keychain.get(tokenPendingKey) != nil {
+      next["tokenPending"] = true
+    }
+    if let lastErr, !lastErr.isEmpty {
+      next["lastError"] = lastErr
+    }
+    return next
+  }
+
+  private func note(_ value: String?) {
+    let next = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let text = next?.isEmpty == false ? next : nil
+    guard lastErr != text else { return }
+    emitState(text)
+  }
+
+  private func emitState(_ value: String?) {
+    let next = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+    lastErr = next?.isEmpty == false ? next : nil
+    _ = finish(state(), emit: true)
+  }
+
+  private func recover(_ error: Error, path: String) -> Error? {
+    guard path.hasPrefix("/v1/device"), let code = staleCode(error) else { return nil }
+    clearCredentials()
+    clearPendingPair()
+    keychain.remove(tokenPendingKey)
+    emitState(code)
+    return PushErr.repair
+  }
+
+  private func staleCode(_ error: Error) -> String? {
+    guard let error = error as? PushErr else { return nil }
+    switch error {
+    case .relay(let message) where message == "device_not_found" || message == "bad_device_secret":
+      return message
+    default:
+      return nil
+    }
+  }
+
+  private func isRepair(_ error: Error) -> Bool {
+    guard let error = error as? PushErr else { return false }
+    if case .repair = error {
+      return true
+    }
+    return false
+  }
+
+  private func normalize(_ error: Error) -> Error {
+    guard let err = error as? URLError, err.code == .timedOut else {
+      return error
+    }
+    return PushErr.relay(
+      "Push relay request timed out. Check that the relay is reachable and try again."
+    )
   }
 
   private func save(_ value: [String: String], key: String) {
@@ -381,6 +594,7 @@ final class PushBridge {
 
   private func clearPendingPair() {
     keychain.remove(pairIDKey)
+    keychain.remove(pairTokKey)
     keychain.remove(pairCmdKey)
     keychain.remove(pairExpKey)
   }
@@ -394,6 +608,7 @@ final class PushBridge {
   private func pair(
     id: String?,
     status: String,
+    token: String?,
     command: String?,
     expires: String?,
     channel: String?,
@@ -405,6 +620,9 @@ final class PushBridge {
     ]
     if let id, !id.isEmpty {
       next["id"] = id
+    }
+    if let token, !token.isEmpty {
+      next["token"] = token
     }
     if let command, !command.isEmpty {
       next["command"] = command
@@ -447,7 +665,8 @@ final class PushBridge {
       channel_id: value.channel_id,
       device_id: value.device_id,
       device_secret: value.device_secret,
-      apns_token: token
+      apns_token: token,
+      apns_env: PushBridge.apnsEnv
     )
     let _: DeviceTokenRes = try await send(path: "/v1/device/token", method: "PUT", body: body)
   }
@@ -459,20 +678,34 @@ final class PushBridge {
   private func request<T: Decodable>(path: String, method: String) async throws -> T {
     let root = relay()
     guard let base = URL(string: root), let url = URL(string: path, relativeTo: base) else {
+      note(PushErr.badRelay.localizedDescription)
       throw PushErr.badRelay
     }
 
     var req = URLRequest(url: url)
     req.httpMethod = method
     req.setValue("application/json", forHTTPHeaderField: "Accept")
+    req.timeoutInterval = PushBridge.reqTimeout
 
-    let (data, response) = try await URLSession.shared.data(for: req)
-    return try parse(data: data, response: response)
+    do {
+      let (data, response) = try await session.data(for: req)
+      let result: T = try parse(data: data, response: response)
+      note(nil)
+      return result
+    } catch {
+      let err = normalize(error)
+      if let recovered = recover(err, path: path) {
+        throw recovered
+      }
+      note(err.localizedDescription)
+      throw err
+    }
   }
 
   private func request<T: Decodable, Body: Encodable>(path: String, method: String, body: Body) async throws -> T {
     let root = relay()
     guard let base = URL(string: root), let url = URL(string: path, relativeTo: base) else {
+      note(PushErr.badRelay.localizedDescription)
       throw PushErr.badRelay
     }
 
@@ -481,9 +714,21 @@ final class PushBridge {
     req.setValue("application/json", forHTTPHeaderField: "Accept")
     req.httpBody = try JSONEncoder().encode(body)
     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.timeoutInterval = PushBridge.reqTimeout
 
-    let (data, response) = try await URLSession.shared.data(for: req)
-    return try parse(data: data, response: response)
+    do {
+      let (data, response) = try await session.data(for: req)
+      let result: T = try parse(data: data, response: response)
+      note(nil)
+      return result
+    } catch {
+      let err = normalize(error)
+      if let recovered = recover(err, path: path) {
+        throw recovered
+      }
+      note(err.localizedDescription)
+      throw err
+    }
   }
 
   private func parse<T: Decodable>(data: Data, response: URLResponse) throws -> T {
@@ -503,7 +748,7 @@ final class PushBridge {
 
   private func relay() -> String {
     config.getPushRelayUrl() ??
-      (Bundle.main.object(forInfoDictionaryKey: "WhisperCodePushRelayURL") as? String ?? "https://push.whispercode.dev")
+      (Bundle.main.object(forInfoDictionaryKey: "WhisperCodePushRelayURL") as? String ?? "https://whisper.clankercontext.com")
   }
 }
 
@@ -529,6 +774,7 @@ private struct PairStartReq: Encodable {
   let apns_token: String
   let device_name: String
   let app_version: String
+  let apns_env: String
 }
 
 private struct PairStartRes: Decodable {
@@ -563,6 +809,7 @@ private struct DeviceTokenReq: Encodable {
   let device_id: String
   let device_secret: String
   let apns_token: String
+  let apns_env: String
 }
 
 private struct DevicePrefsReq: Encodable {
@@ -602,6 +849,7 @@ private enum PushErr: Error, LocalizedError {
   case badReply
   case badPair
   case decode
+  case repair
   case relay(String)
 
   var errorDescription: String? {
@@ -616,6 +864,8 @@ private enum PushErr: Error, LocalizedError {
       return "Push relay pairing response was incomplete"
     case .decode:
       return "Push relay response could not be decoded"
+    case .repair:
+      return "Push pairing is no longer valid on this relay. Re-pair this iPhone."
     case .relay(let message):
       return message
     }

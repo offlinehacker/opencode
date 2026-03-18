@@ -84,6 +84,7 @@ describe("push apns", () => {
       },
       v: 1,
     })
+    apns.close()
   })
 
   test("does not send apns-collapse-id", async () => {
@@ -109,6 +110,23 @@ describe("push apns", () => {
       collapse: "complete:ses_1",
     })
     expect(seen[0]?.collapse).toBeNull()
+    apns.close()
+  })
+
+  test("returns apns_timeout when server hangs", async () => {
+    const apns = createAdapter({
+      mode: "live",
+      team: "TEAM123",
+      kid: "KEY123",
+      topic: "dev.whispercode.app",
+      key: testkey(),
+      dial: hangStub(),
+      timeout: 50,
+    })
+
+    const res = await apns.send({ delivery: "dlv_1", token: "tok_hang", kind: "complete", channel: "ch_1" })
+    expect(res).toEqual({ sent: false, mode: "live", code: "apns_timeout" })
+    apns.close()
   })
 
   test("marks invalid apns tokens", async () => {
@@ -125,6 +143,113 @@ describe("push apns", () => {
     expect(res.sent).toBe(false)
     expect(res.code).toBe("BadDeviceToken")
     expect(res.invalid).toBe(true)
+    apns.close()
+  })
+
+  test("reuses http2 session across sends", async () => {
+    let dialCount = 0
+    const apns = createAdapter({
+      mode: "live",
+      team: "TEAM123",
+      kid: "KEY123",
+      topic: "dev.whispercode.app",
+      key: testkey(),
+      env: "sandbox",
+      dial: (origin: string | URL) => {
+        dialCount++
+        return stub(() => ({ status: 200 }))(origin)
+      },
+    })
+
+    await apns.send({ delivery: "dlv_1", token: "tok_1", kind: "test", channel: "ch_1" })
+    await apns.send({ delivery: "dlv_2", token: "tok_2", kind: "test", channel: "ch_1" })
+    await apns.send({ delivery: "dlv_3", token: "tok_3", kind: "test", channel: "ch_1" })
+    expect(dialCount).toBe(1)
+    apns.close()
+  })
+
+  test("session error between requests nulls pool and reconnects", async () => {
+    let dialCount = 0
+    let currentSession: EventEmitter | undefined
+    const apns = createAdapter({
+      mode: "live",
+      team: "TEAM123",
+      kid: "KEY123",
+      topic: "dev.whispercode.app",
+      key: testkey(),
+      env: "sandbox",
+      dial: (origin: string | URL) => {
+        dialCount++
+        const ses = stub(() => ({ status: 200 }))(origin)
+        currentSession = ses
+        return ses
+      },
+    })
+
+    await apns.send({ delivery: "dlv_1", token: "tok_1", kind: "test", channel: "ch_1" })
+    expect(dialCount).toBe(1)
+
+    // Simulate a GOAWAY / TCP drop between requests
+    currentSession!.emit("error", new Error("GOAWAY"))
+
+    await apns.send({ delivery: "dlv_2", token: "tok_2", kind: "test", channel: "ch_1" })
+    expect(dialCount).toBe(2)
+    apns.close()
+  })
+
+  test("error listener count does not grow with requests", async () => {
+    let currentSession: EventEmitter | undefined
+    const apns = createAdapter({
+      mode: "live",
+      team: "TEAM123",
+      kid: "KEY123",
+      topic: "dev.whispercode.app",
+      key: testkey(),
+      env: "sandbox",
+      dial: (origin: string | URL) => {
+        const ses = stub(() => ({ status: 200 }))(origin)
+        currentSession = ses
+        return ses
+      },
+    })
+
+    await apns.send({ delivery: "dlv_1", token: "tok_1", kind: "test", channel: "ch_1" })
+    const countAfterFirst = currentSession!.listenerCount("error")
+
+    await apns.send({ delivery: "dlv_2", token: "tok_2", kind: "test", channel: "ch_1" })
+    await apns.send({ delivery: "dlv_3", token: "tok_3", kind: "test", channel: "ch_1" })
+    await apns.send({ delivery: "dlv_4", token: "tok_4", kind: "test", channel: "ch_1" })
+
+    expect(currentSession!.listenerCount("error")).toBe(countAfterFirst)
+    apns.close()
+  })
+
+  test("reconnects when session is destroyed", async () => {
+    let dialCount = 0
+    let currentSession: any
+    const apns = createAdapter({
+      mode: "live",
+      team: "TEAM123",
+      kid: "KEY123",
+      topic: "dev.whispercode.app",
+      key: testkey(),
+      env: "sandbox",
+      dial: (origin: string | URL) => {
+        dialCount++
+        const ses = stub(() => ({ status: 200 }))(origin)
+        currentSession = ses
+        return ses
+      },
+    })
+
+    await apns.send({ delivery: "dlv_1", token: "tok_1", kind: "test", channel: "ch_1" })
+    expect(dialCount).toBe(1)
+
+    currentSession.destroyed = true
+
+    await apns.send({ delivery: "dlv_2", token: "tok_2", kind: "test", channel: "ch_1" })
+    expect(dialCount).toBe(2)
+    apns.close()
   })
 })
 
@@ -134,7 +259,12 @@ function stub(
   return (input: string | URL) => {
     const url = String(input)
     const ses = new EventEmitter() as ClientHttp2Session & EventEmitter
-    ses.close = () => ses
+    ;(ses as any).destroyed = false
+    ;(ses as any).closed = false
+    ses.close = () => {
+      ;(ses as any).closed = true
+      return ses
+    }
     ses.request = (headers: OutgoingHttpHeaders) => {
       const req = new EventEmitter() as ClientHttp2Stream & EventEmitter
       let body = ""
@@ -153,6 +283,23 @@ function stub(
           req.emit("end")
           cb?.()
         })
+        return req
+      }) as ClientHttp2Stream["end"]
+      return req
+    }
+    return ses
+  }
+}
+
+function hangStub() {
+  return (input: string | URL) => {
+    const ses = new EventEmitter() as ClientHttp2Session & EventEmitter
+    ses.close = () => ses
+    ses.request = (_headers: OutgoingHttpHeaders) => {
+      const req = new EventEmitter() as ClientHttp2Stream & EventEmitter
+      req.setEncoding = () => req
+      req.close = () => {}
+      req.end = ((_chunk?: unknown, _enc?: unknown, _cb?: unknown) => {
         return req
       }) as ClientHttp2Stream["end"]
       return req

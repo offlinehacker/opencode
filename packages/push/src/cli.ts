@@ -1,6 +1,6 @@
-#!/usr/bin/env bun
-import { parse, run } from "./cmd"
+#!/usr/bin/env node
+import { parse, run } from "./cmd.js"
 
-const opts = parse(Bun.argv.slice(2))
+const opts = parse(process.argv.slice(2))
 
-void run(Bun.argv[2], opts)
+void run(process.argv[2], opts)
