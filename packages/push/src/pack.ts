@@ -3,6 +3,7 @@ type Exports = {
 }
 
 export type Pkg = {
+  main?: string
   bin?: Record<string, string>
   exports?: Exports
 }
@@ -21,6 +22,10 @@ export function rewrite(pkg: Pkg) {
   }
 
   if (next.exports) {
+    const root = next.exports["."]
+    if (typeof root === "string") {
+      next.main = `${file(root)}.js`
+    }
     map(next.exports)
   }
 

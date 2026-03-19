@@ -11,6 +11,7 @@ describe("pack", () => {
   test("rewrites bin and exports for publish", () => {
     const next = rewrite(pkg)
 
+    expect(next.main).toBe("./dist/src/index.js")
     expect(next.bin).toEqual({
       "opencode-push": "./dist/src/cli.js",
     })
