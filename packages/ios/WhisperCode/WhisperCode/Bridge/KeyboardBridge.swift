@@ -14,6 +14,7 @@ private let _accessoryViewIMP: @convention(c) (AnyObject, Selector) -> UIView? =
 final class KeyboardBridge: NSObject {
   var onNavigate: ((String) -> Void)?
   var onClear: (() -> Void)?
+  var onDeleteWord: (() -> Void)?
   var onNewline: (() -> Void)?
   var onDismiss: (() -> Void)?
 
@@ -105,6 +106,12 @@ final class KeyboardBridge: NSObject {
       target: self,
       action: #selector(newlineTapped)
     )
+    let deleteWord = UIBarButtonItem(
+      title: "\\dw",
+      style: .plain,
+      target: self,
+      action: #selector(deleteWordTapped)
+    )
     let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
     let dismiss = UIBarButtonItem(
       image: UIImage(systemName: "keyboard.chevron.compact.down"),
@@ -113,13 +120,14 @@ final class KeyboardBridge: NSObject {
       action: #selector(dismissTapped)
     )
 
-    toolbar.items = [up, down, clear, newline, flex, dismiss]
+    toolbar.items = [up, down, clear, deleteWord, newline, flex, dismiss]
     return toolbar
   }
 
   @objc private func upTapped() { onNavigate?("up") }
   @objc private func downTapped() { onNavigate?("down") }
   @objc private func clearTapped() { onClear?() }
+  @objc private func deleteWordTapped() { onDeleteWord?() }
   @objc private func newlineTapped() { onNewline?() }
   @objc private func dismissTapped() { onDismiss?() }
 }

@@ -688,6 +688,7 @@ export const dict = {
 
   "session.header.search.placeholder": "Pretraži {{project}}",
   "session.header.searchFiles": "Pretraži datoteke",
+  "session.header.refresh": "Osvježi",
   "session.header.openIn": "Otvori u",
   "session.header.open.action": "Otvori {{app}}",
   "session.header.open.ariaLabel": "Otvori u {{app}}",

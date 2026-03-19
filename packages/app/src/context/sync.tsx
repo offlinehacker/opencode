@@ -3,6 +3,7 @@ import { createMemo } from "solid-js"
 import { useServerSync } from "./server-sync"
 import { useSDK } from "./sdk"
 import type { Message, Part } from "@opencode-ai/sdk/v2/client"
+import { copyTodos, todoMode } from "./todo-store"
 
 const SKIP_PARTS = new Set(["patch", "step-start", "step-finish"])
 
@@ -323,28 +324,34 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             }),
           )
         },
-        async todo(sessionID: string) {
+        async todo(sessionID: string, opts?: { force?: boolean }) {
           const directory = sdk.directory
           const client = sdk.client
           const [store, setStore] = globalSync.child(directory)
           const existing = store.todo[sessionID]
           const cached = globalSync.data.session_todo[sessionID]
-          if (existing !== undefined) {
+          const mode = todoMode({
+            force: opts?.force === true,
+            store: existing,
+            cache: cached,
+          })
+
+          if (mode === "store") {
             if (cached === undefined) {
               globalSync.todo.set(sessionID, existing)
             }
             return
           }
 
-          if (cached !== undefined) {
-            setStore("todo", sessionID, reconcile(cached, { key: "id" }))
+          if (mode === "cache" && cached !== undefined) {
+            setStore("todo", sessionID, copyTodos(cached))
           }
 
           const key = keyFor(directory, sessionID)
           return runInflight(inflightTodo, key, () =>
             retry(() => client.session.todo({ sessionID })).then((todo) => {
-              const list = todo.data ?? []
-              setStore("todo", sessionID, reconcile(list, { key: "id" }))
+              const list = copyTodos(todo.data ?? [])
+              setStore("todo", sessionID, list)
               globalSync.todo.set(sessionID, list)
             }),
           )

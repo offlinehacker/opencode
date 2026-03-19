@@ -165,6 +165,7 @@ export function SessionHeader() {
   const search = settings.visibility.search
   const status = settings.visibility.status
   const isDesktop = createMediaQuery("(min-width: 768px)")
+  const mobile = createMemo(() => platform.platform === "ios" || platform.platform === "android")
 
   const [exists, setExists] = createStore<Partial<Record<OpenApp, boolean>>>({
     finder: true,
@@ -286,6 +287,10 @@ export function SessionHeader() {
   onMount(() => {
     setCenterMount(document.getElementById("opencode-titlebar-center"))
   })
+  const refresh = () => {
+    platform.haptic?.("light")
+    void platform.restart()
+  }
 
   return (
     <>
@@ -329,6 +334,16 @@ export function SessionHeader() {
               when={isV2}
               fallback={
                 <div class="flex items-center gap-2">
+                  <Show when={mobile()}>
+                    <IconButton
+                      icon="refresh"
+                      variant="ghost"
+                      class="titlebar-icon w-6 h-6 p-0 box-border shrink-0"
+                      onClick={refresh}
+                      aria-label={language.t("session.header.refresh")}
+                      data-action="session-refresh"
+                    />
+                  </Show>
                   <Show when={projectDirectory()}>
                     <div class="hidden xl:flex items-center">
                       <Show

@@ -1,4 +1,44 @@
 const MAX_BREAKS = 200
+const GAP = /\s/
+
+function gap(char?: string) {
+  return !!char && GAP.test(char)
+}
+
+function text(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return (node.textContent ?? "").replace(/\u200B/g, "")
+  if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR") return "\n"
+
+  let value = ""
+  for (const child of Array.from(node.childNodes)) {
+    value += text(child)
+  }
+  return value
+}
+
+function offset(parent: HTMLElement, node: Node, pos: number) {
+  const range = document.createRange()
+  range.selectNodeContents(parent)
+  range.setEnd(node, pos)
+  return getTextLength(range.cloneContents())
+}
+
+function word(text: string, pos: number) {
+  let start = pos
+  let end = pos
+
+  while (start > 0 && !gap(text[start - 1])) start -= 1
+  while (end < text.length && !gap(text[end])) end += 1
+
+  if (start === end) return null
+  return { start, end }
+}
+
+function left(text: string, pos: number) {
+  let end = pos
+  while (end > 0 && gap(text[end - 1])) end -= 1
+  return word(text, end)
+}
 
 export function createTextFragment(content: string): DocumentFragment {
   const fragment = document.createDocumentFragment()
@@ -51,6 +91,52 @@ export function getCursorPosition(parent: HTMLElement): number {
   preCaretRange.selectNodeContents(parent)
   preCaretRange.setEnd(range.startContainer, range.startOffset)
   return getTextLength(preCaretRange.cloneContents())
+}
+
+export function getEditorText(parent: HTMLElement) {
+  return text(parent)
+}
+
+export function getSelectionRange(parent: HTMLElement) {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return null
+
+  const range = selection.getRangeAt(0)
+  if (!parent.contains(range.startContainer) || !parent.contains(range.endContainer)) return null
+
+  return {
+    start: offset(parent, range.startContainer, range.startOffset),
+    end: offset(parent, range.endContainer, range.endOffset),
+  }
+}
+
+export function getDeleteWordRange(text: string, range?: { start: number; end: number } | null) {
+  if (!text) return null
+
+  if (range && range.start !== range.end) {
+    const start = Math.max(0, Math.min(range.start, range.end, text.length))
+    const end = Math.max(start, Math.min(Math.max(range.start, range.end), text.length))
+    return { start, end }
+  }
+
+  const pos = Math.max(0, Math.min(range?.start ?? text.length, text.length))
+  let span = null as { start: number; end: number } | null
+
+  if (pos > 0 && pos < text.length && !gap(text[pos - 1]) && !gap(text[pos])) {
+    span = word(text, pos)
+  } else if (pos > 0) {
+    span = left(text, pos)
+  }
+
+  if (!span) return null
+
+  let end = span.end
+  while (end < text.length && gap(text[end])) end += 1
+  if (end > span.end) return { start: span.start, end }
+
+  let start = span.start
+  while (start > 0 && gap(text[start - 1])) start -= 1
+  return { start, end: span.end }
 }
 
 export function setCursorPosition(parent: HTMLElement, position: number) {
@@ -115,6 +201,17 @@ export function setCursorPosition(parent: HTMLElement, position: number) {
   fallbackRange.collapse(false)
   fallbackSelection?.removeAllRanges()
   fallbackSelection?.addRange(fallbackRange)
+}
+
+export function setSelectionRange(parent: HTMLElement, range: Range, start: number, end = start) {
+  const length = getTextLength(parent)
+  const from = Math.max(0, Math.min(start, length))
+  const to = Math.max(from, Math.min(end, length))
+
+  range.selectNodeContents(parent)
+  range.collapse(false)
+  setRangeEdge(parent, range, "start", from)
+  setRangeEdge(parent, range, "end", to)
 }
 
 export function setRangeEdge(parent: HTMLElement, range: Range, edge: "start" | "end", offset: number) {

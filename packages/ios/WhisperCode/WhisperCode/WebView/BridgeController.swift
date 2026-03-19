@@ -123,6 +123,9 @@ final class BridgeController: NSObject, WKScriptMessageHandler, WKNavigationDele
     keyboard.onClear = { [weak self] in
       self?.sendEvent(type: "keyboardClear", payload: nil)
     }
+    keyboard.onDeleteWord = { [weak self] in
+      self?.sendEvent(type: "keyboardDeleteWord", payload: nil)
+    }
     keyboard.onNewline = { [weak self] in
       self?.sendEvent(type: "keyboardNewline", payload: nil)
     }

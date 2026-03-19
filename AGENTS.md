@@ -216,15 +216,13 @@ This repo is a mobile (iOS/Android) fork of [sst/opencode](https://github.com/ss
 
 ### Fork-Only Files (no upstream equivalent — auto-merge cleanly)
 
-| File                                                        | Purpose                                            |
-| ----------------------------------------------------------- | -------------------------------------------------- |
-| `packages/ios/`                                             | Entire iOS Tauri wrapper package                   |
-| `packages/android/`                                         | Entire Android Tauri wrapper package               |
-| `packages/app/src/hooks/use-pull-to-refresh.ts`             | Touch gesture hook for pull-to-refresh (155 lines) |
-| `packages/app/src/components/pull-to-refresh-indicator.tsx` | Pull-to-refresh spinner/arrow UI component         |
-| `packages/app/src/pages/session/session-mobile-tabs.tsx`    | Mobile "Session"/"Changes" tab navigation          |
-| `ANDROID_BUILD.md`                                          | Android release build documentation                |
-| `whispercode-logo-*.png`                                    | Fork branding assets                               |
+| File                                                     | Purpose                                   |
+| -------------------------------------------------------- | ----------------------------------------- |
+| `packages/ios/`                                          | Entire iOS Tauri wrapper package          |
+| `packages/android/`                                      | Entire Android Tauri wrapper package      |
+| `packages/app/src/pages/session/session-mobile-tabs.tsx` | Mobile "Session"/"Changes" tab navigation |
+| `ANDROID_BUILD.md`                                       | Android release build documentation       |
+| `whispercode-logo-*.png`                                 | Fork branding assets                      |
 
 ### Files Modified from Upstream (conflict risk on merge)
 
@@ -238,23 +236,10 @@ Extends the `Platform` type with mobile discriminators and capabilities. Usually
 
 #### `packages/app/src/pages/session.tsx` (HIGH conflict risk)
 
-Upstream refactors this file frequently. Fork adds 6 integration points:
+Upstream refactors this file frequently. Fork adds 2 integration points:
 
-1. **Imports** — `usePullToRefresh` from `@/hooks/use-pull-to-refresh`, `usePlatform` from `@/context/platform`
-2. **`refreshActiveSession()` helper** — Cooldown-gated force-sync of the active session on resume. Uses `RESUME_SYNC_COOLDOWN_MS = 1000` and calls `sync.session.sync(id, { force: true })`
-3. **`platform` + `pullToRefresh` setup** — `usePlatform()` call and `usePullToRefresh({ scrollElement, onRefresh: platform.restart, onHaptic: platform.haptic, isNestedScrollable })` — placed near the `scroller`/`content` variable declarations
-4. **`onMount` resume event listeners** — `focus`, `pageshow`, `online`, `opencode:resume` (custom mobile event), `visibilitychange` — all call `refreshActiveSession()`
-5. **`pullToRefresh.setRef`** — Added as `ref` on the main flex container div wrapping `SessionMobileTabs` and the session content
-6. **`pullToRefresh` props** — Passed to `<MessageTimeline>`: `pulling`, `progress`, `refreshing`, `pullDistance`
-
-#### `packages/app/src/pages/session/message-timeline.tsx` (HIGH conflict risk)
-
-Upstream refactors this file frequently. Fork adds 4 integration points:
-
-1. **Import** — `PullToRefreshIndicator` from `@/components/pull-to-refresh-indicator`
-2. **Props type** — `pullToRefresh: { pulling: boolean; progress: number; refreshing: boolean; pullDistance: number }` on the `MessageTimeline` component props
-3. **CSS** — `"overscroll-behavior-y": "contain"` added to the `ScrollView` style object (prevents iOS bounce interfering with pull-to-refresh)
-4. **Component** — `<PullToRefreshIndicator pulling={...} progress={...} refreshing={...} pullDistance={...} />` rendered inside the ScrollView, after the main content `</div>`
+1. **`refreshActiveSession()` helper** — Cooldown-gated force-sync of the active session on resume. Uses `RESUME_SYNC_COOLDOWN_MS = 1000` and calls `sync.session.sync(id, { force: true })`
+2. **`onMount` resume event listeners** — `focus`, `pageshow`, `online`, `opencode:resume` (custom mobile event), `visibilitychange` — all call `refreshActiveSession()`
 
 #### `packages/app/src/context/global-sync.tsx` (MEDIUM conflict risk)
 

@@ -430,6 +430,10 @@ const App = () => {
       document.execCommand("delete")
     })
 
+    const stopKeyboardDeleteWord = bridge.on("keyboardDeleteWord", () => {
+      window.dispatchEvent(new Event("opencode:keyboard-delete-word"))
+    })
+
     const stopKeyboardNewline = bridge.on("keyboardNewline", () => {
       const el = document.activeElement
       if (!el || !(el instanceof HTMLElement) || !el.isContentEditable) return
@@ -445,6 +449,7 @@ const App = () => {
       stopPushState()
       stopKeyboardNav()
       stopKeyboardClear()
+      stopKeyboardDeleteWord()
       stopKeyboardNewline()
     })
   })
