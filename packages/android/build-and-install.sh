@@ -28,7 +28,7 @@ echo "==> Building frontend..."
 bun run build
 
 echo "==> Building APK..."
-bun run tauri android build --apk
+bun run tauri android build --apk --debug
 
 APK="$SCRIPT_DIR/src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk"
 if [ ! -f "$APK" ]; then
