@@ -1,14 +1,14 @@
-import { Component, For, Show, createMemo, type JSX } from "solid-js"
-import { createStore } from "solid-js/store"
+import { Card } from "@opencode-ai/ui/card"
 import { Button } from "@opencode-ai/ui/button"
 import { showToast } from "@opencode-ai/ui/toast"
-import { useGlobalSync } from "@/context/global-sync"
+import { Component, For, Show, createMemo, type JSX } from "solid-js"
+import { createStore } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import { usePlatform, type PushState } from "@/context/platform"
 import { canClearPair, usePushPair } from "@/context/push-pair"
 import { usePushRelay } from "@/context/push-relay"
 import { useServer } from "@/context/server"
-import { addPush, dropPush, hasPush } from "@/utils/push-plugin"
+import { PushFail, pushIssue } from "@/utils/push-pair"
 import { DEFAULT_PUSH_RELAY_URL } from "@/utils/push-relay-url"
 import { sendPushTest } from "@/utils/push-test"
 import { diagRows } from "./settings-mobile-notifications-data"
@@ -19,25 +19,36 @@ type PushAction = {
   run?: () => Promise<void>
 }
 
+type Summary = {
+  variant: "info" | "warning" | "error" | "success"
+  title: string
+  body: string
+  detail?: string
+  command?: string
+  action?: PushAction
+}
+
+export function shouldToastPairErr(err: unknown) {
+  return !(err instanceof PushFail)
+}
+
 export const SettingsMobileNotifications: Component = () => {
   const language = useLanguage()
   const platform = usePlatform()
   const pairing = usePushPair()
   const relay = usePushRelay()
   const server = useServer()
-  const sync = useGlobalSync()
 
   const [store, setStore] = createStore({
     asking: false,
     testing: false,
     diag: false,
-    installing: false,
-    removing: false,
   })
 
   const mobile = createMemo(() => platform.platform === "ios" || platform.platform === "android")
   const push = createMemo(() => platform.pushState?.())
   const diag = createMemo(() => push()?.diag)
+  const issue = createMemo(() => pairing.issue() ?? pushIssue(push()))
   const paired = createMemo(() => push()?.paired || pairing.pair.status === "active")
   const clearable = createMemo(() =>
     canClearPair({
@@ -46,9 +57,15 @@ export const SettingsMobileNotifications: Component = () => {
       status: pairing.pair.status ?? diag()?.pairStatus,
     }),
   )
-  const installed = createMemo(() => hasPush(sync.data.config.plugin))
-  const updating = createMemo(() => sync.data.reload === "pending")
   const ready = createMemo(() => mobile() && !!platform.requestPushPermission)
+
+  const phaseDesc = (value?: ReturnType<typeof pairing.phase>) => {
+    if (value === "permission") return language.t("settings.general.notifications.push.pairing.step.permission")
+    if (value === "register") return language.t("settings.general.notifications.push.pairing.step.register")
+    if (value === "claim") return language.t("settings.general.notifications.push.pairing.step.claim")
+    if (value === "finish") return language.t("settings.general.notifications.push.pairing.step.finish")
+    return language.t("settings.general.notifications.push.pairing.step.begin")
+  }
 
   const pushDesc = (value?: PushState) => {
     if (!value) return language.t("settings.general.notifications.push.permission.pending")
@@ -73,7 +90,7 @@ export const SettingsMobileNotifications: Component = () => {
 
   const note = createMemo(() => {
     if (platform.platform !== "ios") return
-    if (!server.current || pairing.running() || paired()) return
+    if (!server.current || pairing.running() || paired() || issue()) return
     return language.t("settings.general.notifications.push.permission.ios")
   })
 
@@ -83,6 +100,7 @@ export const SettingsMobileNotifications: Component = () => {
     await platform
       .requestPushPermission()
       .catch((err: unknown) => {
+        if (!shouldToastPairErr(err)) return
         const message = err instanceof Error ? err.message : String(err)
         showToast({ title: language.t("common.requestFailed"), description: message })
       })
@@ -131,7 +149,7 @@ export const SettingsMobileNotifications: Component = () => {
 
   const setupPush = async () => {
     await pairing
-      .setup({ ask: true })
+      .setup({ ask: true, source: "settings" })
       .then((ok) => {
         if (!ok) return
         showToast({
@@ -141,6 +159,7 @@ export const SettingsMobileNotifications: Component = () => {
         })
       })
       .catch((err: unknown) => {
+        if (!shouldToastPairErr(err)) return
         const message = err instanceof Error ? err.message : String(err)
         showToast({ title: language.t("common.requestFailed"), description: message })
       })
@@ -175,89 +194,6 @@ export const SettingsMobileNotifications: Component = () => {
       })
   }
 
-  const installHost = async () => {
-    setStore("installing", true)
-    await sync
-      .updateConfig({ plugin: addPush(sync.data.config.plugin) })
-      .then(() => {
-        showToast({
-          title: language.t("settings.general.notifications.push.host.toast.installed.title"),
-          description: language.t("settings.general.notifications.push.host.toast.installed.description"),
-          variant: "success",
-        })
-      })
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : String(err)
-        showToast({ title: language.t("common.requestFailed"), description: message })
-      })
-      .finally(() => setStore("installing", false))
-  }
-
-  const removeHost = async () => {
-    setStore("removing", true)
-    await sync
-      .updateConfig({ plugin: dropPush(sync.data.config.plugin) })
-      .then(() => {
-        showToast({
-          title: language.t("settings.general.notifications.push.host.toast.removed.title"),
-          description: language.t("settings.general.notifications.push.host.toast.removed.description"),
-          variant: "success",
-        })
-      })
-      .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : String(err)
-        showToast({ title: language.t("common.requestFailed"), description: message })
-      })
-      .finally(() => setStore("removing", false))
-  }
-
-  const hostDesc = createMemo(() => {
-    if (updating()) return language.t("settings.general.notifications.push.host.description.updating")
-    if (installed()) return language.t("settings.general.notifications.push.host.description.installed")
-    return language.t("settings.general.notifications.push.host.description.missing")
-  })
-
-  const pairDesc = createMemo(() => {
-    const value = push()
-    if (!server.current) return language.t("settings.general.notifications.push.pairing.server")
-    if (pairing.running()) {
-      const step = pairing.step()
-      if (step === "permission") return language.t("settings.general.notifications.push.pairing.step.permission")
-      if (step === "register") return language.t("settings.general.notifications.push.pairing.step.register")
-      if (step === "claim") return language.t("settings.general.notifications.push.pairing.step.claim")
-      if (step === "finish") return language.t("settings.general.notifications.push.pairing.step.finish")
-      return language.t("settings.general.notifications.push.pairing.step.begin")
-    }
-    if (!pairing.ready()) return language.t("settings.general.notifications.push.pairing.pending")
-    if (!value) return language.t("settings.general.notifications.push.pairing.pending")
-    if (paired()) return language.t("settings.general.notifications.push.pairing.paired")
-    if (pairing.pair.message) return pairing.pair.message
-    if (pairing.pair.status === "pending" || pairing.pair.status === "claimed") {
-      return language.t("settings.general.notifications.push.pairing.retry")
-    }
-    return language.t("settings.general.notifications.push.pairing.unpaired")
-  })
-
-  const pairLabel = createMemo(() => {
-    const value = push()
-    if (pairing.running()) return language.t("settings.general.notifications.push.pairing.action.pairing")
-    if (value?.permission === "denied") return language.t("settings.general.notifications.push.action.openSettings")
-    if (!value?.allowed) return language.t("settings.general.notifications.push.pairing.action.setup")
-    if (paired()) return language.t("settings.general.notifications.push.pairing.action.repair")
-    if (pairing.pair.status === "pending" || pairing.pair.status === "claimed") {
-      return language.t("settings.general.notifications.push.pairing.action.finish")
-    }
-    return language.t("settings.general.notifications.push.pairing.action.setup")
-  })
-
-  const pairDisabled = createMemo(() => {
-    const value = push()
-    if (pairing.running() || pairing.clearing()) return true
-    if (!server.current) return true
-    if (value?.permission === "unsupported") return true
-    return false
-  })
-
   const rows = createMemo(() =>
     diagRows({
       push: push(),
@@ -269,7 +205,7 @@ export const SettingsMobileNotifications: Component = () => {
     }),
   )
 
-  const action = createMemo<PushAction>(() => {
+  const permissionAction = createMemo<PushAction>(() => {
     const value = push()
     if (pairing.running()) {
       return {
@@ -303,11 +239,158 @@ export const SettingsMobileNotifications: Component = () => {
       }
     }
     return {
-      label: server.current
-        ? language.t("settings.general.notifications.push.pairing.action.setup")
-        : language.t("settings.general.notifications.push.action.enable"),
-      disabled: server.current ? pairDisabled() : !platform.requestPushPermission,
-      run: server.current ? setupPush : askPush,
+      label: language.t("settings.general.notifications.push.action.enable"),
+      disabled: !platform.requestPushPermission,
+      run: askPush,
+    }
+  })
+
+  const pairAction = createMemo<PushAction>(() => {
+    const value = push()
+    const next = issue()
+    if (pairing.running()) {
+      return {
+        label: language.t("settings.general.notifications.push.pairing.action.pairing"),
+        disabled: true,
+      }
+    }
+    if (next?.action === "settings" || value?.permission === "denied") {
+      return {
+        label: language.t("settings.general.notifications.push.action.openSettings"),
+        disabled: !platform.openSystemSettings,
+        run: openPush,
+      }
+    }
+    if (paired()) {
+      return {
+        label: language.t("settings.general.notifications.push.pairing.action.repair"),
+        disabled: !server.current,
+        run: setupPush,
+      }
+    }
+    if (pairing.pair.status === "pending" || pairing.pair.status === "claimed") {
+      return {
+        label: language.t("settings.general.notifications.push.pairing.action.finish"),
+        disabled: !server.current,
+        run: setupPush,
+      }
+    }
+    return {
+      label: language.t("settings.general.notifications.push.pairing.action.setup"),
+      disabled: !server.current || value?.permission === "unsupported",
+      run: setupPush,
+    }
+  })
+
+  const pairDesc = createMemo(() => {
+    const value = push()
+    const next = issue()
+    if (!server.current) return language.t("settings.general.notifications.push.pairing.server")
+    if (pairing.running()) return phaseDesc(pairing.phase())
+    if (!pairing.ready()) return language.t("settings.general.notifications.push.pairing.pending")
+    if (!value) return language.t("settings.general.notifications.push.pairing.pending")
+    if (paired()) return language.t("settings.general.notifications.push.pairing.paired")
+    if (next) return next.message
+    if (pairing.pair.status === "pending" || pairing.pair.status === "claimed") {
+      return language.t("settings.general.notifications.push.pairing.retry")
+    }
+    return language.t("settings.general.notifications.push.pairing.unpaired")
+  })
+
+  const pairDisabled = createMemo(() => {
+    const value = push()
+    if (pairing.running() || pairing.clearing()) return true
+    if (value?.permission === "unsupported") return true
+    return pairAction().disabled
+  })
+
+  const pairTitle = createMemo(() => {
+    if (paired() && language.locale() === "en") return "Phone paired"
+    return language.t("settings.general.notifications.push.pairing.title")
+  })
+
+  const summary = createMemo<Summary>(() => {
+    const value = push()
+    const next = issue()
+    const pair = pairAction()
+
+    if (pairing.running()) {
+      return {
+        variant: "info",
+        title: language.t("settings.general.notifications.push.pairing.action.pairing"),
+        body: phaseDesc(pairing.phase()),
+      }
+    }
+
+    if (paired()) {
+      return {
+        variant: "success",
+        title: pairTitle(),
+        body: language.t("settings.general.notifications.push.pairing.paired"),
+      }
+    }
+
+    if (next) {
+      return {
+        variant: next.action === "settings" ? "warning" : "error",
+        title:
+          next.action === "settings"
+            ? language.t("settings.general.notifications.push.permission.title")
+            : language.t("settings.general.notifications.push.pairing.title"),
+        body: next.message,
+        detail: next.detail,
+        command: next.code === "host_install_failed" ? pairing.pair.command : undefined,
+        action: pair,
+      }
+    }
+
+    if (!server.current) {
+      return {
+        variant: "warning",
+        title: language.t("settings.general.notifications.push.pairing.title"),
+        body: language.t("settings.general.notifications.push.pairing.server"),
+      }
+    }
+
+    if (!value) {
+      return {
+        variant: "info",
+        title: language.t("settings.general.notifications.push.permission.title"),
+        body: language.t("settings.general.notifications.push.permission.pending"),
+      }
+    }
+
+    if (!value.allowed) {
+      return {
+        variant: "info",
+        title: language.t("settings.general.notifications.push.permission.title"),
+        body: pushDesc(value),
+        action: permissionAction(),
+      }
+    }
+
+    if (!value.registered) {
+      return {
+        variant: "info",
+        title: language.t("settings.general.notifications.push.pairing.title"),
+        body: language.t("settings.general.notifications.push.permission.registering"),
+      }
+    }
+
+    if (pairing.pair.status === "pending" || pairing.pair.status === "claimed") {
+      return {
+        variant: "warning",
+        title: language.t("settings.general.notifications.push.pairing.title"),
+        body: language.t("settings.general.notifications.push.pairing.retry"),
+        action: pair,
+      }
+    }
+
+    return {
+      variant: "info",
+      title: language.t("settings.general.notifications.push.pairing.title"),
+      body: language.t("settings.general.notifications.push.pairing.unpaired"),
+      action: pair,
     }
   })
 
@@ -315,14 +398,12 @@ export const SettingsMobileNotifications: Component = () => {
     <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
         <div class="flex flex-col gap-1 pt-6 pb-8">
-          <h2 class="text-16-medium text-text-strong">{language.t("settings.tab.phone")}</h2>
+          <h2 class="text-16-medium text-text-strong">{language.t("settings.title.phone")}</h2>
         </div>
       </div>
 
       <div class="flex flex-col gap-8 w-full">
         <div class="flex flex-col gap-1">
-          <h3 class="text-14-medium text-text-strong pb-2">{language.t("settings.section.whispercode")}</h3>
-
           <div class="bg-surface-raised-base px-4 rounded-lg">
             <Show
               when={ready()}
@@ -342,6 +423,18 @@ export const SettingsMobileNotifications: Component = () => {
               }
             >
               <>
+                <div class="py-4 border-b border-border-weak-base">
+                  <StatusCard
+                    variant={summary().variant}
+                    title={summary().title}
+                    body={summary().body}
+                    detail={summary().detail}
+                    command={summary().command}
+                    action={summary().action}
+                    busy={store.asking}
+                  />
+                </div>
+
                 <SettingsRow
                   title={language.t("settings.general.notifications.push.permission.title")}
                   description={
@@ -362,23 +455,14 @@ export const SettingsMobileNotifications: Component = () => {
                     <Button
                       size="small"
                       variant="secondary"
-                      disabled={store.asking || action().disabled}
-                      onClick={() => void action().run?.()}
+                      disabled={store.asking || permissionAction().disabled}
+                      onClick={() => void permissionAction().run?.()}
                     >
                       {store.asking
                         ? language.t("settings.general.notifications.push.action.checking")
-                        : action().label}
+                        : permissionAction().label}
                     </Button>
                   </div>
-                </SettingsRow>
-
-                <SettingsRow
-                  title={language.t("settings.general.notifications.push.generic.title")}
-                  description={language.t("settings.general.notifications.push.generic.description")}
-                >
-                  <span class="text-12-medium text-text-dimmed">
-                    {language.t("settings.general.notifications.push.generic.value")}
-                  </span>
                 </SettingsRow>
 
                 <SettingsRow
@@ -399,13 +483,10 @@ export const SettingsMobileNotifications: Component = () => {
                   </div>
                 </SettingsRow>
 
-                <SettingsRow
-                  title={language.t("settings.general.notifications.push.pairing.title")}
-                  description={pairDesc()}
-                >
+                <SettingsRow title={pairTitle()} description={pairDesc()}>
                   <div class="flex flex-wrap items-center justify-end gap-2" data-action="settings-push-pairing">
-                    <Button size="small" disabled={pairDisabled()} onClick={() => void setupPush()}>
-                      {pairLabel()}
+                    <Button size="small" disabled={pairDisabled()} onClick={() => void pairAction().run?.()}>
+                      {pairAction().label}
                     </Button>
                     <Button
                       size="small"
@@ -421,48 +502,15 @@ export const SettingsMobileNotifications: Component = () => {
                 </SettingsRow>
 
                 <SettingsRow
-                  title={language.t("settings.general.notifications.push.host.title")}
-                  description={hostDesc()}
-                >
-                  <div class="flex flex-wrap items-center justify-end gap-2" data-action="settings-push-host">
-                    <Show
-                      when={installed()}
-                      fallback={
-                        <Button
-                          size="small"
-                          disabled={store.installing || updating()}
-                          onClick={() => void installHost()}
-                        >
-                          {store.installing || updating()
-                            ? language.t("settings.general.notifications.push.host.action.installing")
-                            : language.t("settings.general.notifications.push.host.action.install")}
-                        </Button>
-                      }
-                    >
-                      <Button
-                        size="small"
-                        variant="secondary"
-                        disabled={store.removing || updating()}
-                        onClick={() => void removeHost()}
-                      >
-                        {store.removing || updating()
-                          ? language.t("settings.general.notifications.push.host.action.removing")
-                          : language.t("settings.general.notifications.push.host.action.remove")}
-                      </Button>
-                    </Show>
-                  </div>
-                </SettingsRow>
-
-                <SettingsRow
                   title="Diagnostics"
                   description="Inspect current mobile notification registration and relay pairing state."
                 >
                   <div
-                    class="flex w-full max-w-[460px] flex-col items-stretch gap-2"
+                    class="flex w-full min-w-0 max-w-[460px] flex-col items-stretch gap-2"
                     data-action="settings-push-diagnostics"
                   >
-                    <div class="overflow-x-auto rounded-lg bg-surface-base px-3 py-2 text-12-mono text-text-dimmed">
-                      <For each={rows()}>{(item) => <div class="break-all leading-relaxed">{item}</div>}</For>
+                    <div class="min-w-0 max-w-full rounded-lg bg-surface-base px-3 py-2 text-12-mono text-text-dimmed whitespace-pre-wrap [overflow-wrap:anywhere]">
+                      <For each={rows()}>{(item) => <div class="leading-relaxed">{item}</div>}</For>
                     </div>
                     <div class="flex justify-end">
                       <Button
@@ -485,6 +533,46 @@ export const SettingsMobileNotifications: Component = () => {
   )
 }
 
+function StatusCard(props: Summary & { busy: boolean }) {
+  return (
+    <Card variant={props.variant} class="rounded-lg px-4 py-3">
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-1">
+          <span class="text-14-medium text-text-strong">{props.title}</span>
+          <span class="text-12-regular text-text-weak">{props.body}</span>
+        </div>
+
+        <Show when={props.detail}>
+          {(text) => <div class="text-12-regular text-text-dimmed break-words">{text()}</div>}
+        </Show>
+
+        <Show when={props.command}>
+          {(cmd) => (
+            <div class="flex flex-col gap-1">
+              <span class="text-12-medium text-text-secondary">Exact host command</span>
+              <div class="overflow-x-auto rounded-lg bg-surface-base px-3 py-2 text-12-mono text-text-dimmed break-all">
+                {cmd()}
+              </div>
+            </div>
+          )}
+        </Show>
+
+        <Show when={props.action?.run}>
+          <div class="flex justify-start">
+            <Button
+              size="small"
+              disabled={props.busy || props.action?.disabled}
+              onClick={() => void props.action?.run?.()}
+            >
+              {props.busy ? "Working..." : props.action?.label}
+            </Button>
+          </div>
+        </Show>
+      </div>
+    </Card>
+  )
+}
+
 interface SettingsRowProps {
   title: string | JSX.Element
   description: string | JSX.Element
@@ -498,7 +586,7 @@ const SettingsRow: Component<SettingsRowProps> = (props) => {
         <span class="text-14-medium text-text-strong">{props.title}</span>
         <span class="text-12-regular text-text-weak">{props.description}</span>
       </div>
-      <div class="flex-shrink-0">{props.children}</div>
+      <div class="min-w-0 max-w-full flex-shrink-0">{props.children}</div>
     </div>
   )
 }

@@ -30,6 +30,7 @@ final class PushBridge {
   private var didRegister = false
   private var registerAt = Date.distantPast
   private let registerGap: TimeInterval = 30
+  private var lastCode: String?
   private var lastErr: String?
   private let session: URLSession = {
     let cfg = URLSessionConfiguration.default
@@ -167,7 +168,7 @@ final class PushBridge {
     let text = data.map { String(format: "%02x", $0) }.joined()
     guard !text.isEmpty else { return }
     _ = keychain.set(Data(text.utf8), key: tokenKey)
-    note(nil)
+    note(nil, code: nil)
     Task { @MainActor in
       if paired() {
         do {
@@ -187,7 +188,7 @@ final class PushBridge {
     keychain.remove(tokenKey)
     didRegister = false
     registerAt = .distantPast
-    note("APNs registration failed")
+    note("APNs registration failed", code: "apns_register_failed")
     Task { @MainActor in
       _ = await refresh(emit: true)
     }
@@ -210,7 +211,7 @@ final class PushBridge {
       keychain.remove(secretKey)
     }
     keychain.remove(tokenPendingKey)
-    note(nil)
+    note(nil, code: nil)
     return await refresh(emit: true)
   }
 
@@ -227,6 +228,7 @@ final class PushBridge {
     clearCredentials()
     clearPendingPair()
     keychain.remove(tokenPendingKey)
+    lastCode = nil
     lastErr = nil
     return await refresh(emit: true)
   }
@@ -250,13 +252,14 @@ final class PushBridge {
     clearCredentials()
     clearPendingPair()
     keychain.remove(tokenPendingKey)
+    lastCode = nil
     lastErr = nil
     _ = finish(state(), emit: true)
   }
 
   func beginPair(version: String?) async throws -> [String: Any] {
     guard let token = token(), !token.isEmpty else {
-      note(PushErr.missingToken.localizedDescription)
+      note(PushErr.missingToken.localizedDescription, code: PushErr.missingToken.code)
       throw PushErr.missingToken
     }
 
@@ -431,7 +434,9 @@ final class PushBridge {
       (next["paired"] as? Bool) == true ? "paired" : "unpaired",
       next["channel"] as? String ?? "",
       diag?["device"] as? String ?? "",
+      (diag?["tokenPending"] as? Bool) == true ? "token-pending" : "token-clear",
       diag?["pairStatus"] as? String ?? "",
+      diag?["lastCode"] as? String ?? "",
       diag?["lastError"] as? String ?? "",
     ].joined(separator: ":")
     let changed = stamp != last
@@ -483,21 +488,28 @@ final class PushBridge {
     if keychain.get(tokenPendingKey) != nil {
       next["tokenPending"] = true
     }
+    if let lastCode, !lastCode.isEmpty {
+      next["lastCode"] = lastCode
+    }
     if let lastErr, !lastErr.isEmpty {
       next["lastError"] = lastErr
     }
     return next
   }
 
-  private func note(_ value: String?) {
+  private func note(_ value: String?, code: String?) {
     let next = value?.trimmingCharacters(in: .whitespacesAndNewlines)
     let text = next?.isEmpty == false ? next : nil
-    guard lastErr != text else { return }
-    emitState(text)
+    let nextCode = code?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let valueCode = nextCode?.isEmpty == false ? nextCode : nil
+    guard lastErr != text || lastCode != valueCode else { return }
+    emitState(code: valueCode, message: text)
   }
 
-  private func emitState(_ value: String?) {
-    let next = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+  private func emitState(code: String?, message: String?) {
+    let next = message?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let nextCode = code?.trimmingCharacters(in: .whitespacesAndNewlines)
+    lastCode = nextCode?.isEmpty == false ? nextCode : nil
     lastErr = next?.isEmpty == false ? next : nil
     _ = finish(state(), emit: true)
   }
@@ -507,7 +519,7 @@ final class PushBridge {
     clearCredentials()
     clearPendingPair()
     keychain.remove(tokenPendingKey)
-    emitState(code)
+    emitState(code: code, message: PushErr.repair.localizedDescription)
     return PushErr.repair
   }
 
@@ -678,7 +690,7 @@ final class PushBridge {
   private func request<T: Decodable>(path: String, method: String) async throws -> T {
     let root = relay()
     guard let base = URL(string: root), let url = URL(string: path, relativeTo: base) else {
-      note(PushErr.badRelay.localizedDescription)
+      note(PushErr.badRelay.localizedDescription, code: PushErr.badRelay.code)
       throw PushErr.badRelay
     }
 
@@ -690,14 +702,14 @@ final class PushBridge {
     do {
       let (data, response) = try await session.data(for: req)
       let result: T = try parse(data: data, response: response)
-      note(nil)
+      note(nil, code: nil)
       return result
     } catch {
       let err = normalize(error)
       if let recovered = recover(err, path: path) {
         throw recovered
       }
-      note(err.localizedDescription)
+      note(err.localizedDescription, code: (err as? PushErr)?.code)
       throw err
     }
   }
@@ -705,7 +717,7 @@ final class PushBridge {
   private func request<T: Decodable, Body: Encodable>(path: String, method: String, body: Body) async throws -> T {
     let root = relay()
     guard let base = URL(string: root), let url = URL(string: path, relativeTo: base) else {
-      note(PushErr.badRelay.localizedDescription)
+      note(PushErr.badRelay.localizedDescription, code: PushErr.badRelay.code)
       throw PushErr.badRelay
     }
 
@@ -719,14 +731,14 @@ final class PushBridge {
     do {
       let (data, response) = try await session.data(for: req)
       let result: T = try parse(data: data, response: response)
-      note(nil)
+      note(nil, code: nil)
       return result
     } catch {
       let err = normalize(error)
       if let recovered = recover(err, path: path) {
         throw recovered
       }
-      note(err.localizedDescription)
+      note(err.localizedDescription, code: (err as? PushErr)?.code)
       throw err
     }
   }
@@ -851,6 +863,31 @@ private enum PushErr: Error, LocalizedError {
   case decode
   case repair
   case relay(String)
+
+  var code: String {
+    switch self {
+    case .missingToken:
+      return "missing_token"
+    case .badRelay:
+      return "bad_relay"
+    case .badReply:
+      return "bad_reply"
+    case .badPair:
+      return "bad_pair"
+    case .decode:
+      return "decode"
+    case .repair:
+      return "repair_needed"
+    case .relay(let message):
+      if message == "device_not_found" || message == "bad_device_secret" {
+        return "repair_needed"
+      }
+      if message.lowercased().contains("timed out") {
+        return "relay_timeout"
+      }
+      return "relay_error"
+    }
+  }
 
   var errorDescription: String? {
     switch self {

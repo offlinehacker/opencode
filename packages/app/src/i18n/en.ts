@@ -845,6 +845,7 @@ export const dict = {
   "settings.section.whispercode": "WhisperCode",
   "settings.tab.general": "General",
   "settings.tab.phone": "Phone",
+  "settings.title.phone": "Phone Notifications",
   "settings.tab.shortcuts": "Shortcuts",
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL integration",
@@ -1025,7 +1026,7 @@ export const dict = {
   "settings.general.notifications.push.pairing.paired":
     "This iPhone is paired to your OpenCode host. WhisperCode will repair the connection automatically if it drifts.",
   "settings.general.notifications.push.pairing.retry":
-    "WhisperCode is finishing host pairing for this iPhone and will keep retrying until it sticks.",
+    "WhisperCode has a pending pair request for this iPhone. Tap Finish Setup to resume and verify the host install.",
   "settings.general.notifications.push.pairing.step.permission":
     "Requesting notification permission from iPhone Settings.",
   "settings.general.notifications.push.pairing.step.register": "Waiting for Apple push registration to finish.",

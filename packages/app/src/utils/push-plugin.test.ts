@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { addPush, dropPush, hasPush, installPrompt, installPush, PushPlugin } from "./push-plugin"
+import { addPush, dropPush, hasPush, installPrompt, installPush, pairPush, PushPlugin } from "./push-plugin"
 
 describe("push plugin", () => {
   test("detects installed package by package name", () => {
@@ -16,19 +16,28 @@ describe("push plugin", () => {
   })
 
   test("returns the manual install command", () => {
-    expect(installPush()).toBe("npx --yes --prefix . --package=@whisperopencode/push@0.2.0 opencode-push install")
-    expect(installPush("bunx")).toBe("bunx @whisperopencode/push@0.2.0 install")
+    expect(installPush()).toBe("npx --yes --prefix . --package=@whisperopencode/push opencode-push install")
+    expect(installPush("bunx")).toBe("bunx @whisperopencode/push install")
   })
 
   test("returns the exact agent install prompt", () => {
     expect(installPrompt()).toBe(
-      "Run this exact command on the machine hosting OpenCode and report whether it succeeded: npx --yes --prefix . --package=@whisperopencode/push@0.2.0 opencode-push install",
+      "Run this exact command on the machine hosting OpenCode and report whether it succeeded: npx --yes --prefix . --package=@whisperopencode/push opencode-push install",
     )
   })
 
   test("uses the relay-issued install command when provided", () => {
     expect(installPrompt("bunx @whisperopencode/push install --pair ptok_1")).toBe(
       "Run this exact command on the machine hosting OpenCode and report whether it succeeded: bunx @whisperopencode/push install --pair ptok_1",
+    )
+  })
+
+  test("builds the exact paired install command locally", () => {
+    expect(pairPush("ptok_1")).toBe(
+      "npx --yes --prefix . --package=@whisperopencode/push opencode-push install --pair ptok_1",
+    )
+    expect(pairPush("ptok_1", "https://relay.example.com", "bunx")).toBe(
+      "bunx @whisperopencode/push install --pair ptok_1 --relay https://relay.example.com",
     )
   })
 })

@@ -4,14 +4,10 @@ import { createStore } from "solid-js/store"
 import { type PairInfo, type PairState, usePlatform } from "@/context/platform"
 import { usePushRelay } from "@/context/push-relay"
 import { useServer } from "@/context/server"
-import { claimPush } from "@/utils/push-pair"
 import { Persist, persisted } from "@/utils/persist"
+import { mergePushIssue, PushFail, type PushIssue, type PushPhase, runPushSetup } from "@/utils/push-pair"
 
-const WAIT_MS = 15_000
-const WAIT_GAP = 500
 const RETRY_MS = 15_000
-
-type Step = "permission" | "register" | "begin" | "claim" | "finish"
 
 type Pair = {
   id?: string
@@ -22,12 +18,11 @@ type Pair = {
   channel?: string
   device?: string
   message?: string
+  code?: PushIssue["code"]
+  detail?: string
+  action?: PushIssue["action"]
   auto: boolean
   updated: number
-}
-
-function wait(ms: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
 function expired(value?: string) {
@@ -55,6 +50,24 @@ export function canReusePair(input: { id?: string; status?: PairState; token?: s
   return input.status !== "active" && input.status !== "expired"
 }
 
+export function canSyncPair(input: {
+  id?: string
+  status?: PairState
+  expires?: string
+  paired: boolean
+}) {
+  if (input.paired) return false
+  if (!input.id) return true
+  if (input.status === "active") return false
+  return !canPollPair({
+    id: input.id,
+    status: input.status,
+    expires: input.expires,
+    paired: false,
+    show: true,
+  })
+}
+
 export function canClearPair(input: { paired: boolean; id?: string; status?: PairState }) {
   if (input.paired) return true
   if (input.id) return true
@@ -63,7 +76,6 @@ export function canClearPair(input: { paired: boolean; id?: string; status?: Pai
 
 export function canAutoPair(input: {
   auto: boolean
-  updated: number
   show: boolean
   run: boolean
   clear: boolean
@@ -77,7 +89,7 @@ export function canAutoPair(input: {
     paired?: boolean
   }
 }) {
-  if (!input.auto && input.updated !== 0) return false
+  if (!input.auto) return false
   if (!input.show || input.run || input.clear) return false
   if (!input.server || !input.relay) return false
   if (!input.push?.allowed || !input.push.registered || input.push.paired) return false
@@ -96,7 +108,7 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
     const relay = usePushRelay()
     const server = useServer()
     const [pair, setPair, , ready] = persisted(
-      Persist.global("push.pair", ["push.pair.v2", "push.pair.v1"]),
+      Persist.global("push.pair", ["push.pair.v3", "push.pair.v2", "push.pair.v1"]),
       createStore<Pair>({
         id: undefined,
         status: undefined,
@@ -106,6 +118,9 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
         channel: undefined,
         device: undefined,
         message: undefined,
+        code: undefined,
+        detail: undefined,
+        action: undefined,
         auto: false,
         updated: 0,
       }),
@@ -114,9 +129,11 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
       show: typeof document === "undefined" ? true : document.visibilityState === "visible",
       run: false,
       clear: false,
-      step: undefined as Step | undefined,
+      phase: undefined as PushPhase | undefined,
       tick: 0,
       retry: 0,
+      tries: 0,
+      source: undefined as "settings" | "auto" | undefined,
     })
     let lastRelay: string | undefined
 
@@ -132,195 +149,62 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
         channel: value?.channel,
         device: value?.device,
         message: value?.message,
+        code: undefined,
+        detail: undefined,
+        action: undefined,
         auto: opts?.auto ?? pair.auto,
         updated: opts?.updated ?? (value ? Date.now() : 0),
       })
     }
 
-    const fail = (message: string) => {
+    const stop = (next: PushIssue, value?: Partial<PairInfo>) => {
       setPair({
-        message,
+        id: value?.id ?? pair.id,
+        status: value?.status ?? pair.status,
+        token: value?.token ?? pair.token,
+        command: value?.command ?? pair.command,
+        expires: value?.expires ?? pair.expires,
+        channel: value?.channel ?? pair.channel,
+        device: value?.device ?? pair.device,
+        message: next.message,
+        code: next.code,
+        detail: next.detail,
+        action: next.action,
+        auto: false,
         updated: Date.now(),
       })
     }
 
-    const pull = async () => {
-      const next = await platform.getPushState?.().catch(() => undefined)
-      return next ?? platform.pushState?.()
-    }
-
-    const pullPair = async () => {
-      return platform.getPushPairing?.().catch(() => undefined)
-    }
-
-    const waitPush = async () => {
-      const end = Date.now() + WAIT_MS
-      for (;;) {
-        const value = await pull()
-        if (value?.allowed && value.registered) return value
-        if (Date.now() >= end) {
-          if (!value?.allowed) throw new Error("Enable notifications for WhisperCode to finish pairing")
-          throw new Error("WhisperCode is still waiting for Apple push registration")
-        }
-        await wait(WAIT_GAP)
-      }
-    }
-
-    const waitPair = async () => {
-      const end = Date.now() + WAIT_MS
-      for (;;) {
-        const value = await pullPair()
-        if (value) {
-          save(value, { auto: true })
-          if (value.status === "active" || value.status === "expired" || value.status === "failed") {
-            if (value.status === "active") {
-              await platform.getPushState?.().catch(() => undefined)
-            }
-            return value
-          }
-        }
-        if (Date.now() >= end) return value
-        await wait(WAIT_GAP)
-      }
-    }
-
-    const setup = async (opts?: { ask?: boolean; quiet?: boolean }) => {
+    const setup = async (opts?: { ask?: boolean; source?: "settings" | "auto" }) => {
       if (state.run || state.clear) return false
-      if (!platform.beginPushPairing || !platform.getPushState || !platform.getPushPairing) {
-        throw new Error("Push pairing is unavailable on this device")
-      }
 
       setState("run", true)
-      setState("step", undefined)
-      if (!opts?.quiet) setPair("auto", true)
+      setState("phase", undefined)
+      setState("tries", (value) => value + 1)
+      setState("source", opts?.source ?? "settings")
 
       try {
-        let push = await pull()
-
-        if (!push?.allowed) {
-          if (push?.permission === "denied") {
-            if (opts?.ask && platform.openSystemSettings) {
-              await platform.openSystemSettings()
-              return false
-            }
-            throw new Error("Enable notifications for WhisperCode in iPhone Settings")
-          }
-
-          if (!opts?.ask || !platform.requestPushPermission) {
-            throw new Error("Enable notifications for WhisperCode to finish pairing")
-          }
-
-          setState("step", "permission")
-          push = await platform.requestPushPermission()
-
-          if (!push.allowed) {
-            if (push.permission === "denied" && platform.openSystemSettings) {
-              await platform.openSystemSettings()
-              return false
-            }
-            throw new Error("Enable notifications for WhisperCode to finish pairing")
-          }
-        }
-
-        if (!push.registered) {
-          setState("step", "register")
-          push = await waitPush()
-        }
-
-        if (!server.current) {
-          throw new Error("Connect to an OpenCode server first")
-        }
-
-        let info: PairInfo | undefined = canReusePair(pair)
-          ? {
-              id: pair.id ?? "pending",
-              status: pair.status ?? "pending",
-              token: pair.token,
-              command: pair.command,
-              expires: pair.expires,
-              channel: pair.channel,
-              device: pair.device,
-              message: pair.message,
-            }
-          : undefined
-
-        if (!info) {
-          setState("step", "begin")
-          info = await platform.beginPushPairing()
-          save(info, { auto: true })
-        }
-
-        if (!info.token) {
-          const next = await pullPair()
-          if (next) {
-            info = next
-            save(next, { auto: true })
-          }
-        }
-
-        if (!info.token) {
-          throw new Error("Push pairing token unavailable")
-        }
-        const token = info.token
-
-        setState("step", "claim")
-        await claimPush({
+        const result = await runPushSetup({
           platform,
           server: server.current,
-          token,
           relay: relay.current(),
-          pairId: info.id,
+          pair,
+          ask: opts?.ask,
+          onPhase: (value) => setState("phase", value),
+          onPair: (value) => save(value, { auto: opts?.source === "auto" ? true : pair.auto }),
         })
 
-        setState("step", "finish")
-        const done = await waitPair()
-        await platform.getPushState?.().catch(() => undefined)
-
-        if (platform.pushState?.()?.paired || done?.status === "active") {
-          save(
-            {
-              ...(info ?? {}),
-              ...(done ?? {}),
-              id: done?.id ?? info?.id ?? "active",
-              status: "active",
-              token: undefined,
-              channel: done?.channel ?? info?.channel,
-              device: done?.device ?? info?.device,
-              message: undefined,
-            },
-            { auto: true },
-          )
-          return true
-        }
-
-        if (done?.status === "expired") {
-          throw new Error("This pairing request expired before the iPhone finished syncing")
-        }
-        if (done?.status === "failed") {
-          throw new Error(done.message || "The OpenCode host could not finish pairing this iPhone")
-        }
-        throw new Error("The OpenCode host claimed the pair, but this iPhone has not finished syncing yet")
+        save(result.pair, { auto: true })
+        return true
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        fail(message)
-        throw new Error(message)
+        if (err instanceof PushFail) {
+          stop(err.issue)
+          throw err
+        }
+        throw err
       } finally {
         setState("run", false)
-        setState("step", undefined)
-      }
-    }
-
-    const start = async () => {
-      if (!platform.beginPushPairing || state.run) return
-      setState("run", true)
-      setState("step", "begin")
-      try {
-        const value = await platform.beginPushPairing()
-        save(value, { auto: pair.auto })
-        return value
-      } finally {
-        setState("run", false)
-        setState("step", undefined)
+        setState("phase", undefined)
       }
     }
 
@@ -333,6 +217,36 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
         return value
       } finally {
         setState("clear", false)
+      }
+    }
+
+    const sync = (value: PairInfo, opts?: { auto?: boolean }) => {
+      if (value.status === "failed") {
+        stop(
+          {
+            code: "pair_failed",
+            message: value.message || "The OpenCode host could not finish pairing this iPhone.",
+            action: "retry",
+          },
+          value,
+        )
+        return
+      }
+      if (value.status === "expired") {
+        stop(
+          {
+            code: "pair_expired",
+            message: value.message || "This pairing request expired before the iPhone finished syncing.",
+            action: "retry",
+          },
+          value,
+        )
+        return
+      }
+      save(value, { auto: opts?.auto ?? pair.auto })
+      if (value.status === "active") {
+        setPair("auto", true)
+        void platform.getPushState?.()
       }
     }
 
@@ -387,9 +301,45 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
     })
 
     createEffect(() => {
+      state.tick
+      if (!platform.getPushPairing) return
+      if (state.run || state.clear) return
+      if (
+        !canSyncPair({
+          id: pair.id,
+          status: pair.status,
+          expires: pair.expires,
+          paired: platform.pushState?.()?.paired === true,
+        })
+      ) {
+        return
+      }
+
+      let live = true
+      void platform
+        .getPushPairing?.()
+        .then((value) => {
+          if (!live || !value) return
+          sync(value, { auto: false })
+        })
+        .catch(() => undefined)
+
+      onCleanup(() => {
+        live = false
+      })
+    })
+
+    createEffect(() => {
       if (pair.status !== "pending" && pair.status !== "claimed") return
       if (!expired(pair.expires)) return
-      setPair({ status: "expired", updated: Date.now() })
+      stop(
+        {
+          code: "pair_expired",
+          message: "This pairing request expired before the iPhone finished syncing.",
+          action: "retry",
+        },
+        { status: "expired" },
+      )
     })
 
     createEffect(() => {
@@ -412,18 +362,21 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
       const step = async () => {
         if (!live) return
         if (expired(pair.expires)) {
-          setPair({ status: "expired", updated: Date.now() })
+          stop(
+            {
+              code: "pair_expired",
+              message: "This pairing request expired before the iPhone finished syncing.",
+              action: "retry",
+            },
+            { status: "expired" },
+          )
           return
         }
         await platform
           .getPushPairing?.()
           .then((value) => {
             if (!live || !value) return
-            save(value, { auto: pair.auto })
-            if (value.status === "active") {
-              setPair("auto", true)
-              void platform.getPushState?.()
-            }
+            sync(value)
           })
           .catch(() => undefined)
         if (!live) return
@@ -448,7 +401,6 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
       if (
         !canAutoPair({
           auto: pair.auto,
-          updated: pair.updated,
           show: state.show,
           run: state.run,
           clear: state.clear,
@@ -462,18 +414,29 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
         return
       }
       setState("retry", now)
-      const fresh = !pair.auto && pair.updated === 0
-      void setup({ ask: false, quiet: !fresh }).catch(() => undefined)
+      void setup({ ask: false, source: "auto" }).catch(() => undefined)
     })
 
     return {
       ready,
       pair,
+      issue: () => {
+        const next = pair.code
+          ? {
+              code: pair.code,
+              message: pair.message ?? "Notification setup failed.",
+              detail: pair.detail,
+              action: pair.action ?? "retry",
+            }
+          : undefined
+        return mergePushIssue(next, platform.pushState?.())
+      },
       auto: () => pair.auto,
       running: () => state.run,
       clearing: () => state.clear,
-      step: () => state.step,
-      start,
+      phase: () => state.phase,
+      attempt: () => state.tries,
+      source: () => state.source,
       setup,
       clear,
     }

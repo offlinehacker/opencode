@@ -1,12 +1,33 @@
-import { createEffect, createSignal, For, onCleanup, Show } from "solid-js"
+import { createEffect, createSignal, For, onCleanup, onMount, Show } from "solid-js"
+import { createStore } from "solid-js/store"
 import { Button } from "@opencode-ai/ui/button"
+import { Card } from "@opencode-ai/ui/card"
 import { TextField } from "@opencode-ai/ui/text-field"
 import { Icon } from "@opencode-ai/ui/icon"
+import {
+  PushFail,
+  ServerConnection,
+  type PairInfo,
+  type Platform,
+  type PushIssue,
+  type PushPhase,
+  runPushSetup,
+} from "@opencode-ai/app"
 import { bridge } from "./bridge"
 import appIcon from "./app-icon.png"
 
 interface OnboardingProps {
   onComplete: (server: { url: string; displayName?: string; username?: string; password?: string }) => void
+  platform: Pick<
+    Platform,
+    | "beginPushPairing"
+    | "fetch"
+    | "getPushPairing"
+    | "getPushState"
+    | "openSystemSettings"
+    | "pushState"
+    | "requestPushPermission"
+  >
 }
 
 type ScanResult = { host: string; port: number; url: string }
@@ -132,6 +153,20 @@ export function Onboarding(props: OnboardingProps) {
     username?: string
     password?: string
   } | null>(null)
+  const [notif, setNotif] = createStore({
+    run: false,
+    phase: undefined as PushPhase | undefined,
+    issue: undefined as PushIssue | undefined,
+    pair: undefined as PairInfo | undefined,
+  })
+
+  const phaseText = (value?: PushPhase) => {
+    if (value === "permission") return "Requesting notification permission from iPhone Settings."
+    if (value === "register") return "Waiting for Apple push registration to finish."
+    if (value === "claim") return "Connecting this iPhone to the OpenCode host."
+    if (value === "finish") return "Finishing pairing on this iPhone."
+    return "Preparing a secure pairing request for this iPhone."
+  }
 
   const connect = () => {
     const url = connectUrl()
@@ -143,6 +178,77 @@ export function Onboarding(props: OnboardingProps) {
       setStep(4)
     }
   }
+
+  const complete = () => {
+    const server = pendingServer()
+    if (server) props.onComplete(server)
+  }
+
+  const enable = async () => {
+    const server = pendingServer()
+    if (!server || notif.run) return
+    const conn: ServerConnection.Http = {
+      type: "http",
+      displayName: server.displayName,
+      http: {
+        url: server.url,
+        username: server.username,
+        password: server.password,
+      },
+    }
+    setNotif("run", true)
+    setNotif("issue", undefined)
+    await runPushSetup({
+      platform: props.platform,
+      server: conn,
+      pair: notif.pair,
+      ask: true,
+      onPhase: (value) => setNotif("phase", value),
+      onPair: (value) => setNotif("pair", value),
+    })
+      .then(() => complete())
+      .catch((err: unknown) => {
+        if (err instanceof PushFail) {
+          setNotif("issue", err.issue)
+          return
+        }
+        setNotif("issue", {
+          code: "unknown",
+          message: err instanceof Error ? err.message : String(err),
+          action: "retry",
+        })
+      })
+      .finally(() => {
+        setNotif("run", false)
+        setNotif("phase", undefined)
+      })
+  }
+
+  const openSettings = async () => {
+    if (!props.platform.openSystemSettings || notif.run) return
+    await props.platform.openSystemSettings().catch(() => undefined)
+  }
+
+  onMount(() => {
+    const sync = async () => {
+      const next = await props.platform.getPushState?.().catch(() => undefined)
+      if (!next) return
+      if (notif.issue?.code === "permission_denied" && next.permission !== "denied") {
+        setNotif("issue", undefined)
+      }
+    }
+    const wake = () => {
+      void sync()
+    }
+    window.addEventListener("focus", wake)
+    window.addEventListener("online", wake)
+    window.addEventListener("opencode:resume", wake)
+    onCleanup(() => {
+      window.removeEventListener("focus", wake)
+      window.removeEventListener("online", wake)
+      window.removeEventListener("opencode:resume", wake)
+    })
+  })
 
   return (
     <div class="flex flex-col items-center justify-center min-h-screen px-6 py-12 bg-bg-base">
@@ -342,30 +448,63 @@ export function Onboarding(props: OnboardingProps) {
               installs an OpenCode plugin on your server. You can skip this for now and enable it later in Settings.
             </p>
           </div>
+          <Card
+            variant={
+              notif.issue ? (notif.issue.action === "settings" ? "warning" : "error") : notif.run ? "info" : "normal"
+            }
+            class="w-full rounded-lg px-4 py-3"
+          >
+            <div class="flex flex-col gap-2">
+              <span class="text-14-medium text-text-strong">
+                {notif.run
+                  ? "Setting up notifications"
+                  : notif.issue?.action === "settings"
+                    ? "Notifications blocked"
+                    : notif.issue
+                      ? "Setup needs attention"
+                      : "What this does"}
+              </span>
+              <span class="text-12-regular text-text-weak">
+                {notif.run
+                  ? phaseText(notif.phase)
+                  : (notif.issue?.message ??
+                    "WhisperCode will request iPhone permission, install the host plugin, and pair this iPhone before you continue.")}
+              </span>
+              <Show when={notif.issue?.detail}>
+                {(text) => <div class="text-12-regular text-text-dimmed break-words">{text()}</div>}
+              </Show>
+              <Show when={notif.issue?.code === "host_install_failed" && notif.pair?.command}>
+                <div class="flex flex-col gap-1">
+                  <span class="text-12-medium text-text-secondary">Exact host command</span>
+                  <CopyBlock code={notif.pair!.command!} />
+                </div>
+              </Show>
+            </div>
+          </Card>
           <div class="flex gap-3 w-full mt-2">
-            <Button
-              variant="secondary"
-              size="large"
-              class="flex-1"
-              onClick={() => {
-                const server = pendingServer()
-                if (server) props.onComplete(server)
-              }}
-            >
-              Skip
+            <Button variant="secondary" size="large" class="flex-1" disabled={notif.run} onClick={complete}>
+              Continue Without Notifications
             </Button>
             <Button
               variant="primary"
               size="large"
               class="flex-1"
+              disabled={notif.run}
               onClick={() => {
-                void bridge.sendAsync("requestPushPermission").finally(() => {
-                  const server = pendingServer()
-                  if (server) props.onComplete(server)
-                })
+                if (notif.issue?.action === "settings" || props.platform.pushState?.()?.permission === "denied") {
+                  void openSettings()
+                  return
+                }
+                void enable()
               }}
             >
-              Enable
+              {notif.run
+                ? "Working..."
+                : notif.issue?.action === "settings" || props.platform.pushState?.()?.permission === "denied"
+                  ? "Open Settings"
+                  : notif.issue || notif.pair?.status === "pending" || notif.pair?.status === "claimed"
+                    ? "Retry"
+                    : "Enable"}
             </Button>
           </div>
         </div>

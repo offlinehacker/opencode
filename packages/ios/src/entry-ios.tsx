@@ -139,6 +139,7 @@ const App = () => {
     const pair = (value as { pairStatus?: unknown }).pairStatus
     return {
       token: (value as { token?: unknown }).token === true,
+      tokenPending: (value as { tokenPending?: unknown }).tokenPending === true,
       relay: typeof (value as { relay?: unknown }).relay === "string" ? (value as { relay: string }).relay : undefined,
       device:
         typeof (value as { device?: unknown }).device === "string" ? (value as { device: string }).device : undefined,
@@ -151,6 +152,10 @@ const App = () => {
       pairExpires:
         typeof (value as { pairExpires?: unknown }).pairExpires === "string"
           ? (value as { pairExpires: string }).pairExpires
+          : undefined,
+      lastCode:
+        typeof (value as { lastCode?: unknown }).lastCode === "string"
+          ? (value as { lastCode: string }).lastCode
           : undefined,
       lastError:
         typeof (value as { lastError?: unknown }).lastError === "string"
@@ -458,7 +463,7 @@ const App = () => {
         <Show when={!defaultConfig.loading}>
           <Show
             when={defaultConfig() || completedConfig()}
-            fallback={<Onboarding onComplete={handleOnboardingComplete} />}
+            fallback={<Onboarding onComplete={handleOnboardingComplete} platform={platform} />}
           >
             <AppInterface
               {...(() => {

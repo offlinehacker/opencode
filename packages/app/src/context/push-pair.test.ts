@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { canAutoPair, canClearPair, canPollPair, canReusePair, relaySwitched } from "./push-pair"
+import { canAutoPair, canClearPair, canPollPair, canReusePair, canSyncPair, relaySwitched } from "./push-pair"
 
 describe("canPollPair", () => {
   test("allows visible pending pairs", () => {
@@ -95,6 +95,53 @@ describe("canReusePair", () => {
   })
 })
 
+describe("canSyncPair", () => {
+  test("adopts native pairs when the local pair is terminal", () => {
+    expect(
+      canSyncPair({
+        id: "pair_1",
+        status: "failed",
+        paired: false,
+      }),
+    ).toBe(true)
+
+    expect(
+      canSyncPair({
+        id: "pair_1",
+        status: "pending",
+        expires: new Date(Date.now() - 1_000).toISOString(),
+        paired: false,
+      }),
+    ).toBe(true)
+  })
+
+  test("keeps active or pollable local pairs in control", () => {
+    expect(
+      canSyncPair({
+        id: "pair_1",
+        status: "pending",
+        expires: new Date(Date.now() + 60_000).toISOString(),
+        paired: false,
+      }),
+    ).toBe(false)
+
+    expect(
+      canSyncPair({
+        id: "pair_1",
+        status: "active",
+        paired: false,
+      }),
+    ).toBe(false)
+
+    expect(
+      canSyncPair({
+        status: undefined,
+        paired: true,
+      }),
+    ).toBe(false)
+  })
+})
+
 describe("canClearPair", () => {
   test("allows clearing paired and pending states", () => {
     expect(canClearPair({ paired: true })).toBe(true)
@@ -114,11 +161,10 @@ describe("canClearPair", () => {
 })
 
 describe("canAutoPair", () => {
-  test("allows fresh installs to auto pair", () => {
+  test("allows one automatic repair pass for drifted pairs", () => {
     expect(
       canAutoPair({
-        auto: false,
-        updated: 0,
+        auto: true,
         show: true,
         run: false,
         clear: false,
@@ -131,11 +177,10 @@ describe("canAutoPair", () => {
     ).toBe(true)
   })
 
-  test("blocks auto repair after an explicit clear", () => {
+  test("blocks auto pair when repair is disabled", () => {
     expect(
       canAutoPair({
         auto: false,
-        updated: 10_000,
         show: true,
         run: false,
         clear: false,

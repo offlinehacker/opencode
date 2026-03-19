@@ -44,11 +44,13 @@ export type PushPrefs = {
 }
 export type PushDiag = {
   token?: boolean
+  tokenPending?: boolean
   relay?: string
   device?: string
   pairID?: string
   pairStatus?: PairState
   pairExpires?: string
+  lastCode?: string
   lastError?: string
 }
 export type PushState = {

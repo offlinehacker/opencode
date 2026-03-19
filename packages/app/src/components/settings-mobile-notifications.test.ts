@@ -1,7 +1,22 @@
 import { describe, expect, test } from "bun:test"
+import { PushFail } from "../utils/push-pair"
+import { shouldToastPairErr } from "./settings-mobile-notifications"
 import { diagRows } from "./settings-mobile-notifications-data"
 
 describe("settings mobile notifications", () => {
+  test("suppresses structured pairing failure toasts", () => {
+    expect(
+      shouldToastPairErr(
+        new PushFail({
+          code: "pair_claim_timeout",
+          message: "still syncing",
+          action: "retry",
+        }),
+      ),
+    ).toBe(false)
+    expect(shouldToastPairErr(new Error("boom"))).toBe(true)
+  })
+
   test("keeps relay diagnostics when push diag omits relay", () => {
     const rows = diagRows({
       push: {
@@ -15,10 +30,12 @@ describe("settings mobile notifications", () => {
       },
       info: {
         token: true,
+        tokenPending: false,
         pairID: "pair-123",
         pairStatus: "active",
         pairExpires: "2026-03-16T00:00:00.000Z",
         device: "dev-123",
+        lastCode: "repair_needed",
       },
       pair: {
         id: "pair-123",
@@ -32,13 +49,15 @@ describe("settings mobile notifications", () => {
     })
 
     expect(rows).toContain("relay: https://relay.test")
+    expect(rows).toContain("last_code: repair_needed")
   })
 
-  test("removes the relay settings action from the shared mobile settings view", async () => {
+  test("removes redundant host and relay actions from the shared mobile settings view", async () => {
     const file = Bun.file(new URL("./settings-mobile-notifications.tsx", import.meta.url))
     const text = await file.text()
 
     expect(text.includes('data-action="settings-push-relay"')).toBe(false)
+    expect(text.includes('data-action="settings-push-host"')).toBe(false)
     expect(text.includes('data-action="settings-push-diagnostics"')).toBe(true)
   })
 })

@@ -40,6 +40,7 @@ export function diagRows(input: Input) {
     `allowed: ${mark(input.push?.allowed)}`,
     `registered: ${mark(input.push?.registered)}`,
     `token: ${mark(input.info?.token ?? input.push?.registered)}`,
+    `token_pending: ${mark(input.info?.tokenPending)}`,
     `paired: ${mark(input.paired)}`,
     `pair: ${state}`,
     `pair_id: ${clip(input.info?.pairID ?? input.pair.id)}`,
@@ -47,6 +48,7 @@ export function diagRows(input: Input) {
     `channel: ${clip(input.push?.channel ?? input.pair.channel)}`,
     `device: ${clip(input.info?.device ?? input.pair.device)}`,
     `relay: ${input.info?.relay ?? input.relay ?? input.fallback}`,
+    `last_code: ${input.info?.lastCode ?? "-"}`,
     `last_error: ${input.info?.lastError ?? "-"}`,
   ]
 }
