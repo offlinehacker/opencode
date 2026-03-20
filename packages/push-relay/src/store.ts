@@ -677,7 +677,7 @@ function id(prefix: string) {
 
 function cmd(root: string, token: string) {
   const clean = root.replace(/\/+$/, "")
-  const base = `npx --yes --prefix . --package=@whisperopencode/push@0.2.0 opencode-push install --pair ${token}`
+  const base = `npx --yes --prefix . --package=@whisperopencode/push opencode-push install --pair ${token}`
   if (clean === "https://whisper.clankercontext.com") return base
   return `${base} --relay ${clean}`
 }

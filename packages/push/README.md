@@ -20,15 +20,15 @@ Pair with a mobile device:
 npx --yes --prefix . --package=@whisperopencode/push opencode-push install --pair <token>
 ```
 
+By default, `opencode-push install` writes an unpinned `@whisperopencode/push` entry to your OpenCode config so the host can track the latest plugin release. Pass `--plugin <spec>` if you want to pin a version instead.
+
 ## Plugin usage
 
 Add to your opencode config:
 
 ```jsonc
 {
-  "plugins": {
-    "@whisperopencode/push": true,
-  },
+  "plugin": ["@whisperopencode/push"]
 }
 ```
 

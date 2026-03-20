@@ -4,7 +4,7 @@ import os from "os"
 import path from "path"
 import { install, status, test as ping, unpair, type Opts } from "./cmd"
 
-const base = (): Opts => ({ plugin: "@whisperopencode/push@0.2.0", json: true })
+const base = (): Opts => ({ plugin: "@whisperopencode/push", json: true })
 
 async function tmp() {
   return fs.mkdtemp(path.join(os.tmpdir(), "push-"))
@@ -104,5 +104,29 @@ describe("push cmd", () => {
     await install(base())
     const res = await unpair(base())
     expect(res.cmd).toBe("unpair")
+  })
+
+  test("rerun rewrites pinned config to unpinned spec", async () => {
+    const dir = await tmp()
+    process.env.OPENCODE_TEST_HOME = dir
+    const cfg = path.join(dir, ".config", "opencode", "opencode.jsonc")
+    await fs.mkdir(path.dirname(cfg), { recursive: true })
+    await fs.writeFile(
+      cfg,
+      JSON.stringify(
+        {
+          plugin: ["foo@1.0.0", "@whisperopencode/push@0.2.0"],
+        },
+        null,
+        2,
+      ) + "\n",
+    )
+
+    await install(base())
+
+    const text = await fs.readFile(cfg, "utf8")
+    expect(text).toContain('"@whisperopencode/push"')
+    expect(text).not.toContain("@whisperopencode/push@0.2.0")
+    expect(text).toContain('"foo@1.0.0"')
   })
 })

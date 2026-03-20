@@ -195,7 +195,7 @@ export async function removeDevice(opts: Opts) {
 
 export function parse(args: string[]): Opts {
   const opts: Opts = {
-    plugin: "@whisperopencode/push@0.2.0",
+    plugin: pkg.name,
     json: false,
   }
 

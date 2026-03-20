@@ -7,6 +7,11 @@ describe("push config", () => {
     expect(list).toEqual(["@whisperopencode/push@0.x"])
   })
 
+  test("rewrites pinned package entry to unpinned spec", () => {
+    const list = merge(["@whisperopencode/push@0.1.0"], "@whisperopencode/push")
+    expect(list).toEqual(["@whisperopencode/push"])
+  })
+
   test("removes package entries by package name", () => {
     const list = cut(["@whisperopencode/push@0.x", "foo@1.0.0"], "@whisperopencode/push")
     expect(list).toEqual(["foo@1.0.0"])
