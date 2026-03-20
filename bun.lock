@@ -714,7 +714,7 @@
     },
     "packages/push": {
       "name": "@whisperopencode/push",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "bin": {
         "opencode-push": "./src/cli.ts",
 >>>>>>> 974a5c065 (add notifications)
