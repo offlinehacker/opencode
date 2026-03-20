@@ -64,8 +64,8 @@ export async function save(data: Data) {
   await fs.mkdir(stateDir(), { recursive: true })
   const file = stateFile()
   await fs.writeFile(file, JSON.stringify(data, null, 2) + "\n", "utf8")
-  await fs.chmod(file, 0o600).catch((e) => {
-    console.warn(`push: failed to set permissions on ${file}: ${(e as Error).message}`)
+  await fs.chmod(file, 0o600).catch(() => {
+    // console.warn("push: failed to set permissions on state file")
   })
 }
 
@@ -73,8 +73,8 @@ export async function append(item: Item) {
   await fs.mkdir(stateDir(), { recursive: true })
   const file = logFile()
   await fs.appendFile(file, JSON.stringify(item) + "\n", "utf8")
-  await fs.chmod(file, 0o600).catch((e) => {
-    console.warn(`push: failed to set permissions on ${file}: ${(e as Error).message}`)
+  await fs.chmod(file, 0o600).catch(() => {
+    // console.warn("push: failed to set permissions on log file")
   })
 }
 
