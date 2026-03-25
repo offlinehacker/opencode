@@ -1,34 +1,15 @@
 import type { Plugin } from "@opencode-ai/plugin"
+import { checkin } from "./checkin.js"
+import { trace } from "./debug.js"
 import { record } from "./event.js"
-import { checkin, publish } from "./relay.js"
+import { publish } from "./relay.js"
 import { load, save } from "./state.js"
 
 const plugin: Plugin = async () => {
   const boot = load()
     .then(async (data) => {
       if (data.mode !== "relay" || !data.relay) return
-      const relay = data.relay
-      await checkin(data)
-        .then(() => {
-          data.relay = {
-            ...relay,
-            checked: Date.now(),
-            result: "ok",
-            reason: undefined,
-            err: undefined,
-          }
-          // console.info("whisperopencode-push: channel active")
-        })
-        .catch((err: unknown) => {
-          data.relay = {
-            ...relay,
-            checked: Date.now(),
-            result: "failed",
-            err: err instanceof Error ? err.message : String(err),
-          }
-          // console.warn("whisperopencode-push: checkin failed", data.relay.err)
-        })
-      await save(data)
+      await checkin(data, "plugin")
     })
     .catch(() => {
       // console.error("whisperopencode-push: init failed")

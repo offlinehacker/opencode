@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test"
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
-import { install, status, test as ping, unpair, type Opts } from "./cmd"
+import { install, pair, status, test as ping, unpair, type Opts } from "./cmd"
 
 const base = (): Opts => ({ plugin: "@whisperopencode/push", json: true })
 
@@ -19,6 +19,47 @@ describe("push cmd", () => {
     process.env.OPENCODE_TEST_HOME = await tmp()
     const res = await install(base())
     expect(res.mode).toBe("local")
+  })
+
+  test("pairs without modifying config", async () => {
+    const dir = await tmp()
+    process.env.OPENCODE_TEST_HOME = dir
+    const cfg = path.join(dir, ".config", "opencode", "opencode.jsonc")
+    await fs.mkdir(path.dirname(cfg), { recursive: true })
+    await fs.writeFile(cfg, JSON.stringify({ plugin: ["foo@1.0.0"] }, null, 2) + "\n")
+
+    let port = 0
+    const srv = Bun.serve({
+      port: 0,
+      fetch: async (): Promise<Response> =>
+        Response.json({
+          relay_url: `http://127.0.0.1:${port}`,
+          channel_id: "ch_1",
+          channel_secret: "sec_1",
+        }),
+    })
+    const next = srv.port
+    if (!next) throw new Error("missing test port")
+    port = next
+
+    const res = await pair({ ...base(), pair: "ptok_1", relay: `http://127.0.0.1:${port}` })
+    expect(res.cmd).toBe("pair")
+    expect(res.mode).toBe("relay")
+    expect(res.channel).toBe("ch_1")
+
+    const text = await fs.readFile(cfg, "utf8")
+    expect(text).toContain('"foo@1.0.0"')
+    expect(text).not.toContain("@whisperopencode/push")
+    await srv.stop()
+  })
+
+  test("pair requires a token", async () => {
+    process.env.OPENCODE_TEST_HOME = await tmp()
+    const res = await pair(base())
+    expect(res).toEqual({
+      ok: false,
+      error: "missing_pair_token",
+    })
   })
 
   test("claims relay pair and stores relay state", async () => {
@@ -70,7 +111,7 @@ describe("push cmd", () => {
     await srv.stop()
   })
 
-  test("test pings the relay when paired", async () => {
+  test("test publishes a relay event when paired", async () => {
     process.env.OPENCODE_TEST_HOME = await tmp()
     const seen: string[] = []
     let port = 0
@@ -94,8 +135,9 @@ describe("push cmd", () => {
     port = next
     await install({ ...base(), pair: "ptok_1", relay: `http://127.0.0.1:${port}` })
     const res = await ping(base())
-    expect(res.result).toBe("ok")
+    expect(res.result).toBe("accepted")
     expect(seen.includes("/v1/channel/checkin")).toBe(true)
+    expect(seen.includes("/v1/events/publish")).toBe(true)
     await srv.stop()
   })
 

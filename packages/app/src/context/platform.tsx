@@ -52,6 +52,9 @@ export type PushDiag = {
   pairExpires?: string
   lastCode?: string
   lastError?: string
+  trace?: string
+  traceCount?: number
+  traceTail?: string
 }
 export type PushState = {
   supported: boolean

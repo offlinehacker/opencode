@@ -13,6 +13,11 @@ type Input = {
   info?: PushDiag
   pair: Pair
   paired: boolean
+  run: boolean
+  phase?: string
+  attempt: number
+  spec?: string
+  trace: string[]
   relay?: string
   fallback: string
 }
@@ -47,8 +52,17 @@ export function diagRows(input: Input) {
     `pair_expires: ${input.info?.pairExpires ?? input.pair.expires ?? "-"}`,
     `channel: ${clip(input.push?.channel ?? input.pair.channel)}`,
     `device: ${clip(input.info?.device ?? input.pair.device)}`,
+    `run: ${mark(input.run)}`,
+    `phase: ${input.phase ?? "-"}`,
+    `attempt: ${input.attempt}`,
+    `package: ${input.spec ?? "-"}`,
     `relay: ${input.info?.relay ?? input.relay ?? input.fallback}`,
     `last_code: ${input.info?.lastCode ?? "-"}`,
     `last_error: ${input.info?.lastError ?? "-"}`,
+    `native_trace_count: ${input.info?.traceCount ?? 0}`,
+    `native_trace: ${input.info?.trace ?? "-"}`,
+    `native_trace_tail:\n${input.info?.traceTail ?? "-"}`,
+    `flow_count: ${input.trace.length}`,
+    `flow_tail:\n${input.trace.length ? input.trace.join("\n") : "-"}`,
   ]
 }

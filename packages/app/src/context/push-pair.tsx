@@ -50,12 +50,7 @@ export function canReusePair(input: { id?: string; status?: PairState; token?: s
   return input.status !== "active" && input.status !== "expired"
 }
 
-export function canSyncPair(input: {
-  id?: string
-  status?: PairState
-  expires?: string
-  paired: boolean
-}) {
+export function canSyncPair(input: { id?: string; status?: PairState; expires?: string; paired: boolean }) {
   if (input.paired) return false
   if (!input.id) return true
   if (input.status === "active") return false
@@ -100,6 +95,16 @@ export function relaySwitched(input: { prev?: string; next?: string }) {
   return input.prev !== undefined && input.prev !== input.next
 }
 
+function limited(err: unknown) {
+  const next = (err instanceof Error ? err.message : String(err)).trim().toLowerCase()
+  return (
+    next.includes("rate_limited") ||
+    next.includes("rate limited") ||
+    next.includes("too many requests") ||
+    next.includes("429")
+  )
+}
+
 export const { use: usePushPair, provider: PushPairProvider } = createSimpleContext({
   name: "PushPair",
   gate: false,
@@ -134,10 +139,15 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
       retry: 0,
       tries: 0,
       source: undefined as "settings" | "auto" | undefined,
+      trace: [] as string[],
     })
     let lastRelay: string | undefined
 
     const bump = () => setState("tick", (value) => value + 1)
+    const track = (value: string) => {
+      console.debug("[push-flow]", value)
+      setState("trace", (list) => [...list, value].slice(-20))
+    }
 
     const save = (value?: PairInfo, opts?: { auto?: boolean; updated?: number }) => {
       setPair({
@@ -178,10 +188,12 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
     const setup = async (opts?: { ask?: boolean; source?: "settings" | "auto" }) => {
       if (state.run || state.clear) return false
 
+      setState("trace", [])
       setState("run", true)
       setState("phase", undefined)
       setState("tries", (value) => value + 1)
       setState("source", opts?.source ?? "settings")
+      track(`setup source=${opts?.source ?? "settings"} ask=${opts?.ask === true ? "1" : "0"}`)
 
       try {
         const result = await runPushSetup({
@@ -192,6 +204,7 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
           ask: opts?.ask,
           onPhase: (value) => setState("phase", value),
           onPair: (value) => save(value, { auto: opts?.source === "auto" ? true : pair.auto }),
+          onTrace: track,
         })
 
         save(result.pair, { auto: true })
@@ -344,6 +357,7 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
 
     createEffect(() => {
       if (!platform.getPushPairing) return
+      if (state.run || state.clear) return
       if (
         !canPollPair({
           id: pair.id,
@@ -357,10 +371,11 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
       }
 
       let live = true
+      let halt = false
       let timer: number | undefined
 
       const step = async () => {
-        if (!live) return
+        if (!live || halt) return
         if (expired(pair.expires)) {
           stop(
             {
@@ -378,8 +393,19 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
             if (!live || !value) return
             sync(value)
           })
-          .catch(() => undefined)
-        if (!live) return
+          .catch((err) => {
+            if (!live || !limited(err)) return
+            halt = true
+            stop(
+              {
+                code: "relay_rate_limited",
+                message: "Push relay is temporarily rate limited. Wait a minute and try again.",
+                action: "retry",
+              },
+              { status: "failed" },
+            )
+          })
+        if (!live || halt) return
         timer = window.setTimeout(() => {
           void step()
         }, 5000)
@@ -437,6 +463,7 @@ export const { use: usePushPair, provider: PushPairProvider } = createSimpleCont
       phase: () => state.phase,
       attempt: () => state.tries,
       source: () => state.source,
+      trace: () => state.trace,
       setup,
       clear,
     }

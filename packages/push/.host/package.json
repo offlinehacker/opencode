@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "opencode-push": "./src/cli.ts"
+    "opencode-push": "./dist/src/cli.js"
   },
   "scripts": {
     "typecheck": "tsgo --noEmit",
@@ -13,7 +13,10 @@
     "test": "bun test src"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    }
   },
   "files": [
     "dist"
@@ -29,5 +32,6 @@
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "main": "./dist/src/index.js"
 }

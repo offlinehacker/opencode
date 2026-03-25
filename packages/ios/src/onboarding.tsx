@@ -158,7 +158,12 @@ export function Onboarding(props: OnboardingProps) {
     phase: undefined as PushPhase | undefined,
     issue: undefined as PushIssue | undefined,
     pair: undefined as PairInfo | undefined,
+    trace: [] as string[],
   })
+  const track = (value: string) => {
+    console.debug("[push-flow]", value)
+    setNotif("trace", (list) => [...list, value].slice(-20))
+  }
 
   const phaseText = (value?: PushPhase) => {
     if (value === "permission") return "Requesting notification permission from iPhone Settings."
@@ -198,6 +203,8 @@ export function Onboarding(props: OnboardingProps) {
     }
     setNotif("run", true)
     setNotif("issue", undefined)
+    setNotif("trace", [])
+    track("setup source=onboarding ask=1")
     await runPushSetup({
       platform: props.platform,
       server: conn,
@@ -205,6 +212,7 @@ export function Onboarding(props: OnboardingProps) {
       ask: true,
       onPhase: (value) => setNotif("phase", value),
       onPair: (value) => setNotif("pair", value),
+      onTrace: track,
     })
       .then(() => complete())
       .catch((err: unknown) => {
@@ -477,6 +485,14 @@ export function Onboarding(props: OnboardingProps) {
                 <div class="flex flex-col gap-1">
                   <span class="text-12-medium text-text-secondary">Exact host command</span>
                   <CopyBlock code={notif.pair!.command!} />
+                </div>
+              </Show>
+              <Show when={notif.trace.length > 0}>
+                <div class="flex flex-col gap-1">
+                  <span class="text-12-medium text-text-secondary">Debug trace</span>
+                  <div class="max-h-48 overflow-y-auto rounded-lg bg-surface-base px-3 py-2 text-12-mono text-text-dimmed whitespace-pre-wrap [overflow-wrap:anywhere]">
+                    {notif.trace.join("\n")}
+                  </div>
                 </div>
               </Show>
             </div>

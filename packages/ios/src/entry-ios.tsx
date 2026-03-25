@@ -48,7 +48,9 @@ const emptyPush: PushState = {
   generic: true,
 }
 
+const BRIDGE_MS = 20_000
 const credentialStorage = createBridgeStorage("opencode.settings.dat")
+const trace = (...values: unknown[]) => console.debug("[push]", ...values)
 
 const normalizeServerUrl = (input: string) => {
   const trimmed = input.trim()
@@ -161,6 +163,15 @@ const App = () => {
         typeof (value as { lastError?: unknown }).lastError === "string"
           ? (value as { lastError: string }).lastError
           : undefined,
+      trace: typeof (value as { trace?: unknown }).trace === "string" ? (value as { trace: string }).trace : undefined,
+      traceCount:
+        typeof (value as { traceCount?: unknown }).traceCount === "number"
+          ? (value as { traceCount: number }).traceCount
+          : undefined,
+      traceTail:
+        typeof (value as { traceTail?: unknown }).traceTail === "string"
+          ? (value as { traceTail: string }).traceTail
+          : undefined,
     }
   }
 
@@ -203,6 +214,25 @@ const App = () => {
     }
   }
 
+  const call = async <T,>(method: string, params?: unknown, ms = BRIDGE_MS): Promise<T | null> => {
+    let timer: ReturnType<typeof globalThis.setTimeout> | undefined
+    const stop = new Promise<never>((_, reject) => {
+      timer = globalThis.setTimeout(() => {
+        reject(new Error(`${method} timed out`))
+      }, ms)
+    })
+    try {
+      return (await Promise.race([bridge.sendAsync<T>(method, params), stop])) as T | null
+    } catch (err) {
+      trace(method, "err", err)
+      throw err
+    } finally {
+      if (timer !== undefined) {
+        globalThis.clearTimeout(timer)
+      }
+    }
+  }
+
   const refreshVoice = async () => {
     const result = await bridge.sendAsync<VoiceStatus>("isWhisperReady")
     const status = normalizeStatus(result)
@@ -211,8 +241,9 @@ const App = () => {
   }
 
   const refreshPush = async () => {
-    const result = await bridge.sendAsync<PushState>("getPushState")
+    const result = await call<PushState>("getPushState")
     const next = normalizePush(result)
+    trace("refreshPush", next ?? result)
     if (!next) return push() ?? emptyPush
     setPush(next)
     return next
@@ -271,20 +302,23 @@ const App = () => {
     pushState: push,
     getPushState: async () => refreshPush(),
     requestPushPermission: async () => {
-      const result = await bridge.sendAsync<PushState>("requestPushPermission")
+      const result = await call<PushState>("requestPushPermission")
       const next = normalizePush(result) ?? push() ?? emptyPush
       setPush(next)
       return next
     },
     beginPushPairing: async () => {
-      const result = await bridge.sendAsync<PairInfo>("beginPushPairing", { version: pkg.version })
+      const result = await call<PairInfo>("beginPushPairing", { version: pkg.version })
       const next = normalizePair(result)
+      trace("beginPushPairing", next ?? result)
       if (!next) throw new Error("Push pairing unavailable")
       return next
     },
     getPushPairing: async () => {
-      const result = await bridge.sendAsync<PairInfo>("getPushPairing")
-      return normalizePair(result) ?? undefined
+      const result = await call<PairInfo>("getPushPairing")
+      const next = normalizePair(result) ?? undefined
+      trace("getPushPairing", next ?? result)
+      return next
     },
     setPushPreferences: async (prefs: PushPrefs) => {
       await bridge.sendAsync("setPushPreferences", prefs)
@@ -296,17 +330,17 @@ const App = () => {
       await bridge.sendAsync("openSystemSettings")
     },
     testPush: async (href?: string) => {
-      const result = await bridge.sendAsync<boolean>("testPush", { href })
+      const result = await call<boolean>("testPush", { href })
       return result ?? false
     },
     setPushCredentials: async (input: PushCred) => {
-      const result = await bridge.sendAsync<PushState>("setPushCredentials", input)
+      const result = await call<PushState>("setPushCredentials", input)
       const next = normalizePush(result) ?? push() ?? emptyPush
       setPush(next)
       return next
     },
     clearPushPairing: async () => {
-      const result = await bridge.sendAsync<PushState>("clearPushPairing")
+      const result = await call<PushState>("clearPushPairing")
       const next = normalizePush(result) ?? push() ?? emptyPush
       setPush(next)
       return next
@@ -405,11 +439,13 @@ const App = () => {
             ? (payload as { state?: unknown }).state
             : undefined
       if (state !== "active") return
+      void refreshPush()
       emitResume()
     })
 
     const stopPushState = bridge.on("pushStateChanged", (payload) => {
       const next = normalizePush(payload)
+      trace("pushStateChanged", next ?? payload)
       if (!next) return
       setPush(next)
     })

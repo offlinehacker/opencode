@@ -11,16 +11,18 @@ npm install @whisperopencode/push
 ## CLI usage
 
 ```
-opencode-push <install|status|test|unpair|devices|remove-device> [--pair <token>] [--relay <url>] [--server <label>] [--plugin <spec>] [--device <id>] [--json]
+opencode-push <install|pair|status|test|unpair|devices|remove-device> [--pair <token>] [--relay <url>] [--server <label>] [--plugin <spec>] [--device <id>] [--json]
 ```
 
 Pair with a mobile device:
 
 ```sh
-npx --yes --prefix . --package=@whisperopencode/push opencode-push install --pair <token>
+npx --yes --prefix . --package=@whisperopencode/push opencode-push pair --pair <token>
 ```
 
-By default, `opencode-push install` writes an unpinned `@whisperopencode/push` entry to your OpenCode config so the host can track the latest plugin release. Pass `--plugin <spec>` if you want to pin a version instead.
+`opencode-push pair` only claims the relay pair token and writes the local push state used by the host plugin.
+
+`opencode-push install` is the manual all-in-one command. It writes an unpinned `@whisperopencode/push` entry to your OpenCode config so the host can track the latest plugin release, and it also accepts `--pair <token>` for backward compatibility. Pass `--plugin <spec>` if you want to pin a version instead.
 
 ## Plugin usage
 
@@ -28,7 +30,7 @@ Add to your opencode config:
 
 ```jsonc
 {
-  "plugin": ["@whisperopencode/push"]
+  "plugin": ["@whisperopencode/push"],
 }
 ```
 

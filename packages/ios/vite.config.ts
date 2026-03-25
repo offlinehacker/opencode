@@ -3,6 +3,7 @@ import appPlugin from "@opencode-ai/app/vite"
 
 export default defineConfig({
   plugins: [appPlugin],
+  envDir: "../app",
   publicDir: "../app/public",
   base: "./",
   server: {
