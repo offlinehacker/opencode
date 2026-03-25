@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { claimPush, fetchWithTimeout, mergePushIssue, PushFail, pushIssue, runPushSetup } from "./push-pair"
-import { pairPush, PushPlugin } from "./push-plugin"
+import { installPair, pairPush, PushPlugin } from "./push-plugin"
 
 type Run = {
   out?: string
@@ -53,7 +53,7 @@ function push(
   }
 }
 
-function stub(input: { runs: Run[]; pairs?: Pair[]; cfg?: { plugin?: string[] } }) {
+function stub(input: { runs: Run[]; pairs?: Pair[]; cfg?: { plugin?: string[] }; cfgCode?: number }) {
   const cmds: Cmd[] = []
   const urls: string[] = []
   const reqs: Req[] = []
@@ -124,6 +124,9 @@ function stub(input: { runs: Run[]; pairs?: Pair[]; cfg?: { plugin?: string[] } 
     reqs.push({ url: text, method })
 
     if (path === "/global/config" && method === "GET") {
+      if (input.cfgCode) {
+        return new Response("err", { status: input.cfgCode })
+      }
       return Response.json(cfg)
     }
 
@@ -183,7 +186,7 @@ function stub(input: { runs: Run[]; pairs?: Pair[]; cfg?: { plugin?: string[] } 
 }
 
 async function withStub<T>(
-  input: { runs: Run[]; pairs?: Pair[]; cfg?: { plugin?: string[] } },
+  input: { runs: Run[]; pairs?: Pair[]; cfg?: { plugin?: string[] }; cfgCode?: number },
   fn: (next: ReturnType<typeof stub>) => Promise<T>,
 ) {
   const next = stub(input)
@@ -513,6 +516,52 @@ describe("runPushSetup", () => {
 
         expect(dispose).toBeGreaterThanOrEqual(0)
         expect(pty).toBeGreaterThan(dispose)
+      },
+    )
+  })
+
+  test("falls back to the legacy install flow when host config mutation is unavailable", async () => {
+    await withStub(
+      {
+        runs: [{ out: '{\n  "ok": true,\n  "cmd": "install"\n}' }],
+        pairs: [{ status: "claimed" }],
+        cfgCode: 404,
+      },
+      async (next) => {
+        const seen: string[] = []
+        const platform = {
+          fetch: next.fetch,
+          pushState: () => push(),
+          getPushState: async () => push(),
+          getPushPairing: async () => ({
+            id: "pair_1",
+            status: "active" as const,
+            channel: "ch_1",
+            device: "dev_1",
+          }),
+          beginPushPairing: async () => ({
+            id: "pair_1",
+            status: "pending" as const,
+            token: "tok_1",
+            command: "bunx @whispercode/opencode-push pair --pair tok_1",
+            expires: new Date(Date.now() + 60_000).toISOString(),
+          }),
+        }
+
+        const res = await runPushSetup({
+          platform,
+          server: { type: "http", http: { url: "http://localhost:4096" } } as any,
+          relay: "http://localhost:8787",
+          onPair: (value) => {
+            if (value.command) seen.push(value.command)
+          },
+        })
+
+        expect(res.ok).toBe(true)
+        expect(next.cmds.map((item) => item.command)).toEqual(["bunx"])
+        expect(next.cmds[0]?.args[1]).toBe("install")
+        expect(next.reqs.some((item) => item.url.endsWith("/global/dispose") && item.method === "POST")).toBe(false)
+        expect(seen.at(-1)).toBe(installPair("tok_1", "http://localhost:8787"))
       },
     )
   })

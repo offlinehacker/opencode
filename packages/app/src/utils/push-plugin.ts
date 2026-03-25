@@ -41,6 +41,13 @@ export function installPush(tool: "npx" | "bunx" = "npx") {
   return `npx --yes --prefix . --package=${spec} ${bin} install`
 }
 
+export function installPair(token: string, relay?: string, tool: "npx" | "bunx" = "npx") {
+  if (tool === "bunx") {
+    return `bunx ${spec} install --pair ${token}${relayArg(relay)}`
+  }
+  return `npx --yes --prefix . --package=${spec} ${bin} install --pair ${token}${relayArg(relay)}`
+}
+
 export function pairPush(token: string, relay?: string, tool: "npx" | "bunx" = "npx") {
   if (tool === "bunx") {
     return `bunx ${spec} pair --pair ${token}${relayArg(relay)}`

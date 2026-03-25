@@ -5,6 +5,8 @@ import { load, save, type Data, type Relay } from "./state.js"
 
 const COOL_MS = 30_000
 const LOCK_MS = 20_000
+const WAIT_MS = 250
+const STEP_MS = 25
 
 function same(a?: Relay, b?: Relay) {
   if (!a || !b) return false
@@ -16,8 +18,13 @@ function age(value?: number) {
   return Date.now() - value
 }
 
+function wait(ms: number) {
+  return new Promise<void>((done) => setTimeout(done, ms))
+}
+
 async function acquire() {
   const file = checkinLockFile()
+  const stop = Date.now() + WAIT_MS
   await fs.mkdir(stateDir(), { recursive: true }).catch(() => undefined)
 
   for (;;) {
@@ -26,7 +33,11 @@ async function acquire() {
       .then((info) => info)
       .catch(() => undefined)
     if (found && Date.now() - found.mtimeMs > LOCK_MS) {
-      await fs.rm(file, { force: true }).catch(() => undefined)
+      const gone = await fs
+        .rm(file, { force: true })
+        .then(() => true)
+        .catch(() => false)
+      if (!gone) return
       continue
     }
 
@@ -37,13 +48,16 @@ async function acquire() {
         if ((err as NodeJS.ErrnoException | undefined)?.code === "EEXIST") return
         throw err
       })
-    if (!lock) return
-
-    await lock.writeFile(String(process.pid))
-    return async () => {
-      await lock.close().catch(() => undefined)
-      await fs.rm(file, { force: true }).catch(() => undefined)
+    if (lock) {
+      await lock.writeFile(String(process.pid))
+      return async () => {
+        await lock.close().catch(() => undefined)
+        await fs.rm(file, { force: true }).catch(() => undefined)
+      }
     }
+
+    if (Date.now() >= stop) return
+    await wait(STEP_MS)
   }
 }
 

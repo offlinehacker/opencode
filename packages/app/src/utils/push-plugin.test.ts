@@ -4,6 +4,7 @@ import {
   dropPush,
   hasPush,
   hasPushSpec,
+  installPair,
   installPrompt,
   installPush,
   pairPush,
@@ -50,6 +51,15 @@ describe("push plugin", () => {
   test("returns the exact agent install prompt", () => {
     expect(installPrompt()).toBe(
       `Run this exact command on the machine hosting OpenCode and report whether it succeeded: npx --yes --prefix . --package=${PushPlugin.spec} opencode-push install`,
+    )
+  })
+
+  test("builds the legacy paired install command locally", () => {
+    expect(installPair("ptok_1")).toBe(
+      `npx --yes --prefix . --package=${PushPlugin.spec} opencode-push install --pair ptok_1`,
+    )
+    expect(installPair("ptok_1", "https://relay.example.com", "bunx")).toBe(
+      `bunx ${PushPlugin.spec} install --pair ptok_1 --relay https://relay.example.com`,
     )
   })
 

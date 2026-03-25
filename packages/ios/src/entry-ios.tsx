@@ -205,18 +205,14 @@ const App = () => {
   }
 
   const call = async <T,>(method: string, params?: unknown, ms = BRIDGE_MS): Promise<T | null> => {
-    let timer: ReturnType<typeof globalThis.setTimeout> | undefined
-    const stop = new Promise<never>((_, reject) => {
-      timer = globalThis.setTimeout(() => {
-        reject(new Error(`${method} timed out`))
-      }, ms)
-    })
+    const abort = new AbortController()
+    const timer = globalThis.setTimeout(() => {
+      abort.abort(new Error(`${method} timed out`))
+    }, ms)
     try {
-      return (await Promise.race([bridge.sendAsync<T>(method, params), stop])) as T | null
+      return await bridge.sendAsync<T>(method, params, { signal: abort.signal })
     } finally {
-      if (timer !== undefined) {
-        globalThis.clearTimeout(timer)
-      }
+      globalThis.clearTimeout(timer)
     }
   }
 
@@ -288,7 +284,7 @@ const App = () => {
     pushState: push,
     getPushState: async () => refreshPush(),
     requestPushPermission: async () => {
-      const result = await call<PushState>("requestPushPermission")
+      const result = await call<PushState>("requestPushPermission", undefined, 30_000)
       const next = normalizePush(result) ?? push() ?? emptyPush
       setPush(next)
       return next

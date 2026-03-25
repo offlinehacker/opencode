@@ -1,6 +1,6 @@
 import type { PairInfo, Platform, PushState } from "@/context/platform"
 import type { ServerConnection } from "@/context/server"
-import { addPush, hasPushSpec, pairPush, PushPlugin } from "@/utils/push-plugin"
+import { addPush, hasPushSpec, installPair, pairPush, PushPlugin } from "@/utils/push-plugin"
 import { serverAuthHeaders } from "@/utils/server"
 
 const PTY_TIMEOUT = 60_000
@@ -28,6 +28,8 @@ type Runner = {
   command: string
   args: string[]
 }
+
+type Mode = "pair" | "install"
 
 type PairRes = {
   status?: "pending" | "claimed" | "active" | "expired" | "failed"
@@ -123,32 +125,36 @@ export class PushFail extends Error {
   }
 }
 
-function pair(token: string, relay?: string) {
-  const args = ["pair", "--pair", token, "--json"]
+function args(token: string, relay: string | undefined, mode: Mode) {
+  const args = [mode, "--pair", token, "--json"]
   if (relay) args.push("--relay", relay)
   return args
 }
 
-function npx(token: string, prefix?: string, relay?: string): Runner | undefined {
+function npx(token: string, prefix: string | undefined, relay: string | undefined, mode: Mode): Runner | undefined {
   if (!prefix) return
   return {
     name: "npx",
     command: "npx",
-    args: ["--yes", "--prefix", prefix, "--package", PushPlugin.spec, PushPlugin.bin, ...pair(token, relay)],
+    args: ["--yes", "--prefix", prefix, "--package", PushPlugin.spec, PushPlugin.bin, ...args(token, relay, mode)],
   }
 }
 
-function bunx(token: string, relay?: string): Runner | undefined {
+function bunx(token: string, relay: string | undefined, mode: Mode): Runner | undefined {
   return {
     name: "bunx",
     command: "bunx",
-    args: [PushPlugin.spec, ...pair(token, relay)],
+    args: [PushPlugin.spec, ...args(token, relay, mode)],
   }
 }
 
 function pairCmd(token?: string, relay?: string, command?: string) {
   if (!token) return command
   return pairPush(token, relay)
+}
+
+function hostCmd(token: string, relay: string | undefined, mode: Mode, tool: Runner["name"] = "npx") {
+  return mode === "install" ? installPair(token, relay, tool) : pairPush(token, relay, tool)
 }
 
 function act(code: PushIssueCode): PushIssue["action"] {
@@ -1020,6 +1026,7 @@ export async function claimPush(input: {
   token: string
   relay?: string
   pairId?: string
+  mode?: Mode
   onTrace?: (value: string) => void
 }) {
   const conn = input.server
@@ -1030,13 +1037,14 @@ export async function claimPush(input: {
   const fetch = input.platform.fetch ?? globalThis.fetch
   const relay = input.relay
   const pairId = input.pairId
+  const mode = input.mode ?? "pair"
   const path = await readPath(fetch, conn).catch(() => undefined)
   const prefix = path?.state
   const cwd = prefix || path?.directory
-  const runs = [bunx(input.token, relay), npx(input.token, prefix, relay)].filter((item) => !!item)
+  const runs = [bunx(input.token, relay, mode), npx(input.token, prefix, relay, mode)].filter((item) => !!item)
   note(
     input,
-    `claim start relay=${relay ?? "-"} pair=${brief(pairId)} cwd=${brief(cwd)} prefix=${brief(prefix)} runs=${runs.map((item) => item.name).join(",")}`,
+    `claim start mode=${mode} relay=${relay ?? "-"} pair=${brief(pairId)} cwd=${brief(cwd)} prefix=${brief(prefix)} runs=${runs.map((item) => item.name).join(",")}`,
   )
   drop(relay, pairId)
   let last: PushFail | undefined
@@ -1185,7 +1193,7 @@ export async function claimPush(input: {
   note(input, "claim fail no_runner")
   throw fail(
     "host_install_failed",
-    `The OpenCode host could not finish pairing this iPhone. Run ${pairPush(input.token, relay)} or ${pairPush(input.token, relay, "bunx")} on the host and try again.`,
+    `The OpenCode host could not finish pairing this iPhone. Run ${hostCmd(input.token, relay, mode)} or ${hostCmd(input.token, relay, mode, "bunx")} on the host and try again.`,
   )
 }
 
@@ -1265,22 +1273,37 @@ export async function runPushSetup(input: PushSetupInput): Promise<PushSetupResu
     if (!pair.token) {
       throw fail("pair_token_missing", "Push pairing token unavailable.")
     }
+    const token = pair.token
 
     phase = "claim"
     input.onPhase?.(phase)
     note(input, "phase claim")
+    let legacy = false
     await ensureHost({
       platform,
       server: input.server,
       onTrace: input.onTrace,
+    }).catch((err) => {
+      legacy = true
+      note(input, `claim legacy err=${text(err)}`)
     })
+    const mode: Mode = legacy ? "install" : "pair"
+    if (legacy) {
+      pair = {
+        ...pair,
+        command: hostCmd(token, input.relay, mode),
+      }
+      note(input, `claim legacy ${pair.command}`)
+      input.onPair?.(pair)
+    }
 
     const claim = await claimPush({
       platform,
       server: input.server,
-      token: pair.token,
+      token,
       relay: input.relay,
       pairId: pair.id,
+      mode,
       onTrace: input.onTrace,
     })
     note(input, "claim done")
