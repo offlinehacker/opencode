@@ -572,10 +572,6 @@ describe("runPushSetup", () => {
   })
 
   test("replaces an existing push entry when the configured spec differs", async () => {
-    const prev = import.meta.env.VITE_WHISPEROPENCODE_PUSH_SPEC
-    ;(import.meta.env as ImportMetaEnv & { VITE_WHISPEROPENCODE_PUSH_SPEC?: string }).VITE_WHISPEROPENCODE_PUSH_SPEC =
-      "@whisperopencode/push@0.2.99-phone.1"
-
     await withStub(
       {
         runs: [{ out: '{\n  "ok": true,\n  "cmd": "pair"\n}' }],
@@ -609,13 +605,10 @@ describe("runPushSetup", () => {
         })
 
         expect(res.ok).toBe(true)
-        expect(next.patches).toEqual([{ plugin: ["@whisperopencode/push@0.2.99-phone.1"] }])
-        expect(next.bodies).toEqual([JSON.stringify({ plugin: ["@whisperopencode/push@0.2.99-phone.1"] })])
+        expect(next.patches).toEqual([{ plugin: [PushPlugin.spec] }])
+        expect(next.bodies).toEqual([JSON.stringify({ plugin: [PushPlugin.spec] })])
       },
-    ).finally(() => {
-      ;(import.meta.env as ImportMetaEnv & { VITE_WHISPEROPENCODE_PUSH_SPEC?: string }).VITE_WHISPEROPENCODE_PUSH_SPEC =
-        prev
-    })
+    )
   })
 
   test("surfaces a missing token issue when begin pairing fails before a token exists", async () => {

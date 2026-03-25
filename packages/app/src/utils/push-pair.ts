@@ -139,7 +139,6 @@ function npx(token: string, prefix?: string, relay?: string): Runner | undefined
 }
 
 function bunx(token: string, relay?: string): Runner | undefined {
-  if (PushPlugin.local(PushPlugin.spec)) return
   return {
     name: "bunx",
     command: "bunx",
@@ -246,9 +245,7 @@ function hold(item: Read, gap: number) {
   return gap
 }
 
-function note(input: Pick<PushSetupInput, "onTrace"> | undefined, value: string) {
-  input?.onTrace?.(`${new Date().toISOString()} ${value}`)
-}
+function note(_input: Pick<PushSetupInput, "onTrace"> | undefined, _value: string) {}
 
 function listText(list?: string[]) {
   if (!list?.length) return "-"

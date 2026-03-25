@@ -1,5 +1,4 @@
 import fs from "fs/promises"
-import { trace } from "./debug.js"
 import { checkin as send } from "./relay.js"
 import { checkinLockFile, stateDir } from "./path.js"
 import { load, save, type Data, type Relay } from "./state.js"
@@ -66,7 +65,7 @@ async function apply(data: Data, relay: Relay) {
   }
 }
 
-export async function checkin(data: Data, source: string) {
+export async function checkin(data: Data, _source: string) {
   const relay = data.relay
   if (data.mode !== "relay" || !relay) {
     return {
@@ -79,12 +78,6 @@ export async function checkin(data: Data, source: string) {
   const seen = same(current.relay, relay) ? current.relay : relay
   const recent = await fresh(seen)
   if (recent !== undefined) {
-    await trace(`${source}.checkin.skip`, {
-      relay: relay.url,
-      channel: relay.channel,
-      reason: "fresh",
-      age: recent,
-    })
     return {
       status: "skip" as const,
       reason: "fresh",
@@ -93,11 +86,6 @@ export async function checkin(data: Data, source: string) {
 
   const release = await acquire()
   if (!release) {
-    await trace(`${source}.checkin.skip`, {
-      relay: relay.url,
-      channel: relay.channel,
-      reason: "locked",
-    })
     return {
       status: "skip" as const,
       reason: "locked",
@@ -109,22 +97,12 @@ export async function checkin(data: Data, source: string) {
     const next = same(latest.relay, relay) ? latest.relay : relay
     const again = await fresh(next)
     if (again !== undefined) {
-      await trace(`${source}.checkin.skip`, {
-        relay: relay.url,
-        channel: relay.channel,
-        reason: "fresh_locked",
-        age: again,
-      })
       return {
         status: "skip" as const,
         reason: "fresh_locked",
       }
     }
 
-    await trace(`${source}.checkin.start`, {
-      relay: relay.url,
-      channel: relay.channel,
-    })
     await send(data)
     const ok = {
       ...relay,
@@ -134,10 +112,6 @@ export async function checkin(data: Data, source: string) {
       err: undefined,
     }
     await apply(data, ok)
-    await trace(`${source}.checkin.ok`, {
-      relay: relay.url,
-      channel: relay.channel,
-    })
     data.relay = ok
     return {
       status: "ok" as const,
@@ -150,11 +124,6 @@ export async function checkin(data: Data, source: string) {
       err: err instanceof Error ? err.message : String(err),
     }
     await apply(data, fail)
-    await trace(`${source}.checkin.err`, {
-      relay: relay.url,
-      channel: relay.channel,
-      err: fail.err,
-    })
     data.relay = fail
     return {
       status: "err" as const,

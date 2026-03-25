@@ -46,16 +46,13 @@ describe("settings mobile notifications", () => {
       paired: true,
       run: false,
       phase: undefined,
-      attempt: 2,
-      spec: "@whisperopencode/push@0.2.1-phone.test",
-      trace: ["2026-03-24T12:00:00.000Z success"],
       relay: "https://relay.test",
       fallback: "https://whisper.clankercontext.com",
     })
 
     expect(rows).toContain("relay: https://relay.test")
     expect(rows).toContain("last_code: repair_needed")
-    expect(rows).toContain("flow_count: 1")
+    expect(rows.some((item) => item.startsWith("last_error:"))).toBe(true)
   })
 
   test("removes redundant host and relay actions from the shared mobile settings view", async () => {

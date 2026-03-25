@@ -3,7 +3,6 @@ import os from "os"
 import pkg from "../package.json" with { type: "json" }
 import { checkin } from "./checkin.js"
 import { cut, merge, name, read, write } from "./config.js"
-import { trace } from "./debug.js"
 import { logFile, stateFile } from "./path.js"
 import { claim, devices as relayDevices, publish, removeDevice as relayRemoveDevice } from "./relay.js"
 import { append, load, next, save, type Data } from "./state.js"
@@ -42,11 +41,6 @@ export async function run(cmd: string | undefined, opts: Opts) {
 }
 
 export async function install(opts: Opts) {
-  await trace("install.start", {
-    pair: !!opts.pair,
-    relay: opts.relay ?? null,
-    plugin: opts.plugin,
-  })
   const cfg = await read()
   const list = merge(cfg.data.plugin ?? [], opts.plugin)
   const data = await load()
@@ -63,12 +57,6 @@ export async function install(opts: Opts) {
   }
 
   await write(cfg.src, cfg.text, list)
-  await trace("install.ok", {
-    mode: data.mode,
-    relay: data.relay?.url ?? null,
-    channel: data.relay?.channel ?? null,
-    config: cfg.src,
-  })
 
   return out(opts, {
     ok: true,
@@ -87,9 +75,6 @@ export async function pair(opts: Opts) {
     return out(opts, { ok: false, error: "missing_pair_token" })
   }
 
-  await trace("pair.start", {
-    relay: opts.relay ?? null,
-  })
   const data = await load()
   await claimPair(opts, data)
   data.updated_at = Date.now()
@@ -98,12 +83,6 @@ export async function pair(opts: Opts) {
   if (data.mode === "relay" && data.relay) {
     await checkin(data, "pair")
   }
-
-  await trace("pair.ok", {
-    mode: data.mode,
-    relay: data.relay?.url ?? null,
-    channel: data.relay?.channel ?? null,
-  })
 
   return out(opts, {
     ok: true,
@@ -315,20 +294,7 @@ async function claimPair(opts: Opts, data: Data) {
     data.mode === "relay" && data.relay && data.relay.url === root
       ? { channel_id: data.relay.channel, channel_secret: data.relay.secret }
       : undefined
-  await trace("claim.start", {
-    relay: root,
-    server,
-    version: pkg.version,
-    reuse: !!existing,
-  })
-  const res = await claim(root, opts.pair!, server, pkg.version, existing).catch(async (err: unknown) => {
-    await trace("claim.err", {
-      relay: root,
-      server,
-      err: err instanceof Error ? err.message : String(err),
-    })
-    throw err
-  })
+  const res = await claim(root, opts.pair!, server, pkg.version, existing)
   data.mode = "relay"
   data.relay = {
     url: res.relay_url,
@@ -336,11 +302,6 @@ async function claimPair(opts: Opts, data: Data) {
     secret: res.channel_secret,
     server,
   }
-  await trace("claim.ok", {
-    relay: res.relay_url,
-    channel: res.channel_id,
-    server,
-  })
 }
 
 function envRelay() {

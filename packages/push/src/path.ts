@@ -31,10 +31,6 @@ export function logFile() {
   return path.join(stateDir(), "whisperopencode-push.ndjson")
 }
 
-export function debugFile() {
-  return path.join(stateDir(), "whisperopencode-push.debug.ndjson")
-}
-
 export function checkinLockFile() {
   return path.join(stateDir(), "whisperopencode-push.checkin.lock")
 }

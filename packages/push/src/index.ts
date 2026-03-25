@@ -1,6 +1,5 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import { checkin } from "./checkin.js"
-import { trace } from "./debug.js"
 import { record } from "./event.js"
 import { publish } from "./relay.js"
 import { load, save } from "./state.js"

@@ -9,7 +9,6 @@ import { canClearPair, usePushPair } from "@/context/push-pair"
 import { usePushRelay } from "@/context/push-relay"
 import { useServer } from "@/context/server"
 import { PushFail, pushIssue } from "@/utils/push-pair"
-import { PushPlugin } from "@/utils/push-plugin"
 import { DEFAULT_PUSH_RELAY_URL } from "@/utils/push-relay-url"
 import { sendPushTest } from "@/utils/push-test"
 import { diagRows } from "./settings-mobile-notifications-data"
@@ -203,9 +202,6 @@ export const SettingsMobileNotifications: Component = () => {
       paired: paired(),
       run: pairing.running(),
       phase: pairing.phase(),
-      attempt: pairing.attempt(),
-      spec: PushPlugin.spec,
-      trace: pairing.trace(),
       relay: relay.current(),
       fallback: DEFAULT_PUSH_RELAY_URL,
     }),

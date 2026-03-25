@@ -1,9 +1,6 @@
 import Foundation
 import UIKit
 import UserNotifications
-import os
-
-private nonisolated let log = Logger(subsystem: "opencode", category: "PushBridge")
 
 @MainActor
 final class PushBridge {
@@ -26,7 +23,6 @@ final class PushBridge {
   private let pairCmdKey = "opencode.push.pair.cmd"
   private let pairExpKey = "opencode.push.pair.exp"
   private let tokenPendingKey = "opencode.push.token.pending"
-  private let traceKey = "opencode.push.trace"
   private var last: String?
   private var perm: PushPerm?
   private var task: Task<[String: Any], Never>?
@@ -177,8 +173,6 @@ final class PushBridge {
   func tokenDidUpdate(_ data: Data) {
     let text = data.map { String(format: "%02x", $0) }.joined()
     guard !text.isEmpty else { return }
-    log.info("tokenDidUpdate len=\(text.count, privacy: .public)")
-    track("tokenDidUpdate len=\(text.count)")
     _ = keychain.set(Data(text.utf8), key: tokenKey)
     note(nil, code: nil)
     Task { @MainActor in
@@ -197,8 +191,6 @@ final class PushBridge {
   }
 
   func tokenDidFail() {
-    log.error("tokenDidFail")
-    track("tokenDidFail")
     keychain.remove(tokenKey)
     didRegister = false
     registerAt = .distantPast
@@ -209,12 +201,6 @@ final class PushBridge {
   }
 
   func setCredentials(channel: String?, device: String?, secret: String?) async -> [String: Any] {
-    log.info(
-      "setCredentials channel=\((channel?.isEmpty == false), privacy: .public) device=\((device?.isEmpty == false), privacy: .public) secret=\((secret?.isEmpty == false), privacy: .public)"
-    )
-    track(
-      "setCredentials channel=\(channel?.isEmpty == false) device=\(device?.isEmpty == false) secret=\(secret?.isEmpty == false)"
-    )
     if let channel, !channel.isEmpty {
       save(channel, key: channelKey)
     } else {
@@ -232,10 +218,7 @@ final class PushBridge {
     }
     keychain.remove(tokenPendingKey)
     note(nil, code: nil)
-    let next = await refresh(emit: true)
-    log.info("setCredentials paired=\((next["paired"] as? Bool) == true, privacy: .public)")
-    track("setCredentials paired=\((next["paired"] as? Bool) == true)")
-    return next
+    return await refresh(emit: true)
   }
 
   func clearPairing() async throws -> [String: Any] {
@@ -272,7 +255,6 @@ final class PushBridge {
     let prev = relay()
     config.setPushRelayUrl(url)
     if relay() == prev { return }
-    track("setRelayURL \(prev) -> \(relay())")
     clearCredentials()
     clearPendingPair()
     keychain.remove(tokenPendingKey)
@@ -287,11 +269,6 @@ final class PushBridge {
       throw PushErr.missingToken
     }
 
-    log.info(
-      "beginPair relay=\(self.relay(), privacy: .public) version=\(version ?? "unknown", privacy: .public) apns=\(PushBridge.apnsEnv, privacy: .public)"
-    )
-    track("beginPair relay=\(self.relay()) version=\(version ?? "unknown") apns=\(PushBridge.apnsEnv)")
-
     let req = PairStartReq(
       apns_token: token,
       device_name: UIDevice.current.model,
@@ -299,10 +276,6 @@ final class PushBridge {
       apns_env: PushBridge.apnsEnv
     )
     let res: PairStartRes = try await send(path: "/v1/pair/start", method: "POST", body: req)
-    log.info(
-      "beginPair ok id=\(res.pair_id, privacy: .public) token=\((res.pair_token?.isEmpty == false), privacy: .public) expires=\(res.expires_at, privacy: .public)"
-    )
-    track("beginPair ok id=\(res.pair_id) token=\(res.pair_token?.isEmpty == false)")
     save(res.pair_id, key: pairIDKey)
     if let token = res.pair_token, !token.isEmpty {
       save(token, key: pairTokKey)
@@ -333,10 +306,7 @@ final class PushBridge {
       let dev = device()
       if text(pairIDKey) != nil {
         clearPendingPair()
-        log.info("getPair clearing stale pending pair for paired device")
-        track("getPair clear stale pair for paired device")
       }
-      track("getPair using stored credentials")
       return pair(
         id: nil,
         status: "active",
@@ -351,13 +321,10 @@ final class PushBridge {
 
     if let id = text(pairIDKey), !id.isEmpty {
       if let task = pollTask {
-        track("getPair join id=\(id)")
         return try await task.value
       }
       let age = Date().timeIntervalSince(pollAt)
       if age < pollGap, let last = pollLast {
-        let status = (last["status"] as? String) ?? "-"
-        track("getPair skip id=\(id) age=\(Int(age * 1000)) status=\(status)")
         return last
       }
 
@@ -368,12 +335,6 @@ final class PushBridge {
         let mark = Int(Date().timeIntervalSince1970 * 1000)
         let path = "/v1/pair/\(id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id)?t=\(mark)"
         let res: PairPollRes = try await send(path: path, method: "GET")
-        log.info(
-          "getPair id=\(id, privacy: .public) status=\(res.status, privacy: .public) channel=\((res.channel_id?.isEmpty == false), privacy: .public) device=\((res.device_id?.isEmpty == false), privacy: .public) secret=\((res.device_secret?.isEmpty == false), privacy: .public) message=\(res.message ?? "", privacy: .public)"
-        )
-        track(
-          "getPair id=\(id) status=\(res.status) channel=\(res.channel_id?.isEmpty == false) device=\(res.device_id?.isEmpty == false) secret=\(res.device_secret?.isEmpty == false)"
-        )
 
         let next: [String: Any]?
         switch res.status {
@@ -381,14 +342,10 @@ final class PushBridge {
           guard let channel = res.channel_id,
                 let device = res.device_id,
                 let secret = res.device_secret else {
-            log.error("getPair active missing fields id=\(id, privacy: .public)")
-            track("getPair active missing fields id=\(id)")
             throw PushErr.badPair
           }
           _ = await setCredentials(channel: channel, device: device, secret: secret)
           clearPendingPair()
-          log.info("getPair active stored id=\(id, privacy: .public) channel=\(channel, privacy: .public) device=\(device, privacy: .public)")
-          track("getPair active stored id=\(id) channel=\(channel) device=\(device)")
           next = pair(
             id: id,
             status: "active",
@@ -528,10 +485,6 @@ final class PushBridge {
     if emit, changed {
       onEvent?("pushStateChanged", next)
     }
-    if changed {
-      log.info("state \(stamp, privacy: .public)")
-      track("state \(stamp)")
-    }
     return next
   }
 
@@ -582,33 +535,7 @@ final class PushBridge {
     if let lastErr, !lastErr.isEmpty {
       next["lastError"] = lastErr
     }
-    let trace = trace()
-    if let text = trace.last, !text.isEmpty {
-      next["trace"] = text
-    }
-    if trace.count > 0 {
-      next["traceCount"] = trace.count
-    }
-    if let tail = trace.tail, !tail.isEmpty {
-      next["traceTail"] = tail
-    }
     return next
-  }
-
-  private func trace() -> (last: String?, count: Int, tail: String?) {
-    let list = (UserDefaults.standard.array(forKey: traceKey) as? [String]) ?? []
-    let tail = list.suffix(8).joined(separator: "\n")
-    return (list.last, list.count, tail.isEmpty ? nil : tail)
-  }
-
-  private func track(_ value: String) {
-    let fmt = ISO8601DateFormatter()
-    var list = (UserDefaults.standard.array(forKey: traceKey) as? [String]) ?? []
-    list.append("\(fmt.string(from: Date())) \(value)")
-    if list.count > 20 {
-      list.removeFirst(list.count - 20)
-    }
-    UserDefaults.standard.set(list, forKey: traceKey)
   }
 
   private func note(_ value: String?, code: String?) {
@@ -662,21 +589,6 @@ final class PushBridge {
     return PushErr.relay(
       "Push relay request timed out. Check that the relay is reachable and try again."
     )
-  }
-
-  private func detail(_ err: Error, method: String, path: String) -> String {
-    let text: String
-    if let err = err as? PushErr {
-      switch err {
-      case .relay(let msg):
-        text = msg
-      default:
-        text = err.localizedDescription
-      }
-    } else {
-      text = err.localizedDescription
-    }
-    return "\(method) \(path) failed: \(text)"
   }
 
   private func save(_ value: [String: String], key: String) {
@@ -836,20 +748,15 @@ final class PushBridge {
 
     do {
       let (data, response) = try await session.data(for: req)
-      let code = (response as? HTTPURLResponse)?.statusCode ?? -1
-      log.info("req \(method, privacy: .public) \(path, privacy: .public) -> \(code, privacy: .public)")
-      track("req \(method) \(path) -> \(code)")
       let result: T = try parse(data: data, response: response)
       note(nil, code: nil)
       return result
     } catch {
       let err = normalize(error)
-      log.error("req \(method, privacy: .public) \(path, privacy: .public) err=\(err.localizedDescription, privacy: .public)")
-      track("req \(method) \(path) err=\(err.localizedDescription)")
       if let recovered = recover(err, path: path) {
         throw recovered
       }
-      note(detail(err, method: method, path: path), code: (err as? PushErr)?.code)
+      note((err as? LocalizedError)?.errorDescription ?? err.localizedDescription, code: (err as? PushErr)?.code)
       throw err
     }
   }
@@ -872,20 +779,15 @@ final class PushBridge {
 
     do {
       let (data, response) = try await session.data(for: req)
-      let code = (response as? HTTPURLResponse)?.statusCode ?? -1
-      log.info("req \(method, privacy: .public) \(path, privacy: .public) -> \(code, privacy: .public)")
-      track("req \(method) \(path) -> \(code)")
       let result: T = try parse(data: data, response: response)
       note(nil, code: nil)
       return result
     } catch {
       let err = normalize(error)
-      log.error("req \(method, privacy: .public) \(path, privacy: .public) err=\(err.localizedDescription, privacy: .public)")
-      track("req \(method) \(path) err=\(err.localizedDescription)")
       if let recovered = recover(err, path: path) {
         throw recovered
       }
-      note(detail(err, method: method, path: path), code: (err as? PushErr)?.code)
+      note((err as? LocalizedError)?.errorDescription ?? err.localizedDescription, code: (err as? PushErr)?.code)
       throw err
     }
   }
