@@ -2,6 +2,7 @@
 
 import { Script } from "@opencode-ai/script"
 import { $ } from "bun"
+import { readdir, rm } from "node:fs/promises"
 import { fileURLToPath } from "url"
 import { rewrite, type Pkg } from "../src/pack"
 
@@ -17,6 +18,11 @@ async function main() {
     await $`bun tsc`
     const pkg = rewrite(raw)
     await Bun.write("package.json", JSON.stringify(pkg, null, 2) + "\n")
+    const list = await readdir(".")
+    for (const item of list) {
+      if (!item.endsWith(".tgz")) continue
+      await rm(item, { force: true })
+    }
     await $`bun pm pack`
     await $`npm publish *.tgz --tag ${Script.channel} --access public`
   } finally {
