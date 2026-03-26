@@ -135,7 +135,8 @@ describe("push cmd", () => {
     port = next
     await install({ ...base(), pair: "ptok_1", relay: `http://127.0.0.1:${port}` })
     const res = await ping(base())
-    expect(res.result).toBe("accepted")
+    expect(res.result).toBe("ok")
+    expect(res.publish).toBe("accepted")
     expect(seen.includes("/v1/channel/checkin")).toBe(true)
     expect(seen.includes("/v1/events/publish")).toBe(true)
     await srv.stop()

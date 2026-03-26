@@ -127,6 +127,7 @@ export async function status(opts: Opts) {
 export async function test(opts: Opts) {
   const data = await load()
   const item = next("test")
+  let sent: "accepted" | "suppressed" | undefined
   data.last = item
   data.updated_at = Date.now()
   await append(item)
@@ -137,10 +138,11 @@ export async function test(opts: Opts) {
       const relay = data.relay
       await publish(data, item)
         .then((res) => {
+          sent = res.suppressed ? "suppressed" : "accepted"
           data.relay = {
             ...relay,
             checked: Date.now(),
-            result: res.suppressed ? "suppressed" : "accepted",
+            result: "ok",
             reason: res.reason,
             delivery: res.deliveries?.[0]?.delivery_id,
             err: undefined,
@@ -167,6 +169,7 @@ export async function test(opts: Opts) {
     channel: data.relay?.channel ?? null,
     checked: data.relay?.checked ?? null,
     result: data.relay?.result ?? null,
+    publish: sent ?? null,
     reason: data.relay?.reason ?? null,
     delivery: data.relay?.delivery ?? null,
     error: data.relay?.err ?? null,
