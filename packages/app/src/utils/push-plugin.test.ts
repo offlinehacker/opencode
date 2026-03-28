@@ -12,9 +12,8 @@ import {
 } from "./push-plugin"
 
 describe("push plugin", () => {
-  test("pins the app to the current push package version", () => {
-    expect(PushPlugin.spec.startsWith(`${PushPlugin.pkg}@`)).toBe(true)
-    expect(PushPlugin.spec).not.toBe(PushPlugin.pkg)
+  test("uses the latest push package", () => {
+    expect(PushPlugin.spec).toBe(PushPlugin.pkg)
     expect(addPush(["foo@1.0.0"])).toEqual(["foo@1.0.0", PushPlugin.spec])
     expect(installPush()).toBe(`npx --yes --prefix . --package=${PushPlugin.spec} opencode-push install`)
     expect(pairPush("ptok_1", "https://relay.example.com", "bunx")).toBe(
@@ -30,9 +29,10 @@ describe("push plugin", () => {
     expect(hasPush(["foo@1.0.0"])).toBe(false)
   })
 
-  test("detects the exact configured package spec", () => {
+  test("treats version-pinned entries as compatible by package name", () => {
     expect(hasPushSpec([PushPlugin.spec])).toBe(true)
-    expect(hasPushSpec([PushPlugin.pkg])).toBe(false)
+    expect(hasPushSpec(["@whisperopencode/push@0.1.0"])).toBe(true)
+    expect(hasPushSpec(["foo@1.0.0"])).toBe(false)
   })
 
   test("adds package idempotently", () => {

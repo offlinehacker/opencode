@@ -1,7 +1,7 @@
 import info from "../../../push/package.json"
 
 const pkg = info.name
-const spec = `${pkg}@${info.version}`
+const spec = pkg
 const bin = "opencode-push"
 
 function relayArg(relay?: string) {
@@ -19,15 +19,15 @@ function name(value: string) {
 }
 
 export function hasPush(list?: string[]) {
-  return (list ?? []).some((item) => item === spec || name(item) === pkg)
+  return (list ?? []).some((item) => name(item) === pkg)
 }
 
 export function hasPushSpec(list?: string[]) {
-  return (list ?? []).some((item) => item === spec)
+  return hasPush(list)
 }
 
 export function addPush(list?: string[]) {
-  const next = (list ?? []).filter((item) => item !== spec && name(item) !== pkg)
+  const next = (list ?? []).filter((item) => name(item) !== pkg)
   next.push(spec)
   return next
 }
