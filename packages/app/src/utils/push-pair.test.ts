@@ -229,10 +229,10 @@ describe("fetchWithTimeout", () => {
 })
 
 describe("claimPush", () => {
-  test("waits for the pair command to finish after the relay claims", async () => {
+  test("waits for the install command to finish after the relay claims", async () => {
     await withStub(
       {
-        runs: [{ out: '{\n  "ok": true,\n  "cmd": "pair"\n}' }],
+        runs: [{ out: '{\n  "ok": true,\n  "cmd": "install"\n}' }],
         pairs: [{ status: "claimed" }],
       },
       async (next) => {
@@ -253,10 +253,10 @@ describe("claimPush", () => {
     )
   })
 
-  test("waits for relay claim after a successful pair response", async () => {
+  test("waits for relay claim after a successful install response", async () => {
     await withStub(
       {
-        runs: [{ out: '{\n  "ok": true,\n  "cmd": "pair"\n}' }],
+        runs: [{ out: '{\n  "ok": true,\n  "cmd": "install"\n}' }],
         pairs: [{ status: "pending" }, { status: "pending" }, { status: "pending" }, { status: "claimed" }],
       },
       async (next) => {
@@ -278,7 +278,7 @@ describe("claimPush", () => {
   test("falls back to bunx when the first PTY closes before the relay claims", async () => {
     await withStub(
       {
-        runs: [{ out: "npx failed" }, { out: '{\n  "ok": true,\n  "cmd": "pair"\n}' }],
+        runs: [{ out: "npx failed" }, { out: '{\n  "ok": true,\n  "cmd": "install"\n}' }],
         pairs: [{ status: "pending" }, { status: "pending" }, { status: "active" }],
       },
       async (next) => {
@@ -386,6 +386,7 @@ describe("runPushSetup", () => {
       {
         runs: [{ out: "bunx missing" }, { out: "npx missing" }],
         pairs: [{ status: "pending" }, { status: "pending" }, { status: "pending" }, { status: "pending" }],
+        cfgCode: 404,
       },
       async (next) => {
         const seen: string[] = []
@@ -398,7 +399,7 @@ describe("runPushSetup", () => {
             id: "pair_1",
             status: "pending" as const,
             token: "tok_1",
-            command: "bunx @whispercode/opencode-push pair --pair tok_1",
+            command: "bunx @whispercode/opencode-push install --pair tok_1",
             expires: new Date(Date.now() + 60_000).toISOString(),
           }),
         }
@@ -424,6 +425,7 @@ describe("runPushSetup", () => {
         )
 
         expect(seen[0]).toBe(pairPush("tok_1", "http://localhost:8787"))
+        expect(seen[1]).toBe(installPair("tok_1", "http://localhost:8787"))
       },
     )
   })
@@ -520,7 +522,7 @@ describe("runPushSetup", () => {
     )
   })
 
-  test("falls back to the legacy install flow when host config mutation is unavailable", async () => {
+  test("uses the install flow when host config mutation is unavailable", async () => {
     await withStub(
       {
         runs: [{ out: '{\n  "ok": true,\n  "cmd": "install"\n}' }],
@@ -543,7 +545,7 @@ describe("runPushSetup", () => {
             id: "pair_1",
             status: "pending" as const,
             token: "tok_1",
-            command: "bunx @whispercode/opencode-push pair --pair tok_1",
+            command: "bunx @whispercode/opencode-push install --pair tok_1",
             expires: new Date(Date.now() + 60_000).toISOString(),
           }),
         }
@@ -620,12 +622,12 @@ describe("runPushSetup", () => {
     )
   })
 
-  test("replaces an existing push entry when the configured spec differs", async () => {
+  test("accepts a version-pinned push entry without patching host config", async () => {
     await withStub(
       {
         runs: [{ out: '{\n  "ok": true,\n  "cmd": "pair"\n}' }],
         pairs: [{ status: "claimed" }],
-        cfg: { plugin: ["@whisperopencode/push"] },
+        cfg: { plugin: ["@whisperopencode/push@0.2.1"] },
       },
       async (next) => {
         const platform = {
@@ -654,8 +656,8 @@ describe("runPushSetup", () => {
         })
 
         expect(res.ok).toBe(true)
-        expect(next.patches).toEqual([{ plugin: [PushPlugin.spec] }])
-        expect(next.bodies).toEqual([JSON.stringify({ plugin: [PushPlugin.spec] })])
+        expect(next.patches).toEqual([])
+        expect(next.bodies).toEqual([])
       },
     )
   })
