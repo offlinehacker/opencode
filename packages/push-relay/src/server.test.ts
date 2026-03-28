@@ -428,6 +428,168 @@ describe("push relay", () => {
     }
   })
 
+  test("same-token re-pair reuses the device and keeps prefs", async () => {
+    let sendCount = 0
+    const env = await setup({
+      mode: "live",
+      team: "TEAM123",
+      kid: "KEY123",
+      topic: "dev.whispercode.app",
+      key: testkey(),
+      dial: stub(() => {
+        sendCount++
+        return { status: 200 }
+      }),
+    })
+    try {
+      const startA = await post<Start>(env.root, "/v1/pair/start", {
+        apns_token: "tok_same",
+        device_name: "iPhone",
+        app_version: "1.0.0",
+        apns_env: "production",
+      })
+      const claim = await post<Claim>(env.root, "/v1/pair/claim", {
+        pair_token: startA.pair_token,
+        plugin_version: "0.1.0",
+        server_label: "Alice MacBook",
+      })
+      await post(env.root, "/v1/channel/checkin", {
+        ...check(claim.channel_id),
+        sig: sign(claim.channel_secret, check(claim.channel_id)),
+      })
+
+      const activeA = await get(env.root, `/v1/pair/${startA.pair_id}`)
+      await put(env.root, "/v1/device/preferences", {
+        channel_id: claim.channel_id,
+        device_id: String(activeA.device_id),
+        device_secret: String(activeA.device_secret),
+        prefs: { complete: false, approval: true, question: true, error: true },
+      })
+
+      const startB = await post<Start>(env.root, "/v1/pair/start", {
+        apns_token: "tok_same",
+        device_name: "iPhone",
+        app_version: "1.0.1",
+        apns_env: "production",
+      })
+      await post<Claim>(env.root, "/v1/pair/claim", {
+        pair_token: startB.pair_token,
+        plugin_version: "0.1.0",
+        server_label: "Alice MacBook",
+        channel_id: claim.channel_id,
+        channel_secret: claim.channel_secret,
+      })
+
+      const activeB = await get(env.root, `/v1/pair/${startB.pair_id}`)
+      expect(activeB.status).toBe("active")
+      expect(activeB.device_id).toBe(activeA.device_id)
+
+      const devs = await post<{ devices: Array<Record<string, unknown>> }>(env.root, "/v1/channel/devices", {
+        channel_id: claim.channel_id,
+        channel_secret: claim.channel_secret,
+      })
+      expect(devs.devices.length).toBe(1)
+      expect(devs.devices[0]?.active).toBe(true)
+
+      const body = publish(claim.channel_id, "evt_same_token")
+      const res = await post(env.root, "/v1/events/publish", {
+        ...body,
+        sig: sign(claim.channel_secret, body),
+      })
+      expect(res.suppressed).toBe(true)
+      expect(res.reason).toBe("preferences")
+      expect(sendCount).toBe(0)
+    } finally {
+      await env.stop()
+    }
+  })
+
+  test("putToken collapses rows when a token moves to another device", async () => {
+    let sendCount = 0
+    const env = await setup({
+      mode: "live",
+      team: "TEAM123",
+      kid: "KEY123",
+      topic: "dev.whispercode.app",
+      key: testkey(),
+      dial: stub(() => {
+        sendCount++
+        return { status: 200 }
+      }),
+    })
+    try {
+      const startA = await post<Start>(env.root, "/v1/pair/start", {
+        apns_token: "tok_move_a",
+        device_name: "iPhone",
+        app_version: "1.0.0",
+        apns_env: "production",
+      })
+      const claim = await post<Claim>(env.root, "/v1/pair/claim", {
+        pair_token: startA.pair_token,
+        plugin_version: "0.1.0",
+        server_label: "Alice MacBook",
+      })
+      await post(env.root, "/v1/channel/checkin", {
+        ...check(claim.channel_id),
+        sig: sign(claim.channel_secret, check(claim.channel_id)),
+      })
+      const activeA = await get(env.root, `/v1/pair/${startA.pair_id}`)
+
+      const startB = await post<Start>(env.root, "/v1/pair/start", {
+        apns_token: "tok_move_b",
+        device_name: "iPad",
+        app_version: "1.0.0",
+        apns_env: "production",
+      })
+      await post<Claim>(env.root, "/v1/pair/claim", {
+        pair_token: startB.pair_token,
+        plugin_version: "0.1.0",
+        server_label: "Alice MacBook",
+        channel_id: claim.channel_id,
+        channel_secret: claim.channel_secret,
+      })
+      const activeB = await get(env.root, `/v1/pair/${startB.pair_id}`)
+
+      await put(env.root, "/v1/device/token", {
+        channel_id: claim.channel_id,
+        device_id: String(activeB.device_id),
+        device_secret: String(activeB.device_secret),
+        apns_token: "tok_move_a",
+        apns_env: "production",
+      })
+
+      const devs = await post<{ devices: Array<Record<string, unknown>> }>(env.root, "/v1/channel/devices", {
+        channel_id: claim.channel_id,
+        channel_secret: claim.channel_secret,
+      })
+      const live = devs.devices.filter((row) => row.active === true)
+      expect(live.length).toBe(1)
+      expect(live[0]?.device_id).toBe(activeB.device_id)
+
+      const dead = await fetch(new URL("/v1/device/test", env.root), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channel_id: claim.channel_id,
+          device_id: String(activeA.device_id),
+          device_secret: String(activeA.device_secret),
+        }),
+      })
+      expect(dead.status).toBe(404)
+
+      const body = publish(claim.channel_id, "evt_token_move")
+      const res = await post(env.root, "/v1/events/publish", {
+        ...body,
+        sig: sign(claim.channel_secret, body),
+      })
+      expect(res.accepted).toBe(true)
+      expect(res.device_count).toBe(1)
+      expect(sendCount).toBe(1)
+    } finally {
+      await env.stop()
+    }
+  })
+
   test("lists devices for a channel", async () => {
     const env = await setup()
     try {
@@ -845,6 +1007,58 @@ describe("push relay", () => {
       expect(r2.channels).toBe(1)
     } finally {
       db.close()
+      await fs.rm(next.dir, { recursive: true, force: true }).catch(() => undefined)
+    }
+  })
+
+  test("startup repair collapses duplicate active tokens", async () => {
+    const next = await tmp()
+    let db = new Store({ file: next.file, pairMs: 1 })
+    let open = true
+    try {
+      const now = Date.now()
+      db.db.exec(`DROP INDEX IF EXISTS device_channel_token_active_idx`)
+      db.db.exec(
+        `INSERT INTO channel (id, secret, server_label, created_at, last_seen_at) VALUES ('ch1', 'sec', 'srv', ${now}, ${now})`,
+      )
+      db.db.exec(
+        `INSERT INTO device (id, channel_id, secret, apns_token, prefs_json, created_at, last_seen_at)
+         VALUES ('dev_old', 'ch1', 'dsec_old', 'tok_dup', '{}', ${now - 10}, ${now - 10})`,
+      )
+      db.db.exec(
+        `INSERT INTO device (id, channel_id, secret, apns_token, prefs_json, created_at, last_seen_at)
+         VALUES ('dev_new', 'ch1', 'dsec_new', 'tok_dup', '{}', ${now}, ${now})`,
+      )
+      db.db.exec(
+        `INSERT INTO pair_request (id, token_hash, apns_token, device_name, app_version, status, expires_at, created_at, channel_id, device_id)
+         VALUES ('pair_old', 'h_old', 'tok_dup', 'iPhone', '1.0.0', 'active', ${now + 1000}, ${now}, 'ch1', 'dev_old')`,
+      )
+      db.close()
+      open = false
+
+      db = new Store({ file: next.file, pairMs: 1 })
+      open = true
+
+      const rows = db.db
+        .prepare(
+          `SELECT id, revoked_at, error_code FROM device WHERE channel_id = 'ch1' AND apns_token = 'tok_dup' ORDER BY id`,
+        )
+        .all() as Array<Record<string, string | number | null>>
+      const live = rows.filter((row) => row.revoked_at == null)
+      expect(live.length).toBe(1)
+      expect(live[0]?.id).toBe("dev_new")
+
+      const pair = db.db.prepare(`SELECT device_id FROM pair_request WHERE id = 'pair_old'`).get() as {
+        device_id: string
+      }
+      expect(pair.device_id).toBe("dev_new")
+
+      const idx = db.db
+        .prepare(`SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'device_channel_token_active_idx'`)
+        .get() as { name: string }
+      expect(idx.name).toBe("device_channel_token_active_idx")
+    } finally {
+      if (open) db.close()
       await fs.rm(next.dir, { recursive: true, force: true }).catch(() => undefined)
     }
   })

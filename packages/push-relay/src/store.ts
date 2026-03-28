@@ -203,6 +203,10 @@ export class Store {
         `CREATE UNIQUE INDEX IF NOT EXISTS delivery_event_device_idx ON delivery(channel_id, event_id, device_id)`,
       )
     } catch {}
+    this.repair()
+    this.db.exec(
+      `CREATE UNIQUE INDEX IF NOT EXISTS device_channel_token_active_idx ON device(channel_id, apns_token) WHERE revoked_at IS NULL`,
+    )
   }
 
   close() {
@@ -300,24 +304,42 @@ export class Store {
       if (ch.revoked_at) throw new RelayErr(410, "channel_revoked")
       if (!equal(String(ch.secret), input.channel_secret)) throw new RelayErr(401, "bad_channel_secret")
 
-      const device = id("dev")
-      const dsec = id("dsec")
+      const tok = String(row.apns_token)
+      const hit = this.best(this.same(chId, tok))
+      const device = hit ? String(hit.id) : id("dev")
       const now = Date.now()
       this.db.transaction(() => {
-        this.db
-          .prepare(
-            `INSERT INTO device (id, channel_id, secret, apns_token, apns_env, device_name, created_at, prefs_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-          .run(
-            device,
-            chId,
-            dsec,
-            String(row.apns_token),
-            row.apns_env ?? null,
-            String(row.device_name),
-            now,
-            JSON.stringify(prefs()),
-          )
+        this.prune(chId, tok, device)
+        if (hit?.secret) {
+          this.db
+            .prepare(
+              `UPDATE device
+               SET apns_token = ?,
+                   apns_env = COALESCE(?, apns_env),
+                   device_name = ?,
+                   error_code = NULL,
+                   revoked_at = NULL,
+                   last_seen_at = ?,
+                   created_at = COALESCE(created_at, ?)
+               WHERE id = ?`,
+            )
+            .run(tok, row.apns_env ?? null, String(row.device_name), now, now, device)
+        } else {
+          this.db
+            .prepare(
+              `INSERT INTO device (id, channel_id, secret, apns_token, apns_env, device_name, created_at, prefs_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            )
+            .run(
+              device,
+              chId,
+              id("dsec"),
+              tok,
+              row.apns_env ?? null,
+              String(row.device_name),
+              now,
+              JSON.stringify(prefs()),
+            )
+        }
         this.db
           .prepare(`UPDATE pair_request SET status = 'claimed', channel_id = ?, device_id = ? WHERE id = ?`)
           .run(chId, device, String(row.id))
@@ -393,6 +415,7 @@ export class Store {
     const dev = this.deviceIncludingRevoked(input)
     const now = Date.now()
     this.db.transaction(() => {
+      this.prune(input.channel_id, input.apns_token, input.device_id)
       this.db
         .prepare(
           `UPDATE device SET apns_token = ?, apns_env = COALESCE(?, apns_env), error_code = NULL, revoked_at = NULL, last_seen_at = ? WHERE id = ?`,
@@ -477,7 +500,11 @@ export class Store {
     }
 
     const devices = this.db
-      .prepare(`SELECT * FROM device WHERE channel_id = ? AND revoked_at IS NULL`)
+      .prepare(
+        `SELECT * FROM device
+         WHERE channel_id = ? AND revoked_at IS NULL
+         ORDER BY COALESCE(last_seen_at, created_at, 0) DESC, created_at DESC, id DESC`,
+      )
       .all(input.channel_id) as Row[]
 
     if (devices.length === 0) {
@@ -504,8 +531,32 @@ export class Store {
 
     const sends: Send[] = []
     const now = Date.now()
+    const seen = new Set<string>()
     for (const dev of devices) {
       const did = String(dev.id)
+      const tok = String(dev.apns_token)
+      if (seen.has(tok)) {
+        const idd = id("dlv")
+        this.db
+          .prepare(
+            `INSERT INTO delivery (id, channel_id, device_id, event_id, kind, session_id, collapse_id, status, reason, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            idd,
+            input.channel_id,
+            did,
+            input.event_id,
+            input.kind,
+            input.session_id,
+            input.collapse_id,
+            "suppressed",
+            "duplicate_token",
+            now,
+          )
+        continue
+      }
+      seen.add(tok)
       const pref = loadPrefs(dev.prefs_json ?? null)
       if (!enabled(pref, input.kind)) {
         const idd = id("dlv")
@@ -640,6 +691,26 @@ export class Store {
     })()
   }
 
+  private repair() {
+    const rows = this.db
+      .prepare(
+        `SELECT channel_id, apns_token
+         FROM device
+         WHERE revoked_at IS NULL
+         GROUP BY channel_id, apns_token
+         HAVING COUNT(*) > 1`,
+      )
+      .all() as Row[]
+
+    for (const row of rows) {
+      const channel = String(row.channel_id)
+      const token = String(row.apns_token)
+      const keep = this.best(this.same(channel, token))
+      if (!keep?.id) continue
+      this.prune(channel, token, String(keep.id))
+    }
+  }
+
   private expire(row: Row) {
     const exp = Number(row.expires_at ?? 0)
     if (!exp || Date.now() <= exp) return
@@ -650,6 +721,41 @@ export class Store {
 
   private row(sql: string, ...args: Array<string | number | null>) {
     return (this.db.prepare(sql).get(...args) as Row | null) ?? null
+  }
+
+  private same(channel: string, token: string) {
+    return this.db.prepare(`SELECT * FROM device WHERE channel_id = ? AND apns_token = ?`).all(channel, token) as Row[]
+  }
+
+  private best(rows: Row[], keep?: string) {
+    if (keep) {
+      const hit = rows.find((row) => String(row.id) === keep)
+      if (hit) return hit
+    }
+    return rows
+      .slice()
+      .sort((a, b) => live(b) - live(a) || stamp(b) - stamp(a) || String(b.id).localeCompare(String(a.id)))[0]
+  }
+
+  private prune(channel: string, token: string, keep: string) {
+    const now = Date.now()
+    this.db
+      .prepare(
+        `UPDATE pair_request
+         SET device_id = ?
+         WHERE status IN ('pending', 'claimed', 'active')
+           AND device_id IN (
+             SELECT id FROM device WHERE channel_id = ? AND apns_token = ? AND id != ?
+           )`,
+      )
+      .run(keep, channel, token, keep)
+    this.db
+      .prepare(
+        `UPDATE device
+         SET revoked_at = ?, error_code = COALESCE(error_code, 'duplicate_token')
+         WHERE channel_id = ? AND apns_token = ? AND revoked_at IS NULL AND id != ?`,
+      )
+      .run(now, channel, token, keep)
   }
 
   private device(input: DeviceAuth) {
@@ -686,6 +792,14 @@ function omit<T extends { sig: string }>(value: T) {
   const { sig, ...rest } = value
   void sig
   return rest
+}
+
+function live(row: Row) {
+  return row.revoked_at == null ? 1 : 0
+}
+
+function stamp(row: Row) {
+  return Math.max(Number(row.last_seen_at ?? 0), Number(row.created_at ?? 0))
 }
 
 function prefs() {
