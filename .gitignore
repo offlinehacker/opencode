@@ -38,3 +38,4 @@ packages/android/release.keystore
 todo.md
 *.internal.md
 *.tgz
+script/deploy-relay
