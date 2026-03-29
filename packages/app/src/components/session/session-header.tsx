@@ -165,6 +165,8 @@ export function SessionHeader() {
   const search = settings.visibility.search
   const status = settings.visibility.status
   const isDesktop = createMediaQuery("(min-width: 768px)")
+  // UPSTREAM-DIVERGENCE: The fork exposes extra titlebar affordances on mobile without affecting the
+  // desktop header flow that upstream continues to evolve.
   const mobile = createMemo(() => platform.platform === "ios" || platform.platform === "android")
 
   const [exists, setExists] = createStore<Partial<Record<OpenApp, boolean>>>({
@@ -287,6 +289,8 @@ export function SessionHeader() {
   onMount(() => {
     setCenterMount(document.getElementById("opencode-titlebar-center"))
   })
+  // UPSTREAM-DIVERGENCE: Mobile builds use a manual refresh button instead of the removed pull-to-
+  // refresh gesture so upstream session header changes must keep this fallback available.
   const refresh = () => {
     platform.haptic?.("light")
     void platform.restart()
@@ -335,6 +339,8 @@ export function SessionHeader() {
               fallback={
                 <div class="flex items-center gap-2">
                   <Show when={mobile()}>
+                    {/* UPSTREAM-DIVERGENCE: Preserve this mobile-only refresh button. It replaced the
+                        fork's earlier pull-to-refresh gesture in shared app code. */}
                     <IconButton
                       icon="refresh"
                       variant="ghost"

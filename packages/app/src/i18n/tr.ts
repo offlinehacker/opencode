@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63. Keep the WhisperCode mobile refresh,
+// phone settings tab, and push-notification keys when merging upstream locale updates.
+
 import { dict as en } from "./en"
 
 type Keys = keyof typeof en
@@ -695,6 +698,8 @@ export const dict = {
 
   "session.header.search.placeholder": "{{project}} ara",
   "session.header.searchFiles": "Dosya ara",
+  // UPSTREAM-DIVERGENCE: Fork mobile builds add a manual session refresh action to replace the old
+  // pull-to-refresh path in shared UI.
   "session.header.refresh": "Yenile",
   "session.header.openIn": "Aç",
   "session.header.open.action": "{{app}} ile aç",
@@ -766,6 +771,7 @@ export const dict = {
 
   "app.name.desktop": "OpenCode Masaüstü",
 
+  // UPSTREAM-DIVERGENCE: Fork-only settings navigation labels for the WhisperCode phone tab.
   "settings.section.whispercode": "WhisperCode",
   "settings.section.desktop": "Masaüstü",
   "settings.section.server": "Sunucu",
@@ -918,6 +924,8 @@ export const dict = {
   "settings.general.notifications.errors.title": "Hatalar",
   "settings.general.notifications.errors.description": "Hata oluştuğunda sistem bildirimi göster",
 
+  // UPSTREAM-DIVERGENCE: Fork-only mobile push permission, relay, pairing, diagnostics, and routing
+  // strings used by the shared app package and native wrappers.
   "settings.general.notifications.push.permission.title": "Push izni",
   "settings.general.notifications.push.permission.pending":
     "WhisperCode'un bu iPhone'da bildirim gösterip gösteremeyeceği kontrol ediliyor",

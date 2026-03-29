@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to normalize the fork's hosted relay
+// URL and any custom relay override entered from mobile settings.
+
 export const DEFAULT_PUSH_RELAY_URL = "https://whisper.clankercontext.com"
 
 export function normalizePushRelayURL(input?: string) {

@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Updated after upstream sync 6b9ce5e63 to keep the fork's phone settings
+// tab represented in end-to-end coverage when upstream rearranges the settings dialog.
+
 import { test, expect, settingsKey } from "../fixtures"
 import { closeDialog, openSettings } from "../actions"
 import {

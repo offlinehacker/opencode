@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to keep mobile push pairing state in
+// shared app context instead of forking the settings/session trees for iOS and Android.
+
 import { createSimpleContext } from "@opencode-ai/ui/context"
 import { createEffect, onCleanup, onMount } from "solid-js"
 import { createStore } from "solid-js/store"

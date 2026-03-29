@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63. Keep the WhisperCode mobile refresh,
+// phone settings tab, and push-notification keys when merging upstream locale updates.
+
 import { dict as en } from "./en"
 
 type Keys = keyof typeof en
@@ -673,6 +676,8 @@ export const dict = {
   "session.new.lastModified": "最后修改",
   "session.header.search.placeholder": "搜索 {{project}}",
   "session.header.searchFiles": "搜索文件",
+  // UPSTREAM-DIVERGENCE: Fork mobile builds add a manual session refresh action to replace the old
+  // pull-to-refresh path in shared UI.
   "session.header.refresh": "刷新",
   "session.header.openIn": "打开方式",
   "session.header.open.action": "打开 {{app}}",
@@ -745,6 +750,7 @@ export const dict = {
 
   "settings.section.desktop": "桌面",
   "settings.section.server": "服务器",
+  // UPSTREAM-DIVERGENCE: Fork-only settings navigation labels for the WhisperCode phone tab.
   "settings.section.whispercode": "WhisperCode",
 
   "settings.tab.general": "通用",
@@ -887,6 +893,8 @@ export const dict = {
   "settings.general.notifications.permissions.description": "当需要权限时显示系统通知",
   "settings.general.notifications.errors.title": "错误",
   "settings.general.notifications.errors.description": "发生错误时显示系统通知",
+  // UPSTREAM-DIVERGENCE: Fork-only mobile push permission, relay, pairing, diagnostics, and routing
+  // strings used by the shared app package and native wrappers.
   "settings.general.notifications.push.permission.title": "推送权限",
   "settings.general.notifications.push.permission.pending": "正在检查 WhisperCode 能否在此 iPhone 上显示通知",
   "settings.general.notifications.push.permission.notDetermined": "启用通用提醒，以接收回复、审批、问题和错误通知",

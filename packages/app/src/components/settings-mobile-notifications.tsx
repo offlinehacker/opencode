@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to host the fork's iOS/Android push
+// permission, pairing, relay, and host-plugin setup UI inside the shared app package.
+
 import { Card } from "@opencode-ai/ui/card"
 import { Button } from "@opencode-ai/ui/button"
 import { showToast } from "@opencode-ai/ui/toast"

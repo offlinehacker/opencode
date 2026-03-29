@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to verify the fork's host plugin
+// command generation and package version selection.
+
 import { describe, expect, test } from "bun:test"
 import {
   addPush,

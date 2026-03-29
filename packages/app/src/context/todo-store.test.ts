@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to protect the fork's detached todo
+// copy logic and cache-mode selection.
+
 import { describe, expect, test } from "bun:test"
 import type { Todo } from "@opencode-ai/sdk/v2/client"
 import { createStore } from "solid-js/store"

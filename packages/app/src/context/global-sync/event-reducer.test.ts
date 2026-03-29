@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Updated after upstream sync 6b9ce5e63 to preserve the fork's copied todo
+// semantics during future global-sync reducer merges.
+
 import { describe, expect, test } from "bun:test"
 import type { Message, Part, PermissionRequest, Project, QuestionRequest, Session, Todo } from "@opencode-ai/sdk/v2/client"
 import { createStore } from "solid-js/store"

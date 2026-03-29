@@ -1,4 +1,6 @@
 const MAX_BREAKS = 200
+// UPSTREAM-DIVERGENCE-FILE: These editor DOM helpers were added after upstream sync 6b9ce5e63 for the
+// fork's mobile keyboard delete-word action. Preserve them when upstream changes cursor math.
 const GAP = /\s/
 
 function gap(char?: string) {
@@ -97,6 +99,8 @@ export function getEditorText(parent: HTMLElement) {
   return text(parent)
 }
 
+// UPSTREAM-DIVERGENCE: Mobile delete-word needs selection offsets in editor text coordinates rather
+// than the browser's node-local offsets used by the upstream cursor helpers.
 export function getSelectionRange(parent: HTMLElement) {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0) return null
@@ -204,6 +208,8 @@ export function setCursorPosition(parent: HTMLElement, position: number) {
 }
 
 export function setSelectionRange(parent: HTMLElement, range: Range, start: number, end = start) {
+  // UPSTREAM-DIVERGENCE: The fork's native keyboard shortcut selects a deletion span before mutating
+  // the DOM, so we need a sibling helper to set both edges using the upstream range traversal logic.
   const length = getTextLength(parent)
   const from = Math.max(0, Math.min(start, length))
   const to = Math.max(from, Math.min(end, length))

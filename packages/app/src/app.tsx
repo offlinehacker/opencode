@@ -68,8 +68,18 @@ import { useCheckServerHealth } from "./utils/server-health"
 import { legacySessionHref, legacySessionServer, requireServerKey, sessionHref } from "./utils/session-route"
 import { createSessionLineage } from "@/pages/session/session-lineage"
 
+<<<<<<< HEAD
 import { SessionPage, SessionRouteErrorBoundary, TargetSessionRouteContent } from "@/pages/session"
 import { NewHome, LegacyHome } from "@/pages/home"
+=======
+// UPSTREAM-DIVERGENCE-FILE: This shared app entrypoint carries the fork-only mobile push providers
+// added after upstream sync 6b9ce5e63. Future upstream merges must preserve these providers around
+// Layout so iOS/Android builds keep relay configuration and pairing state.
+
+const Home = lazy(() => import("@/pages/home"))
+const Session = lazy(() => import("@/pages/session"))
+const Loading = () => <div class="size-full" />
+>>>>>>> 8ed8fd1e2 (add upstream comment markers to help with merge conflicts)
 
 const NewSession = lazy(() => import("@/pages/new-session"))
 
@@ -325,6 +335,7 @@ type ServerScopedShellProps = ParentProps<{
 
 function ServerScopedProviders(props: ServerScopedShellProps) {
   return (
+<<<<<<< HEAD
     <PushRelayProvider>
       <PushPairProvider>
         <LayoutProvider>
@@ -333,6 +344,29 @@ function ServerScopedProviders(props: ServerScopedShellProps) {
         </LayoutProvider>
       </PushPairProvider>
     </PushRelayProvider>
+=======
+    <SettingsProvider>
+      <PermissionProvider>
+        {/* UPSTREAM-DIVERGENCE: WhisperCode inserts push relay/pair providers ahead of Layout so the
+            shared app package can serve iOS/Android pairing flows without forking the route tree. */}
+        <PushRelayProvider>
+          <PushPairProvider>
+            <LayoutProvider>
+              <NotificationProvider>
+                <ModelsProvider>
+                  <CommandProvider>
+                    <HighlightsProvider>
+                      <Layout>{props.children}</Layout>
+                    </HighlightsProvider>
+                  </CommandProvider>
+                </ModelsProvider>
+              </NotificationProvider>
+            </LayoutProvider>
+          </PushPairProvider>
+        </PushRelayProvider>
+      </PermissionProvider>
+    </SettingsProvider>
+>>>>>>> 8ed8fd1e2 (add upstream comment markers to help with merge conflicts)
   )
 }
 

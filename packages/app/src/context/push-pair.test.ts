@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to cover the fork's mobile push
+// pairing state machine helpers.
+
 import { describe, expect, test } from "bun:test"
 import { canAutoPair, canClearPair, canPollPair, canReusePair, canSyncPair, relaySwitched } from "./push-pair"
 

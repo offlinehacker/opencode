@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added/updated after upstream sync 6b9ce5e63 to lock down the fork's
+// mobile delete-word editor helpers during future upstream prompt-editor merges.
+
 import { describe, expect, test } from "bun:test"
 import {
   createTextFragment,

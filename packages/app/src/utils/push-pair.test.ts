@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to lock down the fork's relay-backed
+// push pairing, host install, and repair flow.
+
 import { describe, expect, test } from "bun:test"
 import { claimPush, fetchWithTimeout, mergePushIssue, PushFail, pushIssue, runPushSetup } from "./push-pair"
 import { installPair, pairPush, PushPlugin } from "./push-plugin"

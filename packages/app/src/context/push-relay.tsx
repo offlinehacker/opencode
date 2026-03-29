@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to persist the fork's relay URL and
+// mirror it into the native mobile wrappers without splitting the shared app package.
+
 import { createSimpleContext } from "@opencode-ai/ui/context"
 import { createEffect, createMemo } from "solid-js"
 import { createStore } from "solid-js/store"

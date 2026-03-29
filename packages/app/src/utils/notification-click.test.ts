@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Updated after upstream sync 6b9ce5e63 to keep the fork's channel/session
+// notification-open routing behavior covered during future upstream merges.
+
 import { afterEach, describe, expect, test } from "bun:test"
 import { handleNotificationClick, setNavigate, setNotificationOpen } from "./notification-click"
 

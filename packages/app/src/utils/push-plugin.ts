@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to generate the install/pair commands
+// for the fork's host-side push plugin. Keep this aligned with packages/push package naming.
+
 import info from "../../../push/package.json"
 
 const pkg = info.name

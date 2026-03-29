@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 for WhisperCode's relay-backed mobile
+// pairing workflow. Future upstream merges must preserve the host install, claim, and repair flow.
+
 import type { PairInfo, Platform, PushState } from "@/context/platform"
 import type { ServerConnection } from "@/context/server"
 import { addPush, hasPush, installPair, pairPush, PushPlugin } from "@/utils/push-plugin"

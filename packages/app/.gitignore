@@ -1,3 +1,5 @@
+# UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to keep local mobile/push app assets
+# and e2e artifacts out of git when working in the forked app package.
 src/assets/theme.css
 e2e/test-results
 e2e/playwright-report

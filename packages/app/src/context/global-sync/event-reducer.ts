@@ -194,6 +194,8 @@ export function applyDirectoryEvent(input: {
     }
     case "todo.updated": {
       const props = event.properties as { sessionID: string; todos: Todo[] }
+      // UPSTREAM-DIVERGENCE: Copy todo payloads before writing them so the fork's resume logic can
+      // safely share session_todo cache state across stores without reference reuse bugs.
       input.setStore("todo", props.sessionID, copyTodos(props.todos))
       input.setSessionTodo?.(props.sessionID, props.todos)
       break

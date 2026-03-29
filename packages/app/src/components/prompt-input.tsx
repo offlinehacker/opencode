@@ -95,6 +95,9 @@ import type { ReferenceInfo } from "@opencode-ai/sdk/v2/client"
 export { createPromptInputHistory }
 export type { PromptInputControls, PromptInputHistory, PromptInputProps, PromptInputState, PromptInputSubmission }
 
+// UPSTREAM-DIVERGENCE-FILE: Prompt input carries fork-only mobile keyboard affordances added after
+// upstream sync 6b9ce5e63. Preserve these handlers when upstream rewrites editor behavior.
+
 const EXAMPLES = [
   "prompt.example.1",
   "prompt.example.2",
@@ -588,6 +591,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       ),
   )
 
+  // UPSTREAM-DIVERGENCE: Mobile keyboards dispatch a custom delete-word event because iOS/Android do
+  // not reliably map the upstream desktop shortcuts onto the contenteditable prompt.
   const deleteWord = () => {
     if (!editorRef) return
 
@@ -631,6 +636,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   })
 
   createEffect(() => {
+    // UPSTREAM-DIVERGENCE: Listen for the native mobile keyboard accessory action that requests the
+    // shared prompt editor to delete the previous word without forking this component.
     const handleDeleteWord = () => {
       deleteWord()
     }
@@ -1785,6 +1792,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                                 />
                               </Show>
                               <span
+                                // UPSTREAM-DIVERGENCE: Clamp the model label more aggressively on mobile so
+                                // the fork's native wrappers keep the prompt toolbar usable in narrow widths.
                                 class="block min-w-0 max-w-[8ch] truncate"
                                 title={
                                   props.controls.model.selection.current()?.name ??
@@ -1825,6 +1834,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                               />
                             </Show>
                             <span
+                              // UPSTREAM-DIVERGENCE: Match the tighter mobile-safe truncation in the paid
+                              // selector path so both model buttons survive upstream layout changes.
                               class="block min-w-0 max-w-[8ch] truncate"
                               title={
                                 props.controls.model.selection.current()?.name ??

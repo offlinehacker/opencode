@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63. Keep the WhisperCode mobile refresh,
+// phone settings tab, and push-notification keys when merging upstream locale updates.
+
 export const dict = {
   "command.category.suggested": "แนะนำ",
   "command.category.view": "มุมมอง",
@@ -690,6 +693,8 @@ export const dict = {
 
   "session.header.search.placeholder": "ค้นหา {{project}}",
   "session.header.searchFiles": "ค้นหาไฟล์",
+  // UPSTREAM-DIVERGENCE: Fork mobile builds add a manual session refresh action to replace the old
+  // pull-to-refresh path in shared UI.
   "session.header.refresh": "รีเฟรช",
   "session.header.openIn": "เปิดใน",
   "session.header.open.action": "เปิด {{app}}",
@@ -759,6 +764,7 @@ export const dict = {
 
   "app.name.desktop": "OpenCode Desktop",
 
+  // UPSTREAM-DIVERGENCE: Fork-only settings navigation labels for the WhisperCode phone tab.
   "settings.section.whispercode": "WhisperCode",
   "settings.section.desktop": "เดสก์ท็อป",
   "settings.section.server": "เซิร์ฟเวอร์",
@@ -909,6 +915,8 @@ export const dict = {
   "settings.general.notifications.errors.title": "ข้อผิดพลาด",
   "settings.general.notifications.errors.description": "แสดงการแจ้งเตือนระบบเมื่อเกิดข้อผิดพลาด",
 
+  // UPSTREAM-DIVERGENCE: Fork-only mobile push permission, relay, pairing, diagnostics, and routing
+  // strings used by the shared app package and native wrappers.
   "settings.general.notifications.push.permission.title": "สิทธิ์การแจ้งเตือนแบบพุช",
   "settings.general.notifications.push.permission.pending":
     "กำลังตรวจสอบว่า WhisperCode สามารถแสดงการแจ้งเตือนบน iPhone เครื่องนี้ได้หรือไม่",

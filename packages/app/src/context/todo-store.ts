@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to centralize the fork's detached todo
+// copy logic and resume-aware cache selection shared by global-sync and session sync.
+
 import type { Todo } from "@opencode-ai/sdk/v2/client"
 
 export function copyTodos(todos: Todo[]) {

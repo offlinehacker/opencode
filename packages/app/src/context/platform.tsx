@@ -6,6 +6,10 @@ import { ServerConnection } from "./server"
 import type { WslServersPlatform } from "../wsl/types"
 import type { UpdaterPlatform } from "../updater"
 
+// UPSTREAM-DIVERGENCE-FILE: This platform contract is extended by the fork's iOS/Android wrappers.
+// When merging upstream platform changes, preserve the push pairing, relay, and notification metadata
+// additions introduced after upstream sync 6b9ce5e63.
+
 type PickerPaths = string | string[] | null
 type OpenDirectoryPickerOptions = { title?: string; multiple?: boolean }
 type OpenAttachmentPickerOptions = {
@@ -18,6 +22,8 @@ type OpenAttachmentPickerOptions = {
 type SaveFilePickerOptions = { title?: string; defaultPath?: string }
 type PlatformName = "web" | "desktop" | "ios" | "android"
 type DesktopOS = "macos" | "windows" | "linux"
+// UPSTREAM-DIVERGENCE: These exported types are consumed across packages/app, packages/ios, and
+// packages/android to keep push notification permission, pairing, and relay state aligned.
 export type PushKind = "complete" | "error" | "approval" | "question" | "test"
 export type PushPerm = "unsupported" | "not-determined" | "denied" | "authorized" | "provisional" | "ephemeral"
 export type PushCred = {
@@ -114,7 +120,8 @@ type PlatformBase = {
   /** Navigate forward in history */
   forward(): void
 
-  /** Send a system notification (optional deep link) */
+  /** UPSTREAM-DIVERGENCE: Fork mobile builds attach notification kind metadata so native bridges can
+      choose generic push payloads while the web implementation safely ignores the extra options. */
   notify(title: string, description?: string, href?: string, opts?: NotifyOpts): Promise<void>
 
   /** Open a native attachment picker and read selected files sequentially (desktop only) */
@@ -135,7 +142,8 @@ type PlatformBase = {
   /** Stable platform window identity for window-scoped persistence */
   windowID?: string
 
-  /** Current push notification state (optional native platforms) */
+  /** UPSTREAM-DIVERGENCE: Fork-only push methods keep the shared app package aware of native mobile
+      permission, relay, and pairing state. Preserve this surface when reconciling upstream changes. */
   pushState?: Accessor<PushState | undefined>
 
   /** Read push notification state (optional native platforms) */

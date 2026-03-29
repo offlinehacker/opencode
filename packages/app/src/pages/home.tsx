@@ -1776,6 +1776,8 @@ export function LegacyHome() {
       </Button>
       {(platform.platform === "ios" || platform.platform === "android") && (
         <p class="block text-center mt-2 text-12-regular text-text-dimmed">
+          {/* UPSTREAM-DIVERGENCE: Keep the mobile quick-start link on the shared home page so server
+              onboarding survives upstream empty-state redesigns. */}
           Need help connecting?{" "}
           <a
             class="external-link text-text-link underline"

@@ -1,3 +1,6 @@
+// UPSTREAM-DIVERGENCE-FILE: Added after upstream sync 6b9ce5e63 to cover the fork's mobile push
+// settings diagnostics and toast behavior.
+
 import { describe, expect, test } from "bun:test"
 import { PushFail } from "../utils/push-pair"
 import { shouldToastPairErr } from "./settings-mobile-notifications"
