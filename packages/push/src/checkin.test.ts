@@ -1,43 +1,27 @@
-import { afterEach, beforeAll, describe, expect, mock, test } from "bun:test"
+import { afterEach, describe, expect, test } from "bun:test"
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
-import type { Data } from "./state"
+import { checkin } from "./checkin"
+import { checkinLockFile } from "./path"
+import { load, type Data } from "./state"
 
 let hits = 0
-let fail: Error | undefined
+let fail: string | undefined
 let hold: Promise<void> | undefined
 
-mock.module("./relay.js", () => ({
-  checkin: async () => {
-    hits += 1
-    if (hold) await hold
-    if (fail) throw fail
-    return { ok: true }
-  },
-}))
-
-type Check = typeof import("./checkin")
-type Path = typeof import("./path")
-type State = typeof import("./state")
-
-let check: Check
-let state: State
-let paths: Path
-
 const dirs: string[] = []
-
-beforeAll(async () => {
-  check = await import("./checkin")
-  state = await import("./state")
-  paths = await import("./path")
-})
+const srvs: Array<ReturnType<typeof Bun.serve>> = []
 
 afterEach(async () => {
   delete process.env.OPENCODE_TEST_HOME
   hits = 0
   fail = undefined
   hold = undefined
+
+  for (const srv of srvs.splice(0)) {
+    await srv.stop()
+  }
 
   for (const dir of dirs.splice(0)) {
     const root = path.join(dir, ".local", "state", "opencode")
@@ -46,14 +30,14 @@ afterEach(async () => {
   }
 })
 
-function data(): Data {
+function data(url: string): Data {
   return {
     v: 1,
     mode: "relay",
     root: {},
     cool: {},
     relay: {
-      url: "https://relay.test",
+      url,
       channel: "ch_1",
       secret: "sec_1",
     },
@@ -65,6 +49,22 @@ async function home() {
   dirs.push(dir)
   process.env.OPENCODE_TEST_HOME = dir
   return dir
+}
+
+async function serve() {
+  const srv = Bun.serve({
+    port: 0,
+    fetch: async () => {
+      hits += 1
+      if (hold) await hold
+      if (fail) {
+        return Response.json({ error: fail }, { status: 500 })
+      }
+      return Response.json({ ok: true })
+    },
+  })
+  srvs.push(srv)
+  return `http://127.0.0.1:${srv.port}`
 }
 
 async function stale(file: string) {
@@ -88,13 +88,13 @@ async function seen(file: string) {
 describe("push checkin", () => {
   test("clears a stale lock and updates relay state", async () => {
     await home()
-    const lock = paths.checkinLockFile()
+    const url = await serve()
+    const lock = checkinLockFile()
     await fs.mkdir(path.dirname(lock), { recursive: true })
     await stale(lock)
 
-    const next = data()
-    const res = await check.checkin(next, "test")
-    const saved = await state.load()
+    const res = await checkin(data(url), "test")
+    const saved = await load()
     const found = await fs.stat(lock).catch(() => undefined)
 
     expect(res).toEqual({ status: "ok" })
@@ -106,13 +106,13 @@ describe("push checkin", () => {
 
   test("returns locked when stale lock cleanup fails", async () => {
     const dir = await home()
-    const lock = paths.checkinLockFile()
+    const lock = checkinLockFile()
     const root = path.join(dir, ".local", "state", "opencode")
     await fs.mkdir(root, { recursive: true })
     await stale(lock)
     await fs.chmod(root, 0o500)
 
-    const res = await check.checkin(data(), "test")
+    const res = await checkin(data("https://relay.test"), "test")
 
     expect(res).toEqual({ status: "skip", reason: "locked" })
     expect(hits).toBe(0)
@@ -120,11 +120,11 @@ describe("push checkin", () => {
 
   test("returns locked when a fresh lock already exists", async () => {
     await home()
-    const lock = paths.checkinLockFile()
+    const lock = checkinLockFile()
     await fs.mkdir(path.dirname(lock), { recursive: true })
     await fs.writeFile(lock, "123")
 
-    const res = await check.checkin(data(), "test")
+    const res = await checkin(data("https://relay.test"), "test")
 
     expect(res).toEqual({ status: "skip", reason: "locked" })
     expect(hits).toBe(0)
@@ -132,16 +132,17 @@ describe("push checkin", () => {
 
   test("waits for an active lock and reuses the fresh result", async () => {
     await home()
-    const lock = paths.checkinLockFile()
+    const url = await serve()
+    const lock = checkinLockFile()
 
     let open!: () => void
     hold = new Promise<void>((done) => {
       open = done
     })
 
-    const one = check.checkin(data(), "one")
+    const one = checkin(data(url), "one")
     await seen(lock)
-    const two = check.checkin(data(), "two")
+    const two = checkin(data(url), "two")
     open()
 
     const [first, second] = await Promise.all([one, two])
@@ -153,10 +154,11 @@ describe("push checkin", () => {
 
   test("releases the lock when relay checkin fails", async () => {
     await home()
-    const lock = paths.checkinLockFile()
-    fail = new Error("boom")
+    const url = await serve()
+    const lock = checkinLockFile()
+    fail = "boom"
 
-    const res = await check.checkin(data(), "test")
+    const res = await checkin(data(url), "test")
     const found = await fs.stat(lock).catch(() => undefined)
 
     expect(res).toEqual({ status: "err", reason: "boom" })
