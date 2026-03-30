@@ -657,6 +657,11 @@ export const dict = {
   "session.messages.loadEarlier": "โหลดข้อความก่อนหน้า",
   "session.messages.loading": "กำลังโหลดข้อความ...",
   "session.messages.jumpToLatest": "ไปที่ล่าสุด",
+  "voice.processing": "กำลังประมวลผล...",
+  "voice.listeningFor": "กำลังฟังเป็นภาษา {{label}}",
+  "voice.editLangInSettings": "แก้ไขภาษาได้ในการตั้งค่า",
+  "voice.processingShort": "กำลังประมวลผล",
+  "voice.stop": "หยุด",
 
   "session.context.addToContext": "เพิ่ม {{selection}} ไปยังบริบท",
   "session.todo.title": "สิ่งที่ต้องทำ",
@@ -766,6 +771,7 @@ export const dict = {
 
   // UPSTREAM-DIVERGENCE: Fork-only settings navigation labels for the WhisperCode phone tab.
   "settings.section.whispercode": "WhisperCode",
+  "settings.section.mobile": "มือถือ",
   "settings.section.desktop": "เดสก์ท็อป",
   "settings.section.server": "เซิร์ฟเวอร์",
   "settings.tab.general": "ทั่วไป",

@@ -12,7 +12,7 @@ export { useTabs } from "./context/tabs"
 export { useProviders } from "./hooks/use-providers"
 export { ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_TYPES, filePickerFilters } from "./constants/file-picker"
 export { useCommand } from "./context/command"
-export { loadLocaleDict, normalizeLocale, type Locale } from "./context/language"
+export { loadLocaleDict, normalizeLocale, type Locale, useLanguage } from "./context/language"
 export { useWslServers } from "./wsl/context"
 // UPSTREAM-DIVERGENCE: Preserve the push-related platform exports so native wrappers can share the
 // same types and helpers as the app package during upstream merges.

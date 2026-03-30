@@ -564,15 +564,21 @@
       [data-slot="tabs-list"] {
         width: 150px;
         min-width: 150px;
+        padding: 12px;
+        gap: 0;
+        background-color: var(--background-base);
+        border-right: 1px solid var(--border-weak-base);
+
+        @media (max-width: 639px) {
+          width: 88px;
+          min-width: 88px;
+          padding: 8px;
+        }
 
         @media (min-width: 640px) {
           width: 200px;
           min-width: 200px;
         }
-        padding: 12px;
-        gap: 0;
-        background-color: var(--background-base);
-        border-right: 1px solid var(--border-weak-base);
 
         &::after {
           display: none;
@@ -586,6 +592,11 @@
         font-size: var(--font-size-small);
         font-weight: var(--font-weight-medium);
         color: var(--text-weak);
+
+        @media (max-width: 639px) {
+          padding-left: 2px;
+          font-size: var(--font-size-xs);
+        }
       }
 
       [data-slot="tabs-trigger-wrapper"] {
@@ -599,6 +610,13 @@
         font-weight: var(--font-weight-medium);
         line-height: var(--line-height-large);
 
+        @media (max-width: 639px) {
+          height: auto;
+          min-height: 28px;
+          font-size: var(--font-size-small);
+          line-height: var(--line-height-medium);
+        }
+
         [data-slot="tabs-trigger"] {
           border: none;
           padding: 0 8px;
@@ -606,10 +624,26 @@
           justify-content: flex-start;
           width: 100%;
           height: 100%;
+
+          @media (max-width: 639px) {
+            padding: 4px 6px;
+            gap: 0;
+            min-width: 0;
+            overflow: visible;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            text-overflow: clip;
+            text-align: left;
+          }
         }
 
         [data-component="icon"] {
           color: var(--icon-base);
+
+          @media (max-width: 639px) {
+            display: none;
+          }
         }
 
         &:hover:not(:disabled) {

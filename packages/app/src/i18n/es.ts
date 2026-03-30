@@ -658,6 +658,11 @@ export const dict = {
   "session.messages.loadEarlier": "Cargar mensajes anteriores",
   "session.messages.loading": "Cargando mensajes...",
   "session.messages.jumpToLatest": "Ir al último",
+  "voice.processing": "Procesando...",
+  "voice.listeningFor": "Escuchando en {{label}}",
+  "voice.editLangInSettings": "Edita el idioma en Ajustes",
+  "voice.processingShort": "Procesando",
+  "voice.stop": "Detener",
 
   "session.context.addToContext": "Añadir {{selection}} al contexto",
   "session.todo.title": "Tareas",
@@ -772,6 +777,7 @@ export const dict = {
   "settings.section.server": "Servidor",
   // UPSTREAM-DIVERGENCE: Fork-only settings navigation labels for the WhisperCode phone tab.
   "settings.section.whispercode": "WhisperCode",
+  "settings.section.mobile": "Móvil",
   "settings.tab.general": "General",
   "settings.tab.shortcuts": "Atajos",
   "settings.tab.phone": "Teléfono",

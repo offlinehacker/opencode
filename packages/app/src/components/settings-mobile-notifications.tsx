@@ -3,14 +3,16 @@
 
 import { Card } from "@opencode-ai/ui/card"
 import { Button } from "@opencode-ai/ui/button"
+import { Select } from "@opencode-ai/ui/select"
 import { showToast } from "@opencode-ai/ui/toast"
-import { Component, For, Show, createMemo, type JSX } from "solid-js"
+import { Component, For, Show, createMemo, createResource, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import { usePlatform, type PushState } from "@/context/platform"
 import { canClearPair, usePushPair } from "@/context/push-pair"
 import { usePushRelay } from "@/context/push-relay"
 import { useServer } from "@/context/server"
+import { useSettings } from "@/context/settings"
 import { PushFail, pushIssue } from "@/utils/push-pair"
 import { DEFAULT_PUSH_RELAY_URL } from "@/utils/push-relay-url"
 import { sendPushTest } from "@/utils/push-test"
@@ -38,6 +40,7 @@ export function shouldToastPairErr(err: unknown) {
 export const SettingsMobileNotifications: Component = () => {
   const language = useLanguage()
   const platform = usePlatform()
+  const settings = useSettings()
   const pairing = usePushPair()
   const relay = usePushRelay()
   const server = useServer()
@@ -96,6 +99,19 @@ export const SettingsMobileNotifications: Component = () => {
     if (!server.current || pairing.running() || paired() || issue()) return
     return language.t("settings.general.notifications.push.permission.ios")
   })
+  const [speechLocales] = createResource(async () => {
+    if (platform.platform !== "ios" || !platform.getSpeechLocales) return [] as string[]
+    const locales = await platform.getSpeechLocales().catch(() => [] as string[])
+    return locales.slice().sort((a, b) => localeLabel(a).localeCompare(localeLabel(b), language.intl()))
+  })
+  const speechAvailable = createMemo(() => platform.platform === "ios" && !!platform.getSpeechLocales)
+  const speechOptions = createMemo(() =>
+    (speechLocales() ?? []).map((value) => ({
+      value,
+      label: localeLabel(value),
+    })),
+  )
+  const currentSpeech = createMemo(() => speechOptions().find((option) => option.value === settings.speech.locale()))
 
   const askPush = async () => {
     if (!platform.requestPushPermission) return
@@ -403,12 +419,52 @@ export const SettingsMobileNotifications: Component = () => {
     <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
         <div class="flex flex-col gap-1 pt-6 pb-8">
-          <h2 class="text-16-medium text-text-strong">{language.t("settings.title.phone")}</h2>
+          <h2 class="text-16-medium text-text-strong">{language.t("settings.tab.phone")}</h2>
         </div>
       </div>
 
       <div class="flex flex-col gap-8 w-full">
         <div class="flex flex-col gap-1">
+          <h3 class="text-14-medium text-text-strong pb-2">Voice input</h3>
+          <div class="bg-surface-raised-base px-4 rounded-lg">
+            <SettingsRow
+              title="Speech language"
+              description={
+                speechAvailable()
+                  ? "Choose the language used for iPhone speech-to-text. Availability and offline support can vary by locale."
+                  : "Speech language settings are currently available on iPhone builds."
+              }
+            >
+              <Show
+                when={speechAvailable()}
+                fallback={<span class="text-12-medium text-text-dimmed">Unavailable</span>}
+              >
+                <Select
+                  data-action="settings-speech-language"
+                  options={speechOptions()}
+                  current={currentSpeech()}
+                  value={(option) => option.value}
+                  label={(option) => option.label}
+                  valueClass="whitespace-normal break-words text-left leading-tight"
+                  class="max-w-[320px]"
+                  children={(option) => (
+                    <span class="whitespace-normal break-words text-left leading-tight">
+                      {option?.label}
+                    </span>
+                  )}
+                  onSelect={(option) => option && settings.speech.setLocale(option.value)}
+                  variant="secondary"
+                  size="small"
+                  triggerVariant="settings"
+                  triggerStyle={{ "min-width": "220px", height: "auto" }}
+                />
+              </Show>
+            </SettingsRow>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <h3 class="text-14-medium text-text-strong pb-2">Notifications</h3>
           <div class="bg-surface-raised-base px-4 rounded-lg">
             <Show
               when={ready()}
@@ -594,4 +650,17 @@ const SettingsRow: Component<SettingsRowProps> = (props) => {
       <div class="min-w-0 max-w-full flex-shrink-0">{props.children}</div>
     </div>
   )
+}
+
+function localeLabel(identifier: string) {
+  try {
+    const locale = new Intl.Locale(identifier)
+    const languageNames = new Intl.DisplayNames(undefined, { type: "language" })
+    const regionNames = new Intl.DisplayNames(undefined, { type: "region" })
+    const language = locale.language ? languageNames.of(locale.language) : undefined
+    const region = locale.region ? regionNames.of(locale.region) : undefined
+    if (language && region) return `${language} (${region})`
+    if (language) return language
+  } catch {}
+  return identifier
 }

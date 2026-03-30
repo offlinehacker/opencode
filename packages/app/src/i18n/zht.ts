@@ -637,6 +637,11 @@ export const dict = {
   "session.messages.loading": "正在載入訊息...",
 
   "session.messages.jumpToLatest": "跳到最新",
+  "voice.processing": "處理中...",
+  "voice.listeningFor": "正在聆聽 {{label}}",
+  "voice.editLangInSettings": "可在設定中修改語言",
+  "voice.processingShort": "處理中",
+  "voice.stop": "停止",
   "session.context.addToContext": "將 {{selection}} 新增到上下文",
   "session.todo.title": "待辦事項",
   "session.todo.collapse": "折疊",
@@ -746,6 +751,7 @@ export const dict = {
   "settings.section.server": "伺服器",
   // UPSTREAM-DIVERGENCE: Fork-only settings navigation labels for the WhisperCode phone tab.
   "settings.section.whispercode": "WhisperCode",
+  "settings.section.mobile": "行動裝置",
   "settings.tab.general": "一般",
   "settings.tab.shortcuts": "快速鍵",
   "settings.tab.phone": "手機",

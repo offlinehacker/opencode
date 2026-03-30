@@ -1,6 +1,5 @@
-// @refresh reload
 import { render } from "solid-js/web"
-import { createResource, createSignal, onCleanup, onMount, Show } from "solid-js"
+import { createMemo, createResource, createSignal, onCleanup, onMount, Show } from "solid-js"
 import {
   AppBaseProviders,
   AppInterface,
@@ -49,6 +48,7 @@ const emptyPush: PushState = {
 }
 
 const BRIDGE_MS = 20_000
+const settingsStorage = createBridgeStorage()
 const credentialStorage = createBridgeStorage("opencode.settings.dat")
 
 const normalizeServerUrl = (input: string) => {
@@ -66,6 +66,8 @@ if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
 const App = () => {
   const [voice, setVoice] = createSignal<VoiceStatus>({ state: "prewarming", ready: false })
   const [push, setPush] = createSignal<PushState | undefined>()
+  const [speechLocale, setSpeechLocale] = createSignal("en-US")
+  const speechLabel = createMemo(() => localeLabel(speechLocale()))
 
   const emitTranscription = (text: string, isFinal?: boolean) => {
     if (!text) return
@@ -231,6 +233,16 @@ const App = () => {
     return next
   }
 
+  const refreshSpeechLocale = async () => {
+    const raw = await settingsStorage.getItem("settings.v3").catch(() => null)
+    if (!raw) return
+    try {
+      const parsed = JSON.parse(raw) as { speech?: { locale?: unknown } }
+      const locale = parsed.speech?.locale
+      if (typeof locale === "string" && locale) setSpeechLocale(locale)
+    } catch {}
+  }
+
   const startVoiceInput = async (): Promise<VoiceStartResult> => {
     const result = await bridge.sendAsync<VoiceStartResult>("startRecording")
     if (result?.ok) {
@@ -327,6 +339,18 @@ const App = () => {
     voiceStatus: voice,
     startVoiceInput,
     stopVoiceInput,
+    getSpeechLocales: async () => {
+      const result = await call<unknown[]>("getSpeechLocales")
+      if (!Array.isArray(result)) return []
+      return result.filter((value): value is string => typeof value === "string")
+    },
+    setSpeechLocale: async (locale: string) => {
+      const result = await call<string>("setSpeechLocale", { locale })
+      await refreshVoice()
+      const applied = typeof result === "string" ? result : "en-US"
+      setSpeechLocale(applied)
+      return applied
+    },
     haptic: (style: "light" | "medium" | "heavy" | "success" | "warning" | "error") => {
       bridge.send("haptic", { style })
     },
@@ -388,6 +412,7 @@ const App = () => {
     document.documentElement.dataset.platform = "ios"
     void refreshVoice()
     void refreshPush()
+    void refreshSpeechLocale()
 
     const handleClick = (event: MouseEvent) => {
       const link = (event.target as HTMLElement | null)?.closest("a.external-link") as HTMLAnchorElement | null
@@ -471,14 +496,6 @@ const App = () => {
   return (
     <PlatformProvider value={platform}>
       <AppBaseProviders>
-        <VoiceInputOverlay
-          state={() => {
-            const state = voice().state
-            if (state === "recording" || state === "processing") return state
-            return "hidden"
-          }}
-          onStop={() => void stopVoiceInput()}
-        />
         <Show when={!defaultConfig.loading}>
           <Show
             when={defaultConfig() || completedConfig()}
@@ -496,7 +513,21 @@ const App = () => {
                     password: config.password,
                   },
                 }
-                return { defaultServer: ServerConnection.key(conn), servers: [conn] }
+                return {
+                  defaultServer: ServerConnection.key(conn),
+                  servers: [conn],
+                  children: (
+                    <VoiceInputOverlay
+                      state={() => {
+                        const state = voice().state
+                        if (state === "recording" || state === "processing") return state
+                        return "hidden"
+                      }}
+                      speechLabel={speechLabel}
+                      onStop={() => void stopVoiceInput()}
+                    />
+                  ),
+                }
               })()}
             />
           </Show>
@@ -504,6 +535,19 @@ const App = () => {
       </AppBaseProviders>
     </PlatformProvider>
   )
+}
+
+function localeLabel(identifier: string) {
+  try {
+    const locale = new Intl.Locale(identifier)
+    const languageNames = new Intl.DisplayNames(undefined, { type: "language" })
+    const regionNames = new Intl.DisplayNames(undefined, { type: "region" })
+    const language = locale.language ? languageNames.of(locale.language) : undefined
+    const region = locale.region ? regionNames.of(locale.region) : undefined
+    if (language && region) return `${language} (${region})`
+    if (language) return language
+  } catch {}
+  return identifier
 }
 
 if (root instanceof HTMLElement) {

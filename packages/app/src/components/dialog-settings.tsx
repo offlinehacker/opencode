@@ -77,7 +77,7 @@ export const DialogSettings: Component = () => {
                 <div class="flex flex-col gap-1.5">
                   {/* UPSTREAM-DIVERGENCE: This section anchors the fork's mobile notification setup UI
                       inside the shared settings dialog rather than in a separate mobile-only route. */}
-                  <Tabs.SectionTitle>{language.t("settings.section.whispercode")}</Tabs.SectionTitle>
+                  <Tabs.SectionTitle>{language.t("settings.section.mobile")}</Tabs.SectionTitle>
                   <div class="flex flex-col gap-1.5 w-full">
                     <Tabs.Trigger value="mobile-notifications">
                       <Icon name="settings-gear" />

@@ -215,6 +215,13 @@ final class PlatformBridge {
         let result = await voice().stop()
         reply(result, nil)
       }
+    case "getSpeechLocales":
+      reply(voice().speechLocales(), nil)
+    case "setSpeechLocale":
+      Task { @MainActor in
+        let result = await voice().setSpeechLocale(params["locale"] as? String)
+        reply(result, nil)
+      }
     case "isWhisperReady":
       Task { @MainActor in
         let result = await voice().status()

@@ -236,6 +236,12 @@ type PlatformBase = {
   /** Current voice input status (mobile only) */
   voiceStatus?: Accessor<VoiceStatus>
 
+  /** List supported speech locales (mobile only) */
+  getSpeechLocales?(): Promise<string[]>
+
+  /** Set active speech locale and return the applied locale (mobile only) */
+  setSpeechLocale?(locale: string): Promise<string> | string
+
   /** Haptic feedback (mobile only) */
   haptic?(style: "light" | "medium" | "heavy" | "success" | "warning" | "error"): void
 

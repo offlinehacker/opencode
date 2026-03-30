@@ -5,7 +5,9 @@ import os
 private let log = Logger(subsystem: "opencode", category: "SpeechTranscriber")
 
 final class SpeechTranscriber {
-  private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+  private func recognizer(localeID: String) -> SFSpeechRecognizer? {
+    SFSpeechRecognizer(locale: Locale(identifier: localeID))
+  }
 
   func requestAuthorization() async -> Bool {
     await withCheckedContinuation { continuation in
@@ -17,9 +19,9 @@ final class SpeechTranscriber {
     }
   }
 
-  func transcribe(_ samples: [Float]) async -> String {
-    guard let recognizer, recognizer.isAvailable else {
-      log.error("SFSpeechRecognizer unavailable")
+  func transcribe(_ samples: [Float], localeID: String) async -> String {
+    guard let recognizer = recognizer(localeID: localeID), recognizer.isAvailable else {
+      log.error("SFSpeechRecognizer unavailable for locale \(localeID)")
       return ""
     }
 
@@ -44,12 +46,12 @@ final class SpeechTranscriber {
     request.shouldReportPartialResults = false
     if recognizer.supportsOnDeviceRecognition {
       request.requiresOnDeviceRecognition = true
-      log.info("Using on-device speech recognition")
+      log.info("Using on-device speech recognition for \(localeID)")
     }
     request.append(buffer)
     request.endAudio()
 
-    log.info("Using SFSpeechRecognizer fallback")
+    log.info("Using SFSpeechRecognizer fallback for \(localeID)")
 
     return await withCheckedContinuation { continuation in
       recognizer.recognitionTask(with: request) { result, error in

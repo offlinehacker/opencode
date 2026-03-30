@@ -1,10 +1,14 @@
 import AVFoundation
+import Speech
 import os
 
 private let log = Logger(subsystem: "opencode", category: "WhisperBridge")
 
 @MainActor
 final class WhisperBridge {
+  private static let speechLocaleKey = "voice.speech.locale"
+  private static let defaultSpeechLocale = "en-US"
+
   private enum State: String {
     case prewarming
     case ready
@@ -23,6 +27,7 @@ final class WhisperBridge {
   private var state: State
   private var message: String?
   private var preloading = false
+  private var speechLocale: String
 
   private var manager: WhisperManager {
     WhisperManager.shared
@@ -38,15 +43,34 @@ final class WhisperBridge {
   }
 
   init() {
-    if #available(iOS 18, *) {
+    speechLocale = Self.storedSpeechLocale()
+    if #available(iOS 18, *), Self.usesWhisper(for: speechLocale) {
       state = .prewarming
-    } else {
-      state = .ready
+      return
     }
+    state = .ready
+  }
+
+  private static func storedSpeechLocale() -> String {
+    let value = UserDefaults.standard.string(forKey: speechLocaleKey)?.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let value, !value.isEmpty {
+      return value
+    }
+    return defaultSpeechLocale
+  }
+
+  private static func usesWhisper(for locale: String) -> Bool {
+    locale.lowercased().hasPrefix("en")
+  }
+
+  private static func normalizeSpeechLocale(_ locale: String?) -> String {
+    let trimmed = locale?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return trimmed.isEmpty ? defaultSpeechLocale : trimmed
   }
 
   private func preload() {
     guard #available(iOS 18, *) else { return }
+    guard Self.usesWhisper(for: speechLocale) else { return }
     guard !preloading else { return }
     preloading = true
     Task.detached(priority: .background) { [weak self] in
@@ -64,6 +88,33 @@ final class WhisperBridge {
 
   func beginPreload() {
     preload()
+  }
+
+  func speechLocales() -> [String] {
+    SFSpeechRecognizer.supportedLocales()
+      .map(\.identifier)
+      .sorted()
+  }
+
+  func setSpeechLocale(_ locale: String?) async -> String {
+    let requested = Self.normalizeSpeechLocale(locale)
+    let supported = Set(speechLocales())
+    let next = supported.contains(requested) ? requested : Self.defaultSpeechLocale
+    speechLocale = next
+    UserDefaults.standard.set(next, forKey: Self.speechLocaleKey)
+
+    if state == .recording || state == .processing {
+      return next
+    }
+
+    if #available(iOS 18, *), Self.usesWhisper(for: next) {
+      preload()
+      await sync(force: true)
+      return next
+    }
+
+    set(.ready)
+    return next
   }
 
   private func payload() -> [String: Any] {
@@ -103,7 +154,7 @@ final class WhisperBridge {
       return fail(code: "speech_permission_denied", message: "Speech recognition permission is required for voice input.")
     }
 
-    let text = await speech().transcribe(samples)
+    let text = await speech().transcribe(samples, localeID: speechLocale)
     set(.ready)
     guard !text.isEmpty else {
       return fail(code: "transcription_failed", message: "Voice transcription failed.")
@@ -113,6 +164,10 @@ final class WhisperBridge {
   }
 
   private func sync(force: Bool = false) async {
+    guard Self.usesWhisper(for: speechLocale) else {
+      set(.ready)
+      return
+    }
     guard #available(iOS 18, *) else {
       set(.ready)
       return
@@ -152,6 +207,12 @@ final class WhisperBridge {
     }
 
     if #unavailable(iOS 18) {
+      let speechGranted = await speech().requestAuthorization()
+      log.info("Speech recognition permission granted=\(speechGranted)")
+      guard speechGranted else {
+        return fail(code: "speech_permission_denied", message: "Speech recognition permission is required for voice input.")
+      }
+    } else if !Self.usesWhisper(for: speechLocale) {
       let speechGranted = await speech().requestAuthorization()
       log.info("Speech recognition permission granted=\(speechGranted)")
       guard speechGranted else {
@@ -199,7 +260,7 @@ final class WhisperBridge {
     let samples16k = AudioRecorder.resampleTo16kHz(recording)
     log.info("Passing \(samples16k.count) samples (16 kHz) to transcriber")
 
-    if #available(iOS 18, *) {
+    if #available(iOS 18, *), Self.usesWhisper(for: speechLocale) {
       log.info("Using WhisperKit transcriber (iOS 18+)")
       let result = await manager.transcribe(samples16k)
       if let code = result.code {
