@@ -1,10 +1,6 @@
 # WhisperCode
 
-[Install on iOS (App Store)](https://apps.apple.com/us/app/whispercode/id6759430954)
-
-[Download on Android (GitHub Releases)](https://github.com/DNGriffin/whispercode/releases/latest)
-
-iOS port of [OpenCode](https://github.com/anomalyco/opencode) — true to the desktop experience.
+iOS & Android port of [OpenCode](https://github.com/anomalyco/opencode) — true to the desktop experience.
 
 ## Quick Start
 
@@ -28,14 +24,15 @@ iOS port of [OpenCode](https://github.com/anomalyco/opencode) — true to the de
 
 ## What is this?
 
-WhisperCode is a fork of [OpenCode](https://github.com/anomalyco/opencode) that adds native iOS support. It brings the full open-source AI coding agent to your phone.
+WhisperCode is a fork of [OpenCode](https://github.com/anomalyco/opencode) that adds iOS & Android support. It brings the full open-source AI coding agent to your phone & tablet.
 
 ## Key features
 
 - **WhisperKit speech-to-text** — voice input for hands-free coding
 - **Custom keyboard shortcuts** — adapted for mobile
 - **Mobile UI tweaks** — e.g. always-visible search bar
-
+- **Push Notifications** - notifies you whenever your session needs attention. 
+  
 ## Philosophy
 
 WhisperCode is a mobile port that stays true to the desktop experience. Desktop updates from upstream are regularly synced in; mobile improvements are pushed upstream to benefit desktop users too.
