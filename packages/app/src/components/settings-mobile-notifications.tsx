@@ -13,9 +13,10 @@ import { canClearPair, usePushPair } from "@/context/push-pair"
 import { usePushRelay } from "@/context/push-relay"
 import { useServer } from "@/context/server"
 import { useSettings } from "@/context/settings"
-import { PushFail, pushIssue } from "@/utils/push-pair"
+import { pushIssue } from "@/utils/push-pair"
 import { DEFAULT_PUSH_RELAY_URL } from "@/utils/push-relay-url"
 import { sendPushTest } from "@/utils/push-test"
+import { shouldToastPairErr } from "./settings-mobile-notifications-helpers"
 import { diagRows } from "./settings-mobile-notifications-data"
 
 type PushAction = {
@@ -31,10 +32,6 @@ type Summary = {
   detail?: string
   command?: string
   action?: PushAction
-}
-
-export function shouldToastPairErr(err: unknown) {
-  return !(err instanceof PushFail)
 }
 
 export const SettingsMobileNotifications: Component = () => {

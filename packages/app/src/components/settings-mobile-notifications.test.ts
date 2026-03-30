@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "bun:test"
 import { PushFail } from "../utils/push-pair"
-import { shouldToastPairErr } from "./settings-mobile-notifications"
+import { shouldToastPairErr } from "./settings-mobile-notifications-helpers"
 import { diagRows } from "./settings-mobile-notifications-data"
 
 describe("settings mobile notifications", () => {
