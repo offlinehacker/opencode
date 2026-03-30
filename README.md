@@ -1,6 +1,6 @@
 # WhisperCode
 
-iOS & Android port of [OpenCode](https://github.com/anomalyco/opencode) — true to the desktop experience.
+iOS & Android port of [OpenCode](https://github.com/anomalyco/opencode) — true to the OpenCode desktop experience.
 
 ## Quick Start
 
