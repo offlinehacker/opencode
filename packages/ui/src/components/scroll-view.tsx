@@ -159,6 +159,13 @@ export function ScrollView(props: ScrollViewProps) {
     if (scrollIdleTimer !== undefined) clearTimeout(scrollIdleTimer)
     scrollIdleTimer = setTimeout(() => setState("isScrolling", false), 800)
   }
+  const scrollMax = () => Math.max(0, viewportRef.scrollHeight - viewportRef.clientHeight)
+  const scrollEndpoint = (edge: "start" | "end") => {
+    // UPSTREAM-DIVERGENCE: Desktop reversed views use negative scrollTop values, while iOS/Android
+    // webviews keep positive offsets even when the content is visually reversed.
+    if (reverse() && !mobile()) return edge === "start" ? -scrollMax() : 0
+    return edge === "start" ? 0 : scrollMax()
+  }
 
   const thumbVisible = () => {
     if (isDragging()) return true
@@ -314,11 +321,11 @@ export function ScrollView(props: ScrollViewProps) {
         break
       case "home":
         e.preventDefault()
-        viewportRef.scrollTo({ top: 0, behavior: "smooth" })
+        viewportRef.scrollTo({ top: scrollEndpoint("start"), behavior: "smooth" })
         break
       case "end":
         e.preventDefault()
-        viewportRef.scrollTo({ top: viewportRef.scrollHeight, behavior: "smooth" })
+        viewportRef.scrollTo({ top: scrollEndpoint("end"), behavior: "smooth" })
         break
       case "up":
         e.preventDefault()

@@ -1568,12 +1568,20 @@ export default function Page() {
   let fillFrame: number | undefined
 
   const jumpThreshold = (el: HTMLDivElement) => Math.max(400, el.clientHeight)
+  const distanceFromScrollBottom = (el: HTMLDivElement) => {
+    const max = Math.max(0, el.scrollHeight - el.clientHeight)
+
+    // UPSTREAM-DIVERGENCE: Keep bottom detection aligned with reverseScrollTop above. Desktop reports
+    // the bottom of the reversed timeline at scrollTop ~= 0, while mobile keeps normal positive offsets.
+    if (!mobile) return Math.abs(el.scrollTop)
+    return Math.max(0, max - el.scrollTop)
+  }
 
   const updateScrollState = (el: HTMLDivElement) => {
-    const max = el.scrollHeight - el.clientHeight
-    const distance = max - el.scrollTop
+    const max = Math.max(0, el.scrollHeight - el.clientHeight)
+    const distance = distanceFromScrollBottom(el)
     const overflow = max > 1
-    const bottom = !overflow || distance <= 2
+    const bottom = !overflow || distance <= 2 || !autoScroll.userScrolled()
     const jump = overflow && distance > jumpThreshold(el)
 
     if (ui.scroll.overflow === overflow && ui.scroll.bottom === bottom && ui.scroll.jump === jump) return
@@ -2002,9 +2010,7 @@ export default function Page() {
 
       const el = scroller
       const delta = next - dockHeight
-      const stick = el
-        ? !autoScroll.userScrolled() || el.scrollHeight - el.clientHeight - el.scrollTop < 10 + Math.max(0, delta)
-        : false
+      const stick = el ? !autoScroll.userScrolled() || distanceFromScrollBottom(el) < 10 + Math.max(0, delta) : false
 
       dockHeight = next
 
