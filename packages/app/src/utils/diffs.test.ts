@@ -11,6 +11,15 @@ const item = {
   status: "modified",
 } satisfies SnapshotFileDiff
 
+const legacy = {
+  file: "Java.md",
+  before: "",
+  after: "# Java\n\nA poem\n",
+  additions: 3,
+  deletions: 0,
+  status: "added",
+}
+
 describe("diffs", () => {
   test("keeps valid arrays", () => {
     expect(diffs([item])).toEqual([item])
@@ -22,6 +31,18 @@ describe("diffs", () => {
 
   test("reads keyed diff objects", () => {
     expect(diffs({ a: item })).toEqual([item])
+  })
+
+  test("normalizes legacy before/after diffs", () => {
+    expect(diffs([legacy])).toEqual([
+      expect.objectContaining({
+        file: "Java.md",
+        additions: 3,
+        deletions: 0,
+        status: "added",
+        patch: expect.stringContaining("+A poem"),
+      }),
+    ])
   })
 
   test("drops invalid entries", () => {
