@@ -20,12 +20,12 @@ final class LocalFileSchemeHandler: NSObject, WKURLSchemeHandler {
     var path = url.path
     if path.isEmpty || path == "/" { path = "/index.html" }
 
-    var fileURL = baseDirectory.appendingPathComponent(path)
+    var fileURL = baseDirectory.appendingPathComponent(String(path.dropFirst()))
 
     // SPA fallback: if the file doesn't exist and has no extension,
     // it's a client-side route — serve index.html instead
     if !FileManager.default.fileExists(atPath: fileURL.path) && fileURL.pathExtension.isEmpty {
-      fileURL = baseDirectory.appendingPathComponent("/index.html")
+      fileURL = baseDirectory.appendingPathComponent("index.html")
     }
 
     guard let data = try? Data(contentsOf: fileURL) else {
@@ -89,14 +89,12 @@ final class BridgeController: NSObject, WKScriptMessageHandler, WKNavigationDele
     config.userContentController = userContent
 
     // Register custom scheme handler for release builds
-    #if !DEBUG
     let handler = Self.resolveWebAssets()
     if let handler {
       config.setURLSchemeHandler(handler, forURLScheme: "tauri")
       self.schemeHandler = handler
       print("[OpenCode] Registered tauri:// scheme handler")
     }
-    #endif
 
     return config
   }
@@ -146,7 +144,7 @@ final class BridgeController: NSObject, WKScriptMessageHandler, WKNavigationDele
 
   private func loadStartPage(in webView: WKWebView) {
 #if DEBUG
-    if let url = URL(string: "http://localhost:1421") {
+    if ProcessInfo.processInfo.environment["WHISPERCODE_USE_DEV_SERVER"] == "1", let url = URL(string: "http://localhost:1421") {
       webView.load(URLRequest(url: url))
       return
     }

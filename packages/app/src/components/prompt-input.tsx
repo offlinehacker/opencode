@@ -1567,7 +1567,11 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
           onMouseDown={(e) => {
             const target = e.target
             if (!(target instanceof HTMLElement)) return
-            if (target.closest('[data-action="prompt-attach"], [data-action="prompt-submit"]')) {
+            if (
+              target.closest(
+                '[data-action="prompt-attach"], [data-action="prompt-voice"], [data-action="prompt-permissions"], [data-action="prompt-submit"]',
+              )
+            ) {
               return
             }
             editorRef?.focus()
@@ -1659,7 +1663,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
           <div class="pointer-events-none absolute bottom-2 left-2">
             <div
               aria-hidden={store.mode !== "normal"}
-              class="pointer-events-auto flex items-center gap-1"
+              class="pointer-events-auto flex h-8 items-center gap-1"
               style={{
                 "pointer-events": buttonsSpring() > 0.5 ? "auto" : "none",
               }}
@@ -1686,6 +1690,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               <Show when={(platform.platform === "ios" || platform.platform === "android") && platform.startVoiceInput}>
                 <Tooltip placement="top" value="Voice input">
                   <Button
+                    data-action="prompt-voice"
                     type="button"
                     variant="ghost"
                     class="size-8 p-0"
@@ -1701,6 +1706,45 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                   </Button>
                 </Tooltip>
               </Show>
+              <TooltipKeybind
+                placement="top"
+                gutter={8}
+                title={language.t(
+                  accepting() ? "command.permissions.autoaccept.disable" : "command.permissions.autoaccept.enable",
+                )}
+                keybind={command.keybind("permissions.autoaccept")}
+              >
+                <Button
+                  data-action="prompt-permissions"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    const id = props.controls.session.id
+                    if (!id) {
+                      permission.toggleAutoAcceptDirectory(sdk().directory)
+                      return
+                    }
+                    permission.toggleAutoAccept(id, sdk().directory)
+                  }}
+                  classList={{
+                    "size-8 p-0 flex items-center justify-center": true,
+                    "text-text-base": !accepting(),
+                    "hover:bg-surface-success-base": accepting(),
+                  }}
+                  aria-label={
+                    accepting()
+                      ? language.t("command.permissions.autoaccept.disable")
+                      : language.t("command.permissions.autoaccept.enable")
+                  }
+                  aria-pressed={accepting()}
+                >
+                  <Icon
+                    name="chevron-double-right"
+                    size="small"
+                    classList={{ "text-icon-success-base": accepting() }}
+                  />
+                </Button>
+              </TooltipKeybind>
             </div>
           </div>
         </div>
