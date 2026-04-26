@@ -23,6 +23,7 @@ import {
   loadProjectsQuery,
   loadProvidersQuery,
   loadReferencesQuery,
+  warmSessions,
 } from "./global-sync/bootstrap"
 import { createChildStoreManager } from "./global-sync/child-store"
 import { applyDirectoryEvent, applyGlobalEvent } from "./global-sync/event-reducer"
@@ -428,6 +429,16 @@ export function createServerSyncContextInner(serverSDK: ServerSDK) {
         void queryClient.fetchQuery(queryOptionsApi.references(key))
       },
     })
+    if (event.type === "permission.asked" || event.type === "question.asked") {
+      const sessionID = (event.properties as { sessionID?: string })?.sessionID
+      if (sessionID) {
+        // UPSTREAM-DIVERGENCE: Mobile apps can miss session-created events while backgrounded; when a
+        // live prompt arrives, hydrate its session chain so the prompt dock can attach to the active tree.
+        void warmSessions({ ids: [sessionID], store, setStore, sdk: sdkFor(directory) }).catch((err) => {
+          console.error("Failed to warm prompt session", err)
+        })
+      }
+    }
   })
 
   onCleanup(unsub)
