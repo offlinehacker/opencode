@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import type { SnapshotFileDiff } from "@opencode-ai/sdk/v2"
 import type { Message } from "@opencode-ai/sdk/v2/client"
 import { diffs, message } from "./diffs"
+import { diffCount, MOBILE_REVIEW_FILE_LIMIT, mobileReviewLimit } from "./mobile-review-limit"
 
 const item = {
   file: "src/app.ts",
@@ -91,5 +92,27 @@ describe("message", () => {
     } as unknown as Message
 
     expect(message(input)).toMatchObject({ summary: undefined })
+  })
+})
+
+describe("mobileReviewLimit", () => {
+  test("counts raw diff containers without normalizing them", () => {
+    expect(diffCount([item, legacy])).toBe(2)
+    expect(diffCount({ a: item, b: legacy })).toBe(2)
+  })
+
+  test("allows the configured limit on mobile", () => {
+    expect(mobileReviewLimit(MOBILE_REVIEW_FILE_LIMIT, true)).toBeUndefined()
+  })
+
+  test("blocks more than the configured limit on mobile", () => {
+    expect(mobileReviewLimit(MOBILE_REVIEW_FILE_LIMIT + 1, true)).toEqual({
+      count: MOBILE_REVIEW_FILE_LIMIT + 1,
+      limit: MOBILE_REVIEW_FILE_LIMIT,
+    })
+  })
+
+  test("does not block desktop", () => {
+    expect(mobileReviewLimit(MOBILE_REVIEW_FILE_LIMIT + 1, false)).toBeUndefined()
   })
 })
