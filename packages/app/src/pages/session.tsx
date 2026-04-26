@@ -734,6 +734,17 @@ export default function Page() {
 
     const diffs = await Promise.all(
       status.map(async (item): Promise<VcsFileDiff | undefined> => {
+        if (item.status === "deleted") {
+          return list({
+            file: item.path,
+            before: "",
+            after: "",
+            additions: item.added,
+            deletions: item.removed,
+            status: item.status,
+          })[0]
+        }
+
         const content = await sdk()
           .client.file.read({ path: item.path })
           .then((result) => result.data)

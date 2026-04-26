@@ -46,6 +46,29 @@ describe("diffs", () => {
     ])
   })
 
+  test("keeps synthetic deleted diffs visible", () => {
+    expect(
+      diffs([
+        {
+          file: "removed.md",
+          before: "",
+          after: "",
+          additions: 0,
+          deletions: 0,
+          status: "deleted",
+        },
+      ]),
+    ).toEqual([
+      expect.objectContaining({
+        file: "removed.md",
+        additions: 0,
+        deletions: 0,
+        status: "deleted",
+        patch: expect.stringContaining("removed.md"),
+      }),
+    ])
+  })
+
   test("drops invalid entries", () => {
     expect(
       diffs([
