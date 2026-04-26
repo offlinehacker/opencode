@@ -8,7 +8,10 @@ platform :ios do
     bid = ENV["IOS_BUNDLE_ID"] || "com.devgriffin.whispercode"
     out = "build"
     ipa = "#{out}/WhisperCode.ipa"
-    num = Time.now.utc.strftime("%Y%m%d%H%M")
+    num = Time.now.utc.strftime("%Y%m%d%H%M%S")
+    version = ENV["BEAM_MARKETING_VERSION"] || ENV["MARKETING_VERSION"]
+    xcargs = ["CURRENT_PROJECT_VERSION=#{num}"]
+    xcargs << "MARKETING_VERSION=#{version}" if version && !version.strip.empty?
 
     kid = ENV["ASC_KEY_ID"]
     iid = ENV["ASC_ISSUER_ID"]
@@ -34,7 +37,7 @@ platform :ios do
       clean: true,
       output_directory: out,
       output_name: "WhisperCode.ipa",
-      xcargs: "CURRENT_PROJECT_VERSION=#{num}"
+      xcargs: xcargs.join(" ")
     )
 
     api = app_store_connect_api_key(

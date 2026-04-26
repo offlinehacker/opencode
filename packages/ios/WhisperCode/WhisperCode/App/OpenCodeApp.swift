@@ -11,11 +11,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     UNUserNotificationCenter.current().delegate = self
+    clearNotificationBadge()
     return true
   }
 
   func applicationDidBecomeActive(_ application: UIApplication) {
-    UNUserNotificationCenter.current().setBadgeCount(0)
+    clearNotificationBadge()
   }
 
   func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -35,7 +36,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
   ) {
-    completionHandler([.banner, .list, .sound, .badge])
+    // UPSTREAM-DIVERGENCE: The mobile fork uses iOS badges as ephemeral attention signals only.
+    // Foreground pushes can otherwise set the app icon to 1 without a later activation event to
+    // clear it, leaving a stale badge even after the in-app notification state is viewed.
+    clearNotificationBadge()
+    completionHandler([.banner, .list, .sound])
   }
 
   func userNotificationCenter(
@@ -44,8 +49,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
     Task { @MainActor in
+      clearNotificationBadge()
       PushBridge.shared.open(userInfo: response.notification.request.content.userInfo)
       completionHandler()
+    }
+  }
+
+  private func clearNotificationBadge() {
+    let center = UNUserNotificationCenter.current()
+    center.removeAllDeliveredNotifications()
+    center.removeAllPendingNotificationRequests()
+    center.setBadgeCount(0) { err in
+      if let err {
+        log.error("Failed to clear notification badge: \(err.localizedDescription, privacy: .public)")
+      }
     }
   }
 }
