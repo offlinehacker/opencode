@@ -1645,6 +1645,31 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
             />
 
             <div class="flex items-center gap-1 pointer-events-auto">
+              <Show
+                when={
+                  store.mode === "normal" &&
+                  (platform.platform === "ios" || platform.platform === "android") &&
+                  platform.startVoiceInput
+                }
+              >
+                <Tooltip placement="top" value="Voice input">
+                  <Button
+                    data-action="prompt-voice"
+                    type="button"
+                    variant="ghost"
+                    class="size-8 p-0"
+                    onClick={() => void platform.startVoiceInput?.()}
+                    disabled={
+                      platform.voiceStatus
+                        ? platform.voiceStatus().state === "recording" || platform.voiceStatus().state === "processing"
+                        : false
+                    }
+                    aria-label="Voice input"
+                  >
+                    <Icon name="microphone" class="size-5" />
+                  </Button>
+                </Tooltip>
+              </Show>
               <Tooltip placement="top" inactive={!working() && blank()} value={tip()}>
                 <IconButton
                   data-action="prompt-submit"
@@ -1687,25 +1712,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                   <Icon name="plus" class="size-4.5" />
                 </Button>
               </TooltipKeybind>
-              <Show when={(platform.platform === "ios" || platform.platform === "android") && platform.startVoiceInput}>
-                <Tooltip placement="top" value="Voice input">
-                  <Button
-                    data-action="prompt-voice"
-                    type="button"
-                    variant="ghost"
-                    class="size-8 p-0"
-                    onClick={() => void platform.startVoiceInput?.()}
-                    disabled={
-                      platform.voiceStatus
-                        ? platform.voiceStatus().state === "recording" || platform.voiceStatus().state === "processing"
-                        : false
-                    }
-                    aria-label="Voice input"
-                  >
-                    <Icon name="microphone" class="size-4.5" />
-                  </Button>
-                </Tooltip>
-              </Show>
               <TooltipKeybind
                 placement="top"
                 gutter={8}
