@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { retry } from "@opencode-ai/core/util/retry"
-import type { Message, OpencodeClient, Part, Session } from "@opencode-ai/sdk/v2/client"
+import type { Message, OpencodeClient, Part, Session, Todo } from "@opencode-ai/sdk/v2/client"
 import { createServerSession } from "./server-session"
 
 const session = (id: string, parentID?: string): Session => ({
@@ -66,6 +66,8 @@ const response = (data: MessageResponse["data"] = [], cursor?: string): MessageR
 const singleResponse = (info: Message, parts: Part[] = []): SingleMessageResponse => ({ data: { info, parts } })
 
 const deferredResponse = () => Promise.withResolvers<MessageResponse>()
+
+const todo = (content: string, status = "pending"): Todo => ({ content, status, priority: "medium" })
 
 function messageClient(...responses: Array<MessageResponse | Promise<MessageResponse>>) {
   let index = 0
@@ -174,6 +176,40 @@ describe("server session", () => {
     const ctx = setup({ child: session("child", "root"), root: session("root", "child") })
 
     await expect(ctx.store.ensureSessionLineage("child")).rejects.toThrow("Session parent cycle: child")
+  })
+
+  test("replaces todo event snapshots including shorter and empty lists", () => {
+    const store = setup({}).store
+
+    store.apply({
+      type: "todo.updated",
+      properties: { sessionID: "child", todos: [todo("one"), todo("two"), todo("three")] },
+    })
+    store.apply({
+      type: "todo.updated",
+      properties: { sessionID: "child", todos: [todo("done", "completed")] },
+    })
+    expect(store.data.todo.child).toEqual([todo("done", "completed")])
+
+    store.apply({ type: "todo.updated", properties: { sessionID: "child", todos: [] } })
+    expect(store.data.todo.child).toEqual([])
+  })
+
+  test("replaces fetched todo snapshots when forced", async () => {
+    const snapshots = [[todo("one"), todo("two")], [todo("done", "completed")], []]
+    const client = {
+      session: {
+        todo: async () => ({ data: snapshots.shift() ?? [] }),
+      },
+    } as unknown as OpencodeClient
+    const store = createServerSession(client)
+
+    await store.todo("child")
+    await store.todo("child", { force: true })
+    expect(store.data.todo.child).toEqual([todo("done", "completed")])
+
+    await store.todo("child", { force: true })
+    expect(store.data.todo.child).toEqual([])
   })
 
   test("loads session content through the server client", async () => {
