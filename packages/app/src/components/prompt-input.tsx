@@ -231,6 +231,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
 
     const wantsReview = item.commentOrigin === "review" || (item.commentOrigin !== "file" && commentInReview(item.path))
     if (wantsReview) {
+      layout.mobileSidePanel.show()
       if (!props.controls.session.reviewPanel.opened()) props.controls.session.reviewPanel.open()
       layout.fileTree.setTab("changes")
       tabs().setActive("review")
@@ -238,6 +239,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       return
     }
 
+    layout.mobileSidePanel.show()
     if (!props.controls.session.reviewPanel.opened()) props.controls.session.reviewPanel.open()
     layout.fileTree.setTab("all")
     const tab = files.tab(item.path)

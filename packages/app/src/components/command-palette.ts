@@ -69,6 +69,7 @@ export function createCommandPaletteFileOpener(onOpenFile?: (path: string) => vo
     const value = file.tab(path)
     void tabs().open(value)
     void file.load(path)
+    layout.mobileSidePanel.show()
     if (!view().reviewPanel.opened()) view().reviewPanel.open()
     layout.fileTree.setTab("all")
     onOpenFile?.(path)

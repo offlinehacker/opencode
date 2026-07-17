@@ -295,6 +295,9 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         mobileSidebar: {
           opened: false,
         },
+        mobileSidePanel: {
+          opened: false,
+        },
         sessionTabs: {} as Record<string, SessionTabs>,
         sessionView: {} as Record<string, SessionView>,
         handoff: {
@@ -749,6 +752,18 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         },
         toggle() {
           setStore("mobileSidebar", "opened", (x) => !x)
+        },
+      },
+      mobileSidePanel: {
+        opened: createMemo(() => store.mobileSidePanel?.opened ?? false),
+        show() {
+          setStore("mobileSidePanel", "opened", true)
+        },
+        hide() {
+          setStore("mobileSidePanel", "opened", false)
+        },
+        toggle() {
+          setStore("mobileSidePanel", "opened", (x) => !x)
         },
       },
       pendingMessage: {

@@ -15,6 +15,7 @@ import { useCommand } from "@/context/command"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { useSettings } from "@/context/settings"
+import { usePlatform } from "@/context/platform"
 import { useTerminal } from "@/context/terminal"
 import { useSDK } from "@/context/sdk"
 import { terminalTabLabel } from "@/pages/session/terminal-label"
@@ -25,6 +26,7 @@ import { useSessionLayout } from "@/pages/session/session-layout"
 export function TerminalPanel() {
   const delays = [120, 240]
   const layout = useLayout()
+  const platform = usePlatform()
   const terminal = useTerminal()
   const sdk = useSDK()
   const language = useLanguage()
@@ -196,6 +198,157 @@ export function TerminalPanel() {
     })
   }
 
+  // Send a key event to the active terminal's textarea
+  const sendKey = (key: string, code: string, keyCode: number, ctrl = false, alt = false) => {
+    const activeId = terminal.active()
+    if (!activeId) return
+    const wrapper = document.getElementById(`terminal-wrapper-${activeId}`)
+    const textarea = wrapper?.querySelector("textarea")
+    if (!textarea) return
+    textarea.focus()
+    textarea.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key,
+        code,
+        keyCode,
+        which: keyCode,
+        ctrlKey: ctrl,
+        altKey: alt,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    // Keep focus on textarea so Android keyboard stays open
+    setTimeout(() => textarea.focus(), 0)
+  }
+
+  // Prevent focus-stealing from terminal textarea
+  const noFocus = (fn: () => void) => (e: PointerEvent) => {
+    e.preventDefault()
+    fn()
+  }
+
+  function ExtraKeysBar() {
+    const createRepeat = (key: string, code: string, keyCode: number) => {
+      let timer: ReturnType<typeof setInterval> | undefined
+      return {
+        onPointerDown: (e: PointerEvent) => {
+          e.preventDefault()
+          sendKey(key, code, keyCode)
+          timer = setInterval(() => sendKey(key, code, keyCode), 60)
+        },
+        onPointerUp: () => {
+          if (timer) clearInterval(timer)
+          timer = undefined
+        },
+        onPointerLeave: () => {
+          if (timer) clearInterval(timer)
+          timer = undefined
+        },
+      }
+    }
+
+    return (
+      <div class="flex shrink-0 gap-0.5 px-2 py-1 bg-background-stronger border-b border-border-weaker-base">
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-11-medium"
+          onPointerDown={noFocus(() => sendKey("Escape", "Escape", 27))}
+        >
+          Esc
+        </button>
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-11-medium"
+          onPointerDown={noFocus(() => sendKey("Tab", "Tab", 9))}
+        >
+          Tab
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-11-medium"
+          style="color:#ff6b6b"
+          onPointerDown={noFocus(() => sendKey("c", "KeyC", 67, true))}
+        >
+          ^C
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-11-medium"
+          style="color:#ff6b6b"
+          onPointerDown={noFocus(() => sendKey("d", "KeyD", 68, true))}
+        >
+          ^D
+        </button>
+        <div class="w-1" />
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-text-weak text-11-medium"
+          onPointerDown={noFocus(() => sendKey("z", "KeyZ", 90, true))}
+        >
+          ^Z
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-text-weak text-11-medium"
+          onPointerDown={noFocus(() => sendKey("l", "KeyL", 76, true))}
+        >
+          ^L
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-text-weak text-11-medium"
+          onPointerDown={noFocus(() => sendKey("a", "KeyA", 65, true))}
+        >
+          ^A
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-text-weak text-11-medium"
+          onPointerDown={noFocus(() => sendKey("e", "KeyE", 69, true))}
+        >
+          ^E
+        </button>
+        <div class="flex-1" />
+        <button
+          class="h-7 w-8 rounded bg-surface-base text-text-base text-13-medium"
+          {...createRepeat("ArrowUp", "ArrowUp", 38)}
+        >
+          ▲
+        </button>
+        <button
+          class="h-7 w-8 rounded bg-surface-base text-text-base text-13-medium"
+          {...createRepeat("ArrowDown", "ArrowDown", 40)}
+        >
+          ▼
+        </button>
+        <button
+          class="h-7 w-8 rounded bg-surface-base text-text-base text-13-medium"
+          {...createRepeat("ArrowLeft", "ArrowLeft", 37)}
+        >
+          ◀
+        </button>
+        <button
+          class="h-7 w-8 rounded bg-surface-base text-text-base text-13-medium"
+          {...createRepeat("ArrowRight", "ArrowRight", 39)}
+        >
+          ▶
+        </button>
+        <div class="flex-1" />
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-13-medium"
+          onPointerDown={noFocus(() => sendKey("/", "Slash", 191))}
+        >
+          /
+        </button>
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-11-medium"
+          onPointerDown={noFocus(() => sendKey("-", "Minus", 189))}
+        >
+          -
+        </button>
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-11-medium"
+          onPointerDown={noFocus(() => sendKey("|", "Backslash", 220))}
+        >
+          |
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div
       ref={root}
@@ -294,6 +447,9 @@ export function TerminalPanel() {
                   </div>
                 </Tabs.List>
               </Tabs>
+              <Show when={platform.platform === "ios" || platform.platform === "android"}>
+                <ExtraKeysBar />
+              </Show>
               <div class="flex-1 min-h-0 relative">
                 <Show when={opened() && terminal.active()} keyed>
                   {(id) => {

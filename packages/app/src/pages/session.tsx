@@ -547,8 +547,28 @@ export default function Page() {
   }
 
   const openReviewPanel = () => {
+    layout.mobileSidePanel.show()
     if (!view().reviewPanel.opened()) view().reviewPanel.open()
   }
+
+  const toggleMobileSidePanel = () => {
+    const next = !layout.mobileSidePanel.opened()
+    if (next) {
+      layout.mobileSidePanel.show()
+      if (!view().reviewPanel.opened()) view().reviewPanel.open()
+    } else {
+      layout.mobileSidePanel.hide()
+      view().reviewPanel.close()
+    }
+  }
+
+  // Ensure mobile side panel starts closed on page load
+  onMount(() => {
+    if (!isDesktop()) {
+      layout.mobileSidePanel.hide()
+      layout.fileTree.close()
+    }
+  })
 
   const info = createMemo(() => (params.id ? sync().session.get(params.id) : undefined))
   const isChildSession = createMemo(() => !!info()?.parentID)
@@ -2446,7 +2466,7 @@ export default function Page() {
       <SessionHeader />
       <div
         ref={panelRow}
-        class="flex-1 min-h-0 flex flex-col md:flex-row"
+        class="flex-1 min-h-0 flex flex-col md:flex-row relative"
         classList={{
           "gap-2 p-2": settings.general.newLayoutDesigns(),
         }}
@@ -2496,7 +2516,12 @@ export default function Page() {
           </Show>
         </div>
 
-        <Show when={!newSessionDesign() && desktopSidePanelOpen()}>
+        <Show
+          when={
+            (!newSessionDesign() && desktopSidePanelOpen()) ||
+            (!newSessionDesign() && !isDesktop() && layout.mobileSidePanel.opened())
+          }
+        >
           <SessionSidePanel
             canReview={canReview}
             diffs={reviewDiffs}
@@ -2510,6 +2535,7 @@ export default function Page() {
             focusReviewDiff={focusReviewDiff}
             reviewSnap={ui.reviewSnap}
             size={size}
+            forceOpen={!isDesktop() && layout.mobileSidePanel.opened()}
           />
         </Show>
         <Show when={newSessionDesign()}>
@@ -2573,6 +2599,16 @@ export default function Page() {
           </Show>
         </Show>
       </div>
+      <Show when={!isDesktop() && layout.mobileSidePanel.opened()}>
+        <div
+          class="fixed inset-0 z-30 bg-black/30 md:hidden"
+          onClick={() => {
+            layout.mobileSidePanel.hide()
+            view().reviewPanel.close()
+          }}
+          aria-hidden="true"
+        />
+      </Show>
 
       <Show when={!newSessionDesign()}>
         <TerminalPanel />

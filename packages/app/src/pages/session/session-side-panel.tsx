@@ -78,6 +78,8 @@ export function SessionSidePanel(props: {
   reviewSnap: boolean
   size: Sizing
   stacked?: boolean
+  /** Force the panel to render on non-desktop as a full-width overlay. */
+  forceOpen?: boolean
 }) {
   const layout = useLayout()
   const settings = useSettings()
@@ -92,23 +94,29 @@ export function SessionSidePanel(props: {
   const isDesktop = createMediaQuery("(min-width: 768px)")
   const shown = settings.visibility.fileTree
 
-  const reviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
+  const canOpen = createMemo(() => isDesktop() || !!props.forceOpen)
+  const reviewOpen = createMemo(() => canOpen() && view().reviewPanel.opened())
   const fileOpen = createMemo(
     () =>
-      isDesktop() &&
+      canOpen() &&
       shouldShowFileTree({
         visible: shown(),
         opened: layout.fileTree.opened(),
       }),
   )
   const open = createMemo(() => reviewOpen() || fileOpen())
-  const reviewTab = createMemo(() => isDesktop())
+  const reviewTab = createMemo(() => canOpen())
   const panelWidth = createMemo(() => {
     if (!open()) return "0px"
+    if (!isDesktop()) return "100%"
     if (reviewOpen()) return "auto"
     return `${layout.fileTree.width()}px`
   })
-  const treeWidth = createMemo(() => (fileOpen() ? `${layout.fileTree.width()}px` : "0px"))
+  const treeWidth = createMemo(() => {
+    if (!fileOpen()) return "0px"
+    if (!isDesktop()) return "100%"
+    return `${layout.fileTree.width()}px`
+  })
 
   const diffs = createMemo(() => props.diffs().filter(renderDiff))
   const diffFiles = createMemo(() => diffs().map((d) => d.file))
@@ -284,7 +292,7 @@ export function SessionSidePanel(props: {
   })
 
   return (
-    <Show when={isDesktop() && !(settings.general.newLayoutDesigns() && !params.id)}>
+    <Show when={(isDesktop() || !!props.forceOpen) && !(settings.general.newLayoutDesigns() && !params.id)}>
       <aside
         id="review-panel"
         aria-label={language.t("session.panel.reviewAndFiles")}
@@ -301,6 +309,7 @@ export function SessionSidePanel(props: {
             !props.size.active() && !props.reviewSnap,
           "rounded-[10px] shadow-[var(--v2-elevation-raised)] overflow-hidden": settings.general.newLayoutDesigns(),
           "flex-1": reviewOpen(),
+          "absolute inset-y-0 right-0 z-40": !isDesktop(),
         }}
         style={{ width: panelWidth() }}
       >
@@ -700,7 +709,6 @@ export function SessionSidePanel(props: {
                             {props.reviewPanel()}
                           </div>
                         </Show>
-
                         <Show when={activeTab() === "empty"}>
                           <Tabs.Content value="empty" class="flex flex-col h-full overflow-hidden contain-strict">
                             <div class="relative pt-2 flex-1 min-h-0 overflow-hidden">
@@ -709,7 +717,6 @@ export function SessionSidePanel(props: {
                                 <div class="text-14-regular text-text-weak max-w-56">
                                   {language.t("session.files.selectToOpen")}
                                 </div>
-                              </div>
                             </div>
                           </Tabs.Content>
                         </Show>
@@ -758,7 +765,8 @@ export function SessionSidePanel(props: {
                 class="relative min-w-0 h-full shrink-0 overflow-hidden"
                 classList={{
                   "transition-[width] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width] motion-reduce:transition-none":
-                    !props.size.active(),
+                    !props.size.active() && isDesktop(),
+                  "absolute inset-0 z-10 bg-background-base": !isDesktop(),
                 }}
                 style={{ width: treeWidth() }}
               >
@@ -813,7 +821,10 @@ export function SessionSidePanel(props: {
                                 kinds={kinds()}
                                 draggable={false}
                                 active={props.activeDiff}
-                                onFileClick={(node) => props.focusReviewDiff(node.path)}
+                                onFileClick={(node) => {
+                                  if (!isDesktop()) layout.fileTree.close()
+                                  props.focusReviewDiff(node.path)
+                                }}
                               />
                             </Show>
                           </Match>
@@ -830,7 +841,10 @@ export function SessionSidePanel(props: {
                               class="pt-3"
                               modified={diffFiles()}
                               kinds={kinds()}
-                              onFileClick={(node) => openTab(file.tab(node.path))}
+                              onFileClick={(node) => {
+                                if (!isDesktop()) layout.fileTree.close()
+                                openTab(file.tab(node.path))
+                              }}
                             />
                           </Match>
                         </Switch>
@@ -858,6 +872,5 @@ export function SessionSidePanel(props: {
           </div>
         </Show>
       </aside>
-    </Show>
   )
 }

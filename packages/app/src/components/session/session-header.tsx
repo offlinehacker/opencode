@@ -485,7 +485,7 @@ export function SessionHeader() {
                       </Button>
                     </TooltipKeybind>
 
-                    <div class="hidden md:flex items-center gap-1 shrink-0">
+                    <div class="flex items-center gap-1 shrink-0">
                       <TooltipKeybind
                         title={language.t("command.review.toggle")}
                         keybind={command.keybind("review.toggle")}
@@ -493,7 +493,10 @@ export function SessionHeader() {
                         <Button
                           variant="ghost"
                           class="group/review-toggle titlebar-icon w-8 h-6 p-0 box-border"
-                          onClick={() => view().reviewPanel.toggle()}
+                          onClick={() => {
+                            if (!view().reviewPanel.opened()) layout.mobileSidePanel.show()
+                            view().reviewPanel.toggle()
+                          }}
                           aria-label={language.t("command.review.toggle")}
                           aria-expanded={view().reviewPanel.opened()}
                           aria-controls="review-panel"
@@ -509,7 +512,16 @@ export function SessionHeader() {
                         <Button
                           variant="ghost"
                           class="titlebar-icon w-8 h-6 p-0 box-border"
-                          onClick={() => layout.fileTree.toggle()}
+                          onClick={() => {
+                            if (!layout.fileTree.opened()) {
+                              layout.mobileSidePanel.show()
+                              if (!view().reviewPanel.opened()) view().reviewPanel.open()
+                            } else {
+                              layout.mobileSidePanel.hide()
+                              view().reviewPanel.close()
+                            }
+                            layout.fileTree.toggle()
+                          }}
                           aria-label={language.t("command.fileTree.toggle")}
                           aria-expanded={layout.fileTree.opened()}
                           aria-controls="file-tree-panel"
