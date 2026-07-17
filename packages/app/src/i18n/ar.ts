@@ -321,11 +321,7 @@ export const dict = {
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "اسم المستخدم (اختياري)",
   "dialog.server.add.password": "كلمة المرور (اختياري)",
-<<<<<<< HEAD
   "dialog.server.edit.title": "تحرير الخادم",
-=======
-  "dialog.server.edit.title": "تعديل الخادم",
->>>>>>> 974a5c065 (add notifications)
   "dialog.server.default.title": "الخادم الافتراضي",
   "dialog.server.default.description":
     "الاتصال بهذا الخادم عند بدء تشغيل التطبيق بدلاً من بدء خادم محلي. يتطلب إعادة التشغيل.",
@@ -757,7 +753,6 @@ export const dict = {
   "settings.general.row.editToolPartsExpanded.title": "توسيع أجزاء أداة edit",
   "settings.general.row.editToolPartsExpanded.description":
     "إظهار أجزاء أدوات edit و write و patch موسعة بشكل افتراضي في الشريط الزمني",
-<<<<<<< HEAD
   "settings.general.row.newInterface.title": "التخطيط الجديد",
   "settings.general.row.newInterface.badge": "جديد",
   "settings.general.row.newInterface.description":
@@ -767,10 +762,6 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.dismiss": "رفض",
   "settings.general.row.pinchZoom.title": "التكبير بإيماءة القرص",
   "settings.general.row.pinchZoom.description": "السماح بإيماءة القرص على لوحة اللمس وإيماءة Ctrl-scroll للتكبير",
-=======
-  "settings.general.row.reasoningSummaries.title": "إظهار ملخصات الاستنتاج",
-  "settings.general.row.reasoningSummaries.description": "عرض ملخصات استنتاج النموذج في الشريط الزمني",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.wayland.title": "استخدام Wayland الأصلي",
   "settings.general.row.wayland.description": "تعطيل التراجع إلى X11 على Wayland. يتطلب إعادة التشغيل.",
   "settings.general.row.wayland.tooltip":

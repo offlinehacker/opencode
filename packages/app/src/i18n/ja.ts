@@ -316,17 +316,10 @@ export const dict = {
   "dialog.server.add.error": "サーバーに接続できませんでした",
   "dialog.server.add.checking": "確認中...",
   "dialog.server.add.button": "サーバーを追加",
-<<<<<<< HEAD
   "dialog.server.add.name": "サーバー名 (オプション)",
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "ユーザー名 (オプション)",
   "dialog.server.add.password": "パスワード (オプション)",
-=======
-  "dialog.server.add.name": "サーバー名（任意）",
-  "dialog.server.add.namePlaceholder": "Localhost",
-  "dialog.server.add.username": "ユーザー名（任意）",
-  "dialog.server.add.password": "パスワード（任意）",
->>>>>>> 974a5c065 (add notifications)
   "dialog.server.edit.title": "サーバーを編集",
   "dialog.server.default.title": "デフォルトサーバー",
   "dialog.server.default.description":
@@ -582,11 +575,7 @@ export const dict = {
   "session.review.loadingChanges": "変更を読み込み中...",
   "session.review.empty": "このセッションでの変更はまだありません",
   "session.review.noVcs": "Gitバージョン管理システムが検出されないため、変更は表示されません",
-<<<<<<< HEAD
   "session.review.noSnapshot": "設定でスナップショット追跡が無効になっているため、セッションの変更は利用できません",
-=======
-  "session.review.noSnapshot": "設定でスナップショット追跡が無効になっているため、セッションの変更を利用できません",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "変更なし",
   "session.review.noUncommittedChanges": "コミットされていない変更はまだありません",
   "session.review.noBranchChanges": "ブランチの変更はまだありません",
@@ -734,7 +723,6 @@ export const dict = {
   "settings.general.row.colorScheme.description": "OpenCodeがシステム、ライト、またはダークテーマに従うかを選択します",
   "settings.general.row.theme.title": "テーマ",
   "settings.general.row.theme.description": "OpenCodeのテーマをカスタマイズします。",
-<<<<<<< HEAD
   "settings.general.row.font.title": "コードフォント",
   "settings.general.row.font.description": "コードブロックで使用するフォントをカスタマイズします",
   "settings.general.row.terminalFont.title": "ターミナルのフォント",
@@ -763,12 +751,6 @@ export const dict = {
   "settings.general.row.showCustomAgents.description": "コンポーザーにエージェント選択を表示します",
   "settings.general.row.reasoningSummaries.title": "推論の要約を表示",
   "settings.general.row.reasoningSummaries.description": "タイムラインにモデルの推論の要約を表示します",
-=======
-  "settings.general.row.font.title": "フォント",
-  "settings.general.row.font.description": "コードブロックで使用する等幅フォントをカスタマイズします",
-  "settings.general.row.reasoningSummaries.title": "推論サマリーを表示",
-  "settings.general.row.reasoningSummaries.description": "タイムラインにモデルの推論サマリーを表示します",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.shellToolPartsExpanded.title": "shell ツールパーツを展開",
   "settings.general.row.shellToolPartsExpanded.description":
     "タイムラインで shell ツールパーツをデフォルトで展開して表示します",

@@ -121,11 +121,7 @@ export const dict = {
   "dialog.model.empty": "Ingen modeller fundet",
   "dialog.model.manage": "Administrer modeller",
   "dialog.model.manage.description": "Tilpas hvilke modeller der vises i modelvælgeren.",
-<<<<<<< HEAD
   "dialog.model.manage.provider.toggle": "Skift alle {{provider}}-modeller",
-=======
-  "dialog.model.manage.provider.toggle": "Slå alle {{provider}}-modeller til/fra",
->>>>>>> 974a5c065 (add notifications)
 
   "dialog.model.unpaid.freeModels.title": "Gratis modeller leveret af OpenCode",
   "dialog.model.unpaid.addMore.title": "Tilføj flere modeller fra populære udbydere",
@@ -346,17 +342,10 @@ export const dict = {
   "dialog.server.add.error": "Kunne ikke forbinde til server",
   "dialog.server.add.checking": "Tjekker...",
   "dialog.server.add.button": "Tilføj server",
-<<<<<<< HEAD
   "dialog.server.add.name": "Servernavn (valgfrit)",
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "Brugernavn (valgfrit)",
   "dialog.server.add.password": "Adgangskode (valgfrit)",
-=======
-  "dialog.server.add.name": "Servernavn (valgfri)",
-  "dialog.server.add.namePlaceholder": "Localhost",
-  "dialog.server.add.username": "Brugernavn (valgfri)",
-  "dialog.server.add.password": "Adgangskode (valgfri)",
->>>>>>> 974a5c065 (add notifications)
   "dialog.server.edit.title": "Rediger server",
   "dialog.server.default.title": "Standardserver",
   "dialog.server.default.description":
@@ -637,15 +626,9 @@ export const dict = {
   "session.review.change.other": "Ændringer",
   "session.review.loadingChanges": "Indlæser ændringer...",
   "session.review.empty": "Ingen ændringer i denne session endnu",
-<<<<<<< HEAD
   "session.review.noVcs": "Intet Git versionsstyringssystem fundet, ændringer vises ikke",
   "session.review.noSnapshot":
     "Snapshot-sporing er deaktiveret i konfigurationen, så sessionsændringer er ikke tilgængelige",
-=======
-  "session.review.noVcs": "Intet Git versionsstyringssystem registreret, ændringer vises ikke",
-  "session.review.noSnapshot":
-    "Snapshot-sporing er deaktiveret i konfigurationen, så sessionsændringer er utilgængelige",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Ingen ændringer",
   "session.review.noUncommittedChanges": "Ingen ændringer uden commit endnu",
   "session.review.noBranchChanges": "Ingen grenændringer endnu",
@@ -837,7 +820,6 @@ export const dict = {
   "settings.general.row.editToolPartsExpanded.title": "Udvid edit-værktøjsdele",
   "settings.general.row.editToolPartsExpanded.description":
     "Vis edit-, write- og patch-værktøjsdele udvidet som standard i tidslinjen",
-<<<<<<< HEAD
   "settings.general.row.newInterface.title": "Nyt layout",
   "settings.general.row.newInterface.badge": "Ny",
   "settings.general.row.newInterface.description":
@@ -847,10 +829,6 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.dismiss": "Afvis",
   "settings.general.row.pinchZoom.title": "Knib for at zoome",
   "settings.general.row.pinchZoom.description": "Tillad knibebevægelser på pegefeltet og Ctrl-rulning for at zoome",
-=======
-  "settings.general.row.reasoningSummaries.title": "Vis ræsonneringsresuméer",
-  "settings.general.row.reasoningSummaries.description": "Vis modellens ræsonneringsresuméer i tidslinjen",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.wayland.title": "Brug native Wayland",
   "settings.general.row.wayland.description": "Deaktiver X11-fallback på Wayland. Kræver genstart.",
   "settings.general.row.wayland.tooltip":

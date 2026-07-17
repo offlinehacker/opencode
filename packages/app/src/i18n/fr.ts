@@ -112,11 +112,7 @@ export const dict = {
   "dialog.model.empty": "Aucun résultat de modèle",
   "dialog.model.manage": "Gérer les modèles",
   "dialog.model.manage.description": "Personnalisez les modèles qui apparaissent dans le sélecteur.",
-<<<<<<< HEAD
   "dialog.model.manage.provider.toggle": "Basculer tous les modèles {{provider}}",
-=======
-  "dialog.model.manage.provider.toggle": "Activer/désactiver tous les modèles {{provider}}",
->>>>>>> 974a5c065 (add notifications)
   "dialog.model.unpaid.freeModels.title": "Modèles gratuits fournis par OpenCode",
   "dialog.model.unpaid.addMore.title": "Ajouter plus de modèles de fournisseurs populaires",
   "dialog.provider.viewAll": "Voir plus de fournisseurs",
@@ -741,7 +737,6 @@ export const dict = {
   "settings.general.row.colorScheme.description": "Choisissez si OpenCode suit le thème système, clair ou sombre",
   "settings.general.row.theme.title": "Thème",
   "settings.general.row.theme.description": "Personnaliser le thème d'OpenCode.",
-<<<<<<< HEAD
   "settings.general.row.font.title": "Police de code",
   "settings.general.row.font.description": "Personnaliser la police utilisée dans les blocs de code",
   "settings.general.row.terminalFont.title": "Police du terminal",
@@ -771,10 +766,6 @@ export const dict = {
     "Placer la barre de titre et les onglets de session en bas de l'écran sur mobile",
   "settings.general.row.showCustomAgents.title": "Agents personnalisés",
   "settings.general.row.showCustomAgents.description": "Afficher le sélecteur d'agent dans la zone de saisie",
-=======
-  "settings.general.row.font.title": "Police",
-  "settings.general.row.font.description": "Personnaliser la police mono utilisée dans les blocs de code",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.reasoningSummaries.title": "Afficher les résumés de raisonnement",
   "settings.general.row.reasoningSummaries.description":
     "Afficher les résumés de raisonnement du modèle dans la chronologie",

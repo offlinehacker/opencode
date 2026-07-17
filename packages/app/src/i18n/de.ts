@@ -590,15 +590,8 @@ export const dict = {
   "session.review.noSnapshot":
     "Snapshot-Tracking ist in der Konfiguration deaktiviert, daher sind Sitzungsänderungen nicht verfügbar",
   "session.review.noChanges": "Keine Änderungen",
-<<<<<<< HEAD
   "session.review.noUncommittedChanges": "Noch keine nicht committeten Änderungen",
   "session.review.noBranchChanges": "Noch keine Branch-Änderungen",
-=======
-  "session.review.noVcs": "Kein Git-Versionskontrollsystem erkannt, Änderungen werden nicht angezeigt",
-  "session.review.noSnapshot":
-    "Snapshot-Verfolgung ist in der Konfiguration deaktiviert, daher sind Sitzungsänderungen nicht verfügbar",
-  "session.files.empty": "Keine Dateien",
->>>>>>> 974a5c065 (add notifications)
   "session.files.selectToOpen": "Datei zum Öffnen auswählen",
   "session.files.all": "Alle Dateien",
   "session.files.empty": "Keine Dateien",
@@ -782,7 +775,6 @@ export const dict = {
   "settings.general.row.editToolPartsExpanded.title": "Edit-Tool-Abschnitte ausklappen",
   "settings.general.row.editToolPartsExpanded.description":
     "Edit-, Write- und Patch-Tool-Abschnitte standardmäßig in der Timeline ausgeklappt anzeigen",
-<<<<<<< HEAD
   "settings.general.row.newInterface.title": "Neues Layout",
   "settings.general.row.newInterface.badge": "Neu",
   "settings.general.row.newInterface.description":
@@ -792,11 +784,6 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.dismiss": "Verwerfen",
   "settings.general.row.pinchZoom.title": "Zoom per Fingergeste",
   "settings.general.row.pinchZoom.description": "Zoomen per Zwei-Finger- und Ctrl-Scroll-Geste erlauben",
-=======
-  "settings.general.row.reasoningSummaries.title": "Begründungszusammenfassungen anzeigen",
-  "settings.general.row.reasoningSummaries.description":
-    "Zusammenfassungen der Modellbegründung in der Timeline anzeigen",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.wayland.title": "Natives Wayland verwenden",
   "settings.general.row.wayland.description": "X11-Fallback unter Wayland deaktivieren. Erfordert Neustart.",
   "settings.general.row.wayland.tooltip":

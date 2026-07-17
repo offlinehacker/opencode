@@ -344,11 +344,7 @@ export const dict = {
   "dialog.server.add.error": "Nije moguće povezati se na server",
   "dialog.server.add.checking": "Provjera...",
   "dialog.server.add.button": "Dodaj server",
-<<<<<<< HEAD
   "dialog.server.add.name": "Ime servera (opcionalno)",
-=======
-  "dialog.server.add.name": "Naziv servera (opcionalno)",
->>>>>>> 974a5c065 (add notifications)
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "Korisničko ime (opcionalno)",
   "dialog.server.add.password": "Lozinka (opcionalno)",
@@ -633,14 +629,9 @@ export const dict = {
   "session.review.change.other": "Izmjene",
   "session.review.loadingChanges": "Učitavanje izmjena...",
   "session.review.empty": "Još nema izmjena u ovoj sesiji",
-<<<<<<< HEAD
   "session.review.noVcs": "Nije detektovan Git sistem kontrole verzija, promjene se ne prikazuju",
   "session.review.noSnapshot":
     "Praćenje snimaka (snapshot) je onemogućeno u konfiguraciji, pa promjene sesije nisu dostupne",
-=======
-  "session.review.noVcs": "Git sistem za kontrolu verzija nije detektovan, izmjene se ne prikazuju",
-  "session.review.noSnapshot": "Praćenje snimaka je onemogućeno u konfiguraciji, pa izmjene sesije nisu dostupne",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Nema izmjena",
   "session.review.noUncommittedChanges": "Još nema nepotvrđenih promjena",
   "session.review.noBranchChanges": "Još nema promjena na grani",
@@ -836,7 +827,6 @@ export const dict = {
   "settings.general.row.editToolPartsExpanded.title": "Proširi dijelove alata za uređivanje",
   "settings.general.row.editToolPartsExpanded.description":
     "Prikaži dijelove alata za uređivanje, pisanje i patch podrazumijevano proširene na vremenskoj traci",
-<<<<<<< HEAD
   "settings.general.row.newInterface.title": "Novi raspored",
   "settings.general.row.newInterface.badge": "Novo",
   "settings.general.row.newInterface.description":
@@ -847,10 +837,6 @@ export const dict = {
   "settings.general.row.pinchZoom.title": "Zumiranje štipanjem",
   "settings.general.row.pinchZoom.description":
     "Dozvoli zumiranje gestom štipanja na dodirnoj ploči i pomoću Ctrl-pomjeranja",
-=======
-  "settings.general.row.reasoningSummaries.title": "Prikaži sažetke rasuđivanja",
-  "settings.general.row.reasoningSummaries.description": "Prikaži sažetke rasuđivanja modela na vremenskoj traci",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.wayland.title": "Koristi nativni Wayland",
   "settings.general.row.wayland.description": "Onemogući X11 fallback na Waylandu. Zahtijeva restart.",
   "settings.general.row.wayland.tooltip":

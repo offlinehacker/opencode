@@ -121,11 +121,7 @@ export const dict = {
   "dialog.model.empty": "Sin resultados de modelos",
   "dialog.model.manage": "Gestionar modelos",
   "dialog.model.manage.description": "Personalizar qué modelos aparecen en el selector de modelos.",
-<<<<<<< HEAD
   "dialog.model.manage.provider.toggle": "Alternar todos los modelos de {{provider}}",
-=======
-  "dialog.model.manage.provider.toggle": "Activar/desactivar todos los modelos de {{provider}}",
->>>>>>> 974a5c065 (add notifications)
 
   "dialog.model.unpaid.freeModels.title": "Modelos gratuitos proporcionados por OpenCode",
   "dialog.model.unpaid.addMore.title": "Añadir más modelos de proveedores populares",
@@ -638,15 +634,8 @@ export const dict = {
   "session.review.noSnapshot":
     "El seguimiento de instantáneas está deshabilitado en la configuración, por lo que los cambios de sesión no están disponibles",
   "session.review.noChanges": "Sin cambios",
-<<<<<<< HEAD
   "session.review.noUncommittedChanges": "Aún no hay cambios sin confirmar",
   "session.review.noBranchChanges": "Aún no hay cambios en la rama",
-=======
-  "session.review.noVcs": "No se detectó un sistema de control de versiones Git, los cambios no se muestran",
-  "session.review.noSnapshot":
-    "El seguimiento de instantáneas está desactivado en la configuración, por lo que los cambios de sesión no están disponibles",
-  "session.files.empty": "Sin archivos",
->>>>>>> 974a5c065 (add notifications)
 
   "session.files.selectToOpen": "Selecciona un archivo para abrir",
   "session.files.all": "Todos los archivos",
@@ -843,7 +832,6 @@ export const dict = {
   "settings.general.row.editToolPartsExpanded.title": "Expandir partes de la herramienta de edición",
   "settings.general.row.editToolPartsExpanded.description":
     "Mostrar las partes de las herramientas de edición, escritura y parcheado expandidas por defecto en la línea de tiempo",
-<<<<<<< HEAD
   "settings.general.row.newInterface.title": "Nuevo diseño",
   "settings.general.row.newInterface.badge": "Nuevo",
   "settings.general.row.newInterface.description":
@@ -854,11 +842,6 @@ export const dict = {
   "settings.general.row.pinchZoom.title": "Pellizcar para ampliar",
   "settings.general.row.pinchZoom.description":
     "Permitir ampliar con el gesto de pellizco del panel táctil y con Ctrl-scroll",
-=======
-  "settings.general.row.reasoningSummaries.title": "Mostrar resúmenes de razonamiento",
-  "settings.general.row.reasoningSummaries.description":
-    "Mostrar resúmenes de razonamiento del modelo en la línea de tiempo",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.wayland.title": "Usar Wayland nativo",
   "settings.general.row.wayland.description": "Deshabilitar fallback a X11 en Wayland. Requiere reinicio.",
   "settings.general.row.wayland.tooltip":

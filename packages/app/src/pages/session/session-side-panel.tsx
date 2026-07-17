@@ -717,6 +717,7 @@ export function SessionSidePanel(props: {
                                 <div class="text-14-regular text-text-weak max-w-56">
                                   {language.t("session.files.selectToOpen")}
                                 </div>
+                              </div>
                             </div>
                           </Tabs.Content>
                         </Show>
@@ -872,5 +873,6 @@ export function SessionSidePanel(props: {
           </div>
         </Show>
       </aside>
+    </Show>
   )
 }

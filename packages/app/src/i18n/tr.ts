@@ -352,13 +352,10 @@ export const dict = {
   "dialog.server.add.username": "Kullanıcı adı (isteğe bağlı)",
   "dialog.server.add.password": "Parola (isteğe bağlı)",
   "dialog.server.add.button": "Sunucu ekle",
-<<<<<<< HEAD
   "dialog.server.add.name": "Sunucu adı (isteğe bağlı)",
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "Kullanıcı adı (isteğe bağlı)",
   "dialog.server.add.password": "Şifre (isteğe bağlı)",
-=======
->>>>>>> 974a5c065 (add notifications)
   "dialog.server.edit.title": "Sunucuyu düzenle",
   "dialog.server.default.title": "Varsayılan sunucu",
   "dialog.server.default.description":
@@ -642,11 +639,7 @@ export const dict = {
   "session.review.empty": "Bu oturumda henüz değişiklik yok",
   "session.review.noVcs": "Git VCS algılanamadı, oturum değişiklikleri tespit edilemeyecek",
   "session.review.noSnapshot":
-<<<<<<< HEAD
     "Yapılandırmada anlık görüntü takibi devre dışı bırakıldı, bu nedenle oturum değişiklikleri kullanılamıyor",
-=======
-    "Anlık görüntü takibi yapılandırmada devre dışı bırakıldığı için oturum değişiklikleri kullanılamıyor",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Değişiklik yok",
   "session.review.noUncommittedChanges": "Henüz commit edilmemiş değişiklik yok",
   "session.review.noBranchChanges": "Henüz dal değişikliği yok",

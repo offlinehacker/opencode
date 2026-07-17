@@ -631,11 +631,7 @@ export const dict = {
   "session.review.loadingChanges": "Загрузка изменений...",
   "session.review.empty": "Изменений в этой сессии пока нет",
   "session.review.noVcs": "Система контроля версий Git не обнаружена, изменения не отображаются",
-<<<<<<< HEAD
   "session.review.noSnapshot": "Отслеживание снимков отключено в настройках, поэтому изменения сессии недоступны",
-=======
-  "session.review.noSnapshot": "Отслеживание снимков отключено в конфигурации, поэтому изменения сессии недоступны",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Нет изменений",
   "session.review.noUncommittedChanges": "Пока нет незафиксированных изменений",
   "session.review.noBranchChanges": "Пока нет изменений в ветке",

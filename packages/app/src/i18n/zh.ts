@@ -625,11 +625,7 @@ export const dict = {
   "session.review.change.other": "更改",
   "session.review.loadingChanges": "正在加载更改...",
   "session.review.empty": "此会话暂无更改",
-<<<<<<< HEAD
   "session.review.noVcs": "未检测到 Git 版本控制系统，无法显示更改",
-=======
-  "session.review.noVcs": "未检测到 Git 版本控制系统，不显示更改",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noSnapshot": "配置中已禁用快照跟踪，因此会话更改不可用",
   "session.review.noChanges": "无更改",
   "session.review.noUncommittedChanges": "尚无未提交的更改",
@@ -786,7 +782,6 @@ export const dict = {
   "settings.general.row.colorScheme.description": "选择 OpenCode 跟随系统、浅色或深色主题",
   "settings.general.row.theme.title": "主题",
   "settings.general.row.theme.description": "自定义 OpenCode 的主题。",
-<<<<<<< HEAD
   "settings.general.row.font.title": "代码字体",
   "settings.general.row.font.description": "自定义代码块使用的字体",
   "settings.general.row.terminalFont.title": "终端字体",
@@ -811,10 +806,6 @@ export const dict = {
   "settings.general.row.mobileTitlebarBottom.description": "在移动设备上将标题栏和会话标签页置于屏幕底部",
   "settings.general.row.showCustomAgents.title": "自定义智能体",
   "settings.general.row.showCustomAgents.description": "在输入框中显示智能体选择器",
-=======
-  "settings.general.row.font.title": "字体",
-  "settings.general.row.font.description": "自定义代码块使用的等宽字体",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.reasoningSummaries.title": "显示推理摘要",
   "settings.general.row.reasoningSummaries.description": "在时间线中显示模型推理摘要",
   "settings.general.row.shellToolPartsExpanded.title": "展开 shell 工具部分",

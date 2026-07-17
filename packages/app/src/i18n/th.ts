@@ -121,11 +121,7 @@ export const dict = {
   "dialog.model.empty": "ไม่พบผลลัพธ์โมเดล",
   "dialog.model.manage": "จัดการโมเดล",
   "dialog.model.manage.description": "ปรับแต่งโมเดลที่จะปรากฏในตัวเลือกโมเดล",
-<<<<<<< HEAD
   "dialog.model.manage.provider.toggle": "สลับโมเดลทั้งหมดของ {{provider}}",
-=======
-  "dialog.model.manage.provider.toggle": "สลับโมเดล {{provider}} ทั้งหมด",
->>>>>>> 974a5c065 (add notifications)
 
   "dialog.model.unpaid.freeModels.title": "โมเดลฟรีที่จัดหาให้โดย OpenCode",
   "dialog.model.unpaid.addMore.title": "เพิ่มโมเดลเพิ่มเติมจากผู้ให้บริการยอดนิยม",
@@ -351,13 +347,10 @@ export const dict = {
   "dialog.server.add.username": "ชื่อผู้ใช้ (ไม่บังคับ)",
   "dialog.server.add.password": "รหัสผ่าน (ไม่บังคับ)",
   "dialog.server.add.button": "เพิ่มเซิร์ฟเวอร์",
-<<<<<<< HEAD
   "dialog.server.add.name": "ชื่อเซิร์ฟเวอร์ (ไม่บังคับ)",
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "ชื่อผู้ใช้ (ไม่บังคับ)",
   "dialog.server.add.password": "รหัสผ่าน (ไม่บังคับ)",
-=======
->>>>>>> 974a5c065 (add notifications)
   "dialog.server.edit.title": "แก้ไขเซิร์ฟเวอร์",
   "dialog.server.default.title": "เซิร์ฟเวอร์เริ่มต้น",
   "dialog.server.default.description":
@@ -635,13 +628,8 @@ export const dict = {
   "session.review.change.other": "การเปลี่ยนแปลง",
   "session.review.loadingChanges": "กำลังโหลดการเปลี่ยนแปลง...",
   "session.review.empty": "ยังไม่มีการเปลี่ยนแปลงในเซสชันนี้",
-<<<<<<< HEAD
   "session.review.noVcs": "ไม่ตรวจพบระบบควบคุมเวอร์ชัน Git การเปลี่ยนแปลงจะไม่แสดง",
   "session.review.noSnapshot": "การติดตามสแนปชอตถูกปิดใช้งานในการกำหนดค่า ดังนั้นการเปลี่ยนแปลงเซสชันจึงไม่พร้อมใช้งาน",
-=======
-  "session.review.noVcs": "ไม่พบระบบควบคุมเวอร์ชัน Git การเปลี่ยนแปลงจะไม่แสดง",
-  "session.review.noSnapshot": "การติดตามสแน็ปช็อตถูกปิดในการกำหนดค่า จึงไม่สามารถดูการเปลี่ยนแปลงของเซสชันได้",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "ไม่มีการเปลี่ยนแปลง",
   "session.review.noUncommittedChanges": "ยังไม่มีการเปลี่ยนแปลงที่รอคอมมิต",
   "session.review.noBranchChanges": "ยังไม่มีการเปลี่ยนแปลงในสาขา",
@@ -802,7 +790,6 @@ export const dict = {
   "settings.general.row.colorScheme.description": "เลือกว่าจะให้ OpenCode ใช้ธีมตามระบบ สว่าง หรือมืด",
   "settings.general.row.theme.title": "ธีม",
   "settings.general.row.theme.description": "ปรับแต่งวิธีการที่ OpenCode มีธีม",
-<<<<<<< HEAD
   "settings.general.row.font.title": "ฟอนต์โค้ด",
   "settings.general.row.font.description": "ปรับแต่งฟอนต์ที่ใช้ในบล็อกโค้ด",
   "settings.general.row.terminalFont.title": "ฟอนต์เทอร์มินัล",
@@ -828,11 +815,6 @@ export const dict = {
     "วางแถบชื่อเรื่องและแท็บเซสชันไว้ด้านล่างของหน้าจอบนอุปกรณ์เคลื่อนที่",
   "settings.general.row.showCustomAgents.title": "เอเจนต์ที่กำหนดเอง",
   "settings.general.row.showCustomAgents.description": "แสดงตัวเลือกเอเจนต์ในช่องเขียนข้อความ",
-=======
-  "settings.general.row.font.title": "ฟอนต์",
-  "settings.general.row.font.description": "ปรับแต่งฟอนต์โมโนที่ใช้ในบล็อกโค้ด",
-
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.reasoningSummaries.title": "แสดงสรุปการใช้เหตุผล",
   "settings.general.row.reasoningSummaries.description": "แสดงสรุปการใช้เหตุผลของโมเดลในไทม์ไลน์",
   "settings.general.row.shellToolPartsExpanded.title": "ขยายส่วนเครื่องมือ shell",

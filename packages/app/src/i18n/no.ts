@@ -526,11 +526,7 @@ export const dict = {
   "session.review.empty": "Ingen endringer i denne sesjonen ennå",
   "session.review.noVcs": "Ingen Git-versjonskontrollsystem oppdaget, endringer vises ikke",
   "session.review.noSnapshot":
-<<<<<<< HEAD
     "Snapshot-sporing er deaktivert i konfigurasjonen, så sesjonsendringer er ikke tilgjengelige",
-=======
-    "Øyeblikksbildesporing er deaktivert i konfigurasjonen, så sesjonsendringer er utilgjengelige",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Ingen endringer",
 
   "session.files.selectToOpen": "Velg en fil å åpne",
@@ -672,7 +668,6 @@ export const dict = {
   "settings.general.row.colorScheme.description": "Velg om OpenCode skal følge systemets, lyst eller mørkt tema",
   "settings.general.row.theme.title": "Tema",
   "settings.general.row.theme.description": "Tilpass hvordan OpenCode er tematisert.",
-<<<<<<< HEAD
   "settings.general.row.font.title": "Kodefont",
   "settings.general.row.font.description": "Tilpass skrifttypen som brukes i kodeblokker",
   "settings.general.row.terminalFont.title": "Terminalskrift",
@@ -685,13 +680,6 @@ export const dict = {
   "settings.general.row.followup.option.steer": "Styr",
   "settings.general.row.reasoningSummaries.title": "Vis resonneringssammendrag",
   "settings.general.row.reasoningSummaries.description": "Vis sammendrag av modellresonnering i tidslinjen",
-=======
-  "settings.general.row.font.title": "Skrift",
-  "settings.general.row.font.description": "Tilpass mono-skriften som brukes i kodeblokker",
-  "settings.general.row.reasoningSummaries.title": "Vis resonneringssammendrag",
-  "settings.general.row.reasoningSummaries.description": "Vis modellens resonneringssammendrag i tidslinjen",
-
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.shellToolPartsExpanded.title": "Utvid shell-verktøydeler",
   "settings.general.row.shellToolPartsExpanded.description": "Vis shell-verktøydeler utvidet som standard i tidslinjen",
   "settings.general.row.editToolPartsExpanded.title": "Utvid edit-verktøydeler",

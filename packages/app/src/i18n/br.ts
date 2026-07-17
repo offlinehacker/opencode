@@ -112,11 +112,7 @@ export const dict = {
   "dialog.model.empty": "Nenhum resultado de modelo",
   "dialog.model.manage": "Gerenciar modelos",
   "dialog.model.manage.description": "Personalizar quais modelos aparecem no seletor de modelos.",
-<<<<<<< HEAD
   "dialog.model.manage.provider.toggle": "Alternar todos os modelos {{provider}}",
-=======
-  "dialog.model.manage.provider.toggle": "Alternar todos os modelos de {{provider}}",
->>>>>>> 974a5c065 (add notifications)
   "dialog.model.unpaid.freeModels.title": "Modelos gratuitos fornecidos pelo OpenCode",
   "dialog.model.unpaid.addMore.title": "Adicionar mais modelos de provedores populares",
   "dialog.provider.viewAll": "Ver mais provedores",
@@ -581,15 +577,9 @@ export const dict = {
   "session.review.change.other": "Alterações",
   "session.review.loadingChanges": "Carregando alterações...",
   "session.review.empty": "Nenhuma alteração nesta sessão ainda",
-<<<<<<< HEAD
   "session.review.noVcs": "Nenhum Sistema de Controle de Versão Git detectado, alterações não exibidas",
   "session.review.noSnapshot":
     "O rastreamento de snapshot está desabilitado na configuração, então as alterações da sessão estão indisponíveis",
-=======
-  "session.review.noVcs": "Nenhum sistema de controle de versão Git detectado, alterações não exibidas",
-  "session.review.noSnapshot":
-    "O rastreamento de snapshots está desabilitado na configuração, então as alterações da sessão estão indisponíveis",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Sem alterações",
   "session.review.noUncommittedChanges": "Ainda não há alterações sem commit",
   "session.review.noBranchChanges": "Ainda não há alterações na branch",
@@ -772,7 +762,6 @@ export const dict = {
   "settings.general.row.editToolPartsExpanded.title": "Expandir partes da ferramenta de edição",
   "settings.general.row.editToolPartsExpanded.description":
     "Mostrar partes das ferramentas de edição, escrita e patch expandidas por padrão na linha do tempo",
-<<<<<<< HEAD
   "settings.general.row.newInterface.title": "Novo layout",
   "settings.general.row.newInterface.badge": "Novo",
   "settings.general.row.newInterface.description":
@@ -783,10 +772,6 @@ export const dict = {
   "settings.general.row.pinchZoom.title": "Zoom com gesto de pinça",
   "settings.general.row.pinchZoom.description":
     "Permitir gestos de pinça no trackpad e de Ctrl+rolagem para aplicar zoom",
-=======
-  "settings.general.row.reasoningSummaries.title": "Mostrar resumos de raciocínio",
-  "settings.general.row.reasoningSummaries.description": "Exibir resumos de raciocínio do modelo na linha do tempo",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.wayland.title": "Usar Wayland nativo",
   "settings.general.row.wayland.description": "Desabilitar fallback X11 no Wayland. Requer reinicialização.",
   "settings.general.row.wayland.tooltip":

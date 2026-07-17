@@ -12,14 +12,10 @@ import { SettingsProviders } from "./settings-providers"
 import { SettingsModels } from "./settings-models"
 import { SettingsServers } from "./settings-servers"
 
-<<<<<<< HEAD
-export const DialogSettings: Component<{ defaultValue?: string }> = (props) => {
-=======
 // UPSTREAM-DIVERGENCE-FILE: The settings dialog exposes a fork-only WhisperCode phone tab added after
 // upstream sync 6b9ce5e63. Preserve this entrypoint when upstream reorganizes the settings navigation.
 
-export const DialogSettings: Component = () => {
->>>>>>> 8ed8fd1e2 (add upstream comment markers to help with merge conflicts)
+export const DialogSettings: Component<{ defaultValue?: string }> = (props) => {
   const language = useLanguage()
   const platform = usePlatform()
   const dialog = useDialog()

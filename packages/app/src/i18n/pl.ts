@@ -579,11 +579,7 @@ export const dict = {
   "session.review.loadingChanges": "Ładowanie zmian...",
   "session.review.empty": "Brak zmian w tej sesji",
   "session.review.noVcs": "Nie wykryto systemu kontroli wersji Git, zmiany nie są wyświetlane",
-<<<<<<< HEAD
   "session.review.noSnapshot": "Śledzenie migawek jest wyłączone w konfiguracji, więc zmiany w sesji są niedostępne",
-=======
-  "session.review.noSnapshot": "Śledzenie migawek jest wyłączone w konfiguracji, więc zmiany sesji są niedostępne",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "Brak zmian",
   "session.review.noUncommittedChanges": "Brak jeszcze niezatwierdzonych zmian",
   "session.review.noBranchChanges": "Brak jeszcze zmian w gałęzi",
@@ -732,7 +728,6 @@ export const dict = {
     "Wybierz, czy OpenCode ma używać motywu systemowego, jasnego czy ciemnego",
   "settings.general.row.theme.title": "Motyw",
   "settings.general.row.theme.description": "Dostosuj motyw OpenCode.",
-<<<<<<< HEAD
   "settings.general.row.font.title": "Czcionka kodu",
   "settings.general.row.font.description": "Dostosuj czcionkę używaną w blokach kodu",
   "settings.general.row.terminalFont.title": "Czcionka terminala",
@@ -761,12 +756,6 @@ export const dict = {
   "settings.general.row.showCustomAgents.description": "Pokaż wybór agenta w edytorze wiadomości",
   "settings.general.row.reasoningSummaries.title": "Pokaż podsumowania wnioskowania",
   "settings.general.row.reasoningSummaries.description": "Wyświetlaj podsumowania wnioskowania modelu na osi czasu",
-=======
-  "settings.general.row.font.title": "Czcionka",
-  "settings.general.row.font.description": "Dostosuj czcionkę mono używaną w blokach kodu",
-  "settings.general.row.reasoningSummaries.title": "Pokaż podsumowania rozumowania",
-  "settings.general.row.reasoningSummaries.description": "Wyświetlaj podsumowania rozumowania modelu na osi czasu",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.shellToolPartsExpanded.title": "Rozwijaj elementy narzędzia shell",
   "settings.general.row.shellToolPartsExpanded.description":
     "Domyślnie pokazuj rozwinięte elementy narzędzia shell na osi czasu",

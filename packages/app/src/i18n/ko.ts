@@ -472,11 +472,7 @@ export const dict = {
   "session.review.loadingChanges": "변경 사항 로드 중...",
   "session.review.empty": "이 세션에 변경 사항이 아직 없습니다",
   "session.review.noVcs": "Git 버전 관리 시스템이 감지되지 않아 변경 사항이 표시되지 않습니다",
-<<<<<<< HEAD
   "session.review.noSnapshot": "구성에서 스냅샷 추적이 비활성화되어 있어 세션 변경 사항을 사용할 수 없습니다",
-=======
-  "session.review.noSnapshot": "설정에서 스냅샷 추적이 비활성화되어 있어 세션 변경 사항을 사용할 수 없습니다",
->>>>>>> 974a5c065 (add notifications)
   "session.review.noChanges": "변경 없음",
   "session.files.selectToOpen": "열 파일을 선택하세요",
   "session.files.all": "모든 파일",
@@ -602,7 +598,6 @@ export const dict = {
   "settings.general.row.colorScheme.description": "OpenCode가 시스템, 라이트 또는 다크 테마를 따를지 선택하세요",
   "settings.general.row.theme.title": "테마",
   "settings.general.row.theme.description": "OpenCode 테마 사용자 지정",
-<<<<<<< HEAD
   "settings.general.row.font.title": "코드 글꼴",
   "settings.general.row.font.description": "코드 블록에 사용되는 글꼴을 사용자 지정",
   "settings.general.row.terminalFont.title": "터미널 글꼴",
@@ -615,12 +610,6 @@ export const dict = {
   "settings.general.row.followup.option.steer": "조종",
   "settings.general.row.reasoningSummaries.title": "추론 요약 표시",
   "settings.general.row.reasoningSummaries.description": "타임라인에 모델 추론 요약 표시",
-=======
-  "settings.general.row.font.title": "글꼴",
-  "settings.general.row.font.description": "코드 블록에 사용되는 고정폭 글꼴 사용자 지정",
-  "settings.general.row.reasoningSummaries.title": "추론 요약 표시",
-  "settings.general.row.reasoningSummaries.description": "타임라인에 모델 추론 요약을 표시합니다",
->>>>>>> 974a5c065 (add notifications)
   "settings.general.row.shellToolPartsExpanded.title": "shell 도구 파트 펼치기",
   "settings.general.row.shellToolPartsExpanded.description":
     "타임라인에서 기본적으로 shell 도구 파트를 펼친 상태로 표시합니다",
