@@ -29,7 +29,7 @@
     },
     "packages/android": {
       "name": "@opencode-ai/android",
-      "version": "1.2.6",
+      "version": "1.18.3",
       "dependencies": {
         "@opencode-ai/app": "workspace:*",
         "@opencode-ai/ui": "workspace:*",
@@ -561,7 +561,7 @@
     },
     "packages/ios": {
       "name": "@opencode-ai/ios",
-      "version": "1.2.4",
+      "version": "1.18.3",
       "dependencies": {
         "@opencode-ai/app": "workspace:*",
         "@opencode-ai/ui": "workspace:*",
