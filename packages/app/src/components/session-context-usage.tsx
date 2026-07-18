@@ -2,6 +2,7 @@ import { Match, Show, Switch, createMemo, type ComponentProps, type JSX } from "
 import { ProgressCircle } from "@opencode-ai/ui/progress-circle"
 import { ProgressCircleV2 } from "@opencode-ai/ui/v2/progress-circle-v2"
 import { Button } from "@opencode-ai/ui/button"
+import { Icon } from "@opencode-ai/ui/icon"
 import { IconButtonV2 } from "@opencode-ai/ui/v2/icon-button-v2"
 import { TooltipV2 } from "@opencode-ai/ui/v2/tooltip-v2"
 import { createMediaQuery } from "@solid-primitives/media"
@@ -14,7 +15,7 @@ import { useProviders } from "@/hooks/use-providers"
 import { useSDK } from "@/context/sdk"
 import { getSessionContext } from "@/components/session/session-context-metrics"
 import { useSessionLayout } from "@/pages/session/session-layout"
-import { createSessionTabs } from "@/pages/session/helpers"
+import { createSessionTabs, SESSION_OPEN_FILE_TAB } from "@/pages/session/helpers"
 import { useSettings } from "@/context/settings"
 
 interface SessionContextUsageProps {
@@ -36,11 +37,65 @@ function openSessionContext(args: {
   view: ReturnType<ReturnType<typeof useLayout>["view"]>
   layout: ReturnType<typeof useLayout>
   tabs: ReturnType<ReturnType<typeof useLayout>["tabs"]>
+  mobile: boolean
 }) {
+  if (args.mobile) args.layout.mobileSidePanel.show()
   args.view.reviewPanel.open(args.view.reviewPanel.opened() ? "other" : "context-button")
   if (args.layout.fileTree.opened() && args.layout.fileTree.tab() !== "all") args.layout.fileTree.setTab("all")
   void args.tabs.open("context")
   args.tabs.setActive("context")
+}
+
+export function SessionFilesButton(props: {
+  buttonAppearance?: "default" | "v2"
+  placement?: ComponentProps<typeof TooltipV2>["placement"]
+}) {
+  const layout = useLayout()
+  const language = useLanguage()
+  const settings = useSettings()
+  const { params, tabs, view } = useSessionLayout()
+  const isDesktop = createMediaQuery("(min-width: 768px)")
+
+  const openFiles = () => {
+    if (!params.id) return
+    layout.mobileSidePanel.show()
+    view().reviewPanel.open("other")
+    if (layout.fileTree.opened() && layout.fileTree.tab() !== "all") layout.fileTree.setTab("all")
+    tabs().previewTab(SESSION_OPEN_FILE_TAB)
+    tabs().setActive(SESSION_OPEN_FILE_TAB)
+  }
+
+  const icon = () => <Icon name="file-tree" size="small" />
+
+  return (
+    <Show when={params.id && settings.general.newLayoutDesigns() && !isDesktop()}>
+      <TooltipV2 value={language.t("command.file.open")} placement={props.placement ?? "top"} shift={-8}>
+        <Switch>
+          <Match when={props.buttonAppearance === "v2"}>
+            <IconButtonV2
+              type="button"
+              variant="ghost-muted"
+              size="large"
+              icon={icon()}
+              onClick={openFiles}
+              aria-label={language.t("command.file.open")}
+            />
+          </Match>
+          <Match when={true}>
+            <Button
+              type="button"
+              variant="ghost"
+              class="size-6"
+              onClick={openFiles}
+              aria-label={language.t("command.file.open")}
+            >
+              {icon()}
+            </Button>
+          </Match>
+        </Switch>
+      </TooltipV2>
+    </Show>
+  )
 }
 
 export function SessionContextUsage(props: SessionContextUsageProps) {
@@ -60,7 +115,7 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
     tabs,
     pathFromTab: file.pathFromTab,
     normalizeTab: (tab) => (tab.startsWith("file://") ? file.tab(tab) : tab),
-    fileBrowser: () => settings.general.newLayoutDesigns() && isDesktop() && !!params.id,
+    fileBrowser: () => settings.general.newLayoutDesigns() && !!params.id,
   })
   const messages = createMemo(() => (params.id ? (sync().data.message[params.id] ?? []) : []))
   const info = createMemo(() => (params.id ? sync().session.get(params.id) : undefined))
@@ -90,7 +145,10 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
     const sessionView = view()
     if (contextVisible()) {
       tabs().close("context")
-      if (sessionView.reviewPanel.source() === "context-button" && !hasOtherTabs()) sessionView.reviewPanel.close()
+      if (sessionView.reviewPanel.source() === "context-button" && !hasOtherTabs()) {
+        sessionView.reviewPanel.close()
+        if (!isDesktop()) layout.mobileSidePanel.hide()
+      }
       return
     }
 
@@ -98,6 +156,7 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
       view: sessionView,
       layout,
       tabs: tabs(),
+      mobile: settings.general.newLayoutDesigns() && !isDesktop(),
     })
   }
 
