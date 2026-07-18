@@ -245,6 +245,10 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
       if (Date.now() - lastEventAt < HEARTBEAT_TIMEOUT_MS) return
       attempt?.abort()
     })
+    // Mobile webviews can be suspended with a live-looking stream; force a reconnect on resume.
+    makeEventListener(window, "opencode:resume", () => {
+      attempt?.abort()
+    })
   })
 
   onCleanup(() => {
