@@ -708,13 +708,13 @@ export default function Page() {
   const activeReviewLimit = createMemo<ReviewLimit | undefined>(() => {
     if (!mobilePlatform()) return
 
-    if (store.changes === "turn") {
+    if (reviewMode() === "turn") {
       const limit = mobileReviewLimit(diffCount(turnDiffSource()), true)
       if (limit) return { mode: "turn", ...limit }
     }
 
     const limit = store.reviewLimit
-    if (limit?.mode === store.changes) return limit
+    if (limit?.mode === reviewMode()) return limit
   })
   const nogit = createMemo(() => {
     const project = sync().project
@@ -745,6 +745,8 @@ export default function Page() {
     () =>
       ["session-vcs", sdk().directory, sync().data.vcs?.branch ?? "", sync().data.vcs?.default_branch ?? ""] as const,
   )
+  const asVcsDiff = (value: unknown): VcsFileDiff | undefined =>
+    list(value).find((diff): diff is VcsFileDiff => typeof diff.file === "string")
   const fallbackGitDiff = async () => {
     const status = await sdk()
       .client.file.status()
@@ -755,14 +757,14 @@ export default function Page() {
     const diffs = await Promise.all(
       status.map(async (item): Promise<VcsFileDiff | undefined> => {
         if (item.status === "deleted") {
-          return list({
+          return asVcsDiff({
             file: item.path,
             before: "",
             after: "",
             additions: item.added,
             deletions: item.removed,
             status: item.status,
-          })[0]
+          })
         }
 
         const content = await sdk()
@@ -782,14 +784,14 @@ export default function Page() {
         }
 
         if (item.status !== "added") return
-        return list({
+        return asVcsDiff({
           file: item.path,
           before: "",
           after: content.content,
           additions: item.added,
           deletions: item.removed,
           status: item.status,
-        })[0]
+        })
       }),
     )
 
@@ -889,7 +891,7 @@ export default function Page() {
   }
 
   createEffect(
-    on([sessionKey, wantsReview, () => store.changes] as const, ([, wants, changes]) => {
+    on([sessionKey, wantsReview, () => reviewMode()] as const, ([, wants, changes]) => {
       if (!wants) return
       if (changes !== "git" && changes !== "branch") return
       refreshVcs()
@@ -1623,7 +1625,7 @@ export default function Page() {
     if (!id) return
 
     if (!wantsReview()) return
-    if (mobilePlatform() && store.changes !== "turn") return
+    if (mobilePlatform() && reviewMode() !== "turn") return
     if (mobilePlatform() && activeReviewLimit()) return
     if (sync().data.session_diff[id] !== undefined) return
     if (sync().status === "loading") return
@@ -1640,7 +1642,7 @@ export default function Page() {
         diffFrame = undefined
         diffTimer = undefined
         if (!wants) return
-        if (mobilePlatform() && store.changes !== "turn") return
+        if (mobilePlatform() && reviewMode() !== "turn") return
         if (mobilePlatform() && activeReviewLimit()) return
 
         const id = params.id
@@ -1709,10 +1711,6 @@ export default function Page() {
   const jumpThreshold = (el: HTMLDivElement) => Math.max(400, el.clientHeight)
   const distanceFromScrollBottom = (el: HTMLDivElement) => {
     const max = Math.max(0, el.scrollHeight - el.clientHeight)
-
-    // UPSTREAM-DIVERGENCE: Keep bottom detection aligned with reverseScrollTop above. Desktop reports
-    // the bottom of the reversed timeline at scrollTop ~= 0, while mobile keeps normal positive offsets.
-    if (!mobile) return Math.abs(el.scrollTop)
     return Math.max(0, max - el.scrollTop)
   }
 

@@ -820,9 +820,6 @@ export const dict = {
   "settings.general.row.showCustomAgents.title": "Пользовательские агенты",
   "settings.general.row.showCustomAgents.description": "Показывать выбор агента в редакторе запросов",
   "settings.general.row.reasoningSummaries.title": "Показывать сводки рассуждений",
-  "settings.general.row.reasoningSummaries.description": "Отображать сводки рассуждений модели в ленте",
-
-  "settings.general.row.reasoningSummaries.title": "Показывать сводки рассуждений",
   "settings.general.row.reasoningSummaries.description": "Отображать сводки рассуждений модели на ленте",
   "settings.general.row.shellToolPartsExpanded.title": "Разворачивать элементы инструмента shell",
   "settings.general.row.shellToolPartsExpanded.description":

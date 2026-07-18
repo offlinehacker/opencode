@@ -4,6 +4,7 @@ import { Button } from "@opencode-ai/ui/button"
 import { Icon } from "@opencode-ai/ui/icon"
 import { Select } from "@opencode-ai/ui/select"
 import { Switch } from "@opencode-ai/ui/switch"
+import { TextField } from "@opencode-ai/ui/text-field"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { Tag } from "@opencode-ai/ui/v2/badge-v2"
 import { useTheme, type ColorScheme } from "@opencode-ai/ui/theme/context"
@@ -49,6 +50,17 @@ type PushAction = {
   label: string
   disabled: boolean
   run?: () => Promise<void>
+}
+
+type PushPairStore = {
+  id?: string
+  status?: PairState
+  command?: string
+  expires?: string
+  channel?: string
+  device?: string
+  message?: string
+  updated: number
 }
 
 type ThemeOption = {
@@ -139,6 +151,10 @@ export const SettingsGeneral: Component = () => {
   const serverSync = useServerSync()
   const serverSdk = useServerSDK()
   const relay = usePushRelay()
+  const [pair, setPair, , pairReady] = persisted(
+    Persist.global("push.pair", ["push.pair.v3", "push.pair.v2", "push.pair.v1"]),
+    createStore<PushPairStore>({ updated: 0 }),
+  )
 
   const [store, setStore] = createStore({
     asking: false,

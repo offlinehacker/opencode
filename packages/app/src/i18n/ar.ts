@@ -572,8 +572,6 @@ export const dict = {
   "session.review.change.other": "تغييرات",
   "session.review.loadingChanges": "جارٍ تحميل التغييرات...",
   "session.review.empty": "لا توجد تغييرات في هذه الجلسة بعد",
-  "session.review.noVcs": "لم يتم اكتشاف نظام التحكم بالإصدارات Git، لا يتم عرض التغييرات",
-  "session.review.noSnapshot": "تتبع اللقطات معطل في الإعدادات، لذا تغييرات الجلسة غير متاحة",
   "session.review.noChanges": "لا توجد تغييرات",
   "session.review.noUncommittedChanges": "لا توجد تغييرات غير مُودَعة بعد",
   "session.review.noBranchChanges": "لا توجد تغييرات في الفرع بعد",

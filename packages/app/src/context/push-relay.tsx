@@ -10,6 +10,7 @@ import { DEFAULT_PUSH_RELAY_URL, normalizePushRelayURL } from "@/utils/push-rela
 
 export const { use: usePushRelay, provider: PushRelayProvider } = createSimpleContext({
   name: "PushRelay",
+  gate: false,
   init: () => {
     const platform = usePlatform()
 
@@ -34,6 +35,7 @@ export const { use: usePushRelay, provider: PushRelayProvider } = createSimpleCo
       ready,
       current,
       custom: () => store.url,
+      guess: () => DEFAULT_PUSH_RELAY_URL,
       set(value?: string) {
         setStore("url", normalizePushRelayURL(value))
       },

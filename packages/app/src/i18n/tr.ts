@@ -350,12 +350,8 @@ export const dict = {
   "dialog.server.add.name": "Sunucu adı (isteğe bağlı)",
   "dialog.server.add.namePlaceholder": "Localhost",
   "dialog.server.add.username": "Kullanıcı adı (isteğe bağlı)",
-  "dialog.server.add.password": "Parola (isteğe bağlı)",
-  "dialog.server.add.button": "Sunucu ekle",
-  "dialog.server.add.name": "Sunucu adı (isteğe bağlı)",
-  "dialog.server.add.namePlaceholder": "Localhost",
-  "dialog.server.add.username": "Kullanıcı adı (isteğe bağlı)",
   "dialog.server.add.password": "Şifre (isteğe bağlı)",
+  "dialog.server.add.button": "Sunucu ekle",
   "dialog.server.edit.title": "Sunucuyu düzenle",
   "dialog.server.default.title": "Varsayılan sunucu",
   "dialog.server.default.description":
@@ -648,7 +644,6 @@ export const dict = {
   "session.files.all": "Tüm dosyalar",
   "session.files.empty": "Dosya yok",
   "session.files.binaryContent": "İkili dosya (içerik görüntülenemiyor)",
-  "session.files.empty": "Dosya yok",
 
   "session.messages.renderEarlier": "Önceki mesajları göster",
   "session.messages.loadingEarlier": "Önceki mesajlar yükleniyor...",

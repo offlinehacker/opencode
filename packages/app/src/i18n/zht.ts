@@ -620,8 +620,6 @@ export const dict = {
   "session.review.change.other": "變更",
   "session.review.loadingChanges": "正在載入變更...",
   "session.review.empty": "此工作階段暫無變更",
-  "session.review.noVcs": "未偵測到 Git 版本控制系統，不顯示變更",
-  "session.review.noSnapshot": "設定中已停用快照追蹤，因此工作階段變更不可用",
   "session.review.noChanges": "沒有變更",
   "session.review.noUncommittedChanges": "尚無未提交的變更",
   "session.review.noBranchChanges": "尚無分支變更",
@@ -803,9 +801,6 @@ export const dict = {
   "settings.general.row.mobileTitlebarBottom.description": "在行動裝置上將標題列和工作階段分頁置於畫面底部",
   "settings.general.row.showCustomAgents.title": "自訂代理程式",
   "settings.general.row.showCustomAgents.description": "在輸入區顯示代理程式選擇器",
-  "settings.general.row.reasoningSummaries.title": "顯示推理摘要",
-  "settings.general.row.reasoningSummaries.description": "在時間軸中顯示模型推理摘要",
-
   "settings.general.row.reasoningSummaries.title": "顯示推理摘要",
   "settings.general.row.reasoningSummaries.description": "在時間軸中顯示模型推理摘要",
   "settings.general.row.shellToolPartsExpanded.title": "展開 shell 工具區塊",

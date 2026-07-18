@@ -15,27 +15,34 @@ export function installPrompt(value = installPush()) {
   return `Run this exact command on the machine hosting OpenCode and report whether it succeeded: ${value}`
 }
 
-function name(value: string) {
-  const idx = value.lastIndexOf("@")
-  if (idx > 0) return value.slice(0, idx)
-  return value
+type PluginEntry = string | [string, { [key: string]: unknown }]
+
+function name(value: PluginEntry) {
+  const item = Array.isArray(value) ? value[0] : value
+  const idx = item.lastIndexOf("@")
+  if (idx > 0) return item.slice(0, idx)
+  return item
 }
 
-export function hasPush(list?: string[]) {
+export function hasPush(list?: PluginEntry[]) {
   return (list ?? []).some((item) => name(item) === pkg)
 }
 
-export function hasPushSpec(list?: string[]) {
+export function hasPushSpec(list?: PluginEntry[]) {
   return hasPush(list)
 }
 
-export function addPush(list?: string[]) {
+export function addPush(list?: string[]): string[]
+export function addPush(list?: PluginEntry[]): PluginEntry[]
+export function addPush(list?: PluginEntry[]) {
   const next = (list ?? []).filter((item) => name(item) !== pkg)
   next.push(spec)
   return next
 }
 
-export function dropPush(list?: string[]) {
+export function dropPush(list?: string[]): string[]
+export function dropPush(list?: PluginEntry[]): PluginEntry[]
+export function dropPush(list?: PluginEntry[]) {
   return (list ?? []).filter((item) => item !== spec && name(item) !== pkg)
 }
 

@@ -582,9 +582,6 @@ export const dict = {
   "session.review.change.other": "Modifications",
   "session.review.loadingChanges": "Chargement des modifications...",
   "session.review.empty": "Aucune modification dans cette session pour l'instant",
-  "session.review.noVcs": "Aucun système de contrôle de version Git détecté, les modifications ne sont pas affichées",
-  "session.review.noSnapshot":
-    "Le suivi des instantanés est désactivé dans la configuration, les modifications de session ne sont donc pas disponibles",
   "session.review.noChanges": "Aucune modification",
   "session.review.noUncommittedChanges": "Aucune modification non validée pour l'instant",
   "session.review.noBranchChanges": "Aucune modification de branche pour l'instant",

@@ -161,9 +161,6 @@ export function ScrollView(props: ScrollViewProps) {
   }
   const scrollMax = () => Math.max(0, viewportRef.scrollHeight - viewportRef.clientHeight)
   const scrollEndpoint = (edge: "start" | "end") => {
-    // UPSTREAM-DIVERGENCE: Desktop reversed views use negative scrollTop values, while iOS/Android
-    // webviews keep positive offsets even when the content is visually reversed.
-    if (reverse() && !mobile()) return edge === "start" ? -scrollMax() : 0
     return edge === "start" ? 0 : scrollMax()
   }
 

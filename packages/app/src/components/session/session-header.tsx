@@ -173,13 +173,17 @@ export function SessionHeader() {
     finder: true,
   })
 
+  const desktopOs = createMemo(() => {
+    const value = os()
+    return value === "macos" || value === "windows" ? value : "linux"
+  })
   const apps = createMemo(() => {
-    if (os() === "macos") return MAC_APPS
-    if (os() === "windows") return WINDOWS_APPS
+    if (desktopOs() === "macos") return MAC_APPS
+    if (desktopOs() === "windows") return WINDOWS_APPS
     return LINUX_APPS
   })
 
-  const fileManager = createMemo(() => fileManagerApp(os()))
+  const fileManager = createMemo(() => fileManagerApp(desktopOs()))
 
   createEffect(() => {
     if (platform.platform !== "desktop") return
