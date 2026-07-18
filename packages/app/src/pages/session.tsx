@@ -2504,10 +2504,25 @@ export default function Page() {
           />
         </Show>
         <Show when={newSessionDesign()}>
-          <Show when={isDesktop() && desktopV2PanelLayout().visible}>
-            <div class="min-w-0 h-full flex flex-1 flex-col">
-              <Show when={desktopV2ReviewOpen() || desktopFileTreeOpen()}>
-                <div class="min-h-0 flex-1">
+          <Show when={isDesktop() ? desktopV2PanelLayout().visible : layout.mobileSidePanel.opened()}>
+            <div
+              classList={{
+                "min-w-0 h-full flex flex-1 flex-col": isDesktop(),
+                contents: !isDesktop(),
+              }}
+            >
+              <Show
+                when={
+                  (isDesktop() && (desktopV2ReviewOpen() || desktopFileTreeOpen())) ||
+                  (!isDesktop() && layout.mobileSidePanel.opened())
+                }
+              >
+                <div
+                  classList={{
+                    "min-h-0 flex-1": isDesktop(),
+                    contents: !isDesktop(),
+                  }}
+                >
                   <SessionSidePanel
                     canReview={canReview}
                     diffs={reviewDiffs}
@@ -2530,10 +2545,11 @@ export default function Page() {
                     reviewSnap={ui.reviewSnap}
                     size={size}
                     stacked={desktopV2PanelLayout().stacked}
+                    forceOpen={!isDesktop() && layout.mobileSidePanel.opened()}
                   />
                 </div>
               </Show>
-              <Show when={desktopV2PanelLayout().stacked}>
+              <Show when={isDesktop() && desktopV2PanelLayout().stacked}>
                 <div class="relative h-2 shrink-0" onPointerDown={() => size.start()}>
                   <ResizeHandle
                     class="!relative !inset-auto !h-full !w-full !transform-none"
@@ -2550,7 +2566,7 @@ export default function Page() {
                   />
                 </div>
               </Show>
-              <Show when={terminalOpen()}>
+              <Show when={isDesktop() && terminalOpen()}>
                 <div
                   classList={{
                     "min-h-0 shrink-0": desktopV2PanelLayout().stacked,
@@ -2564,6 +2580,18 @@ export default function Page() {
           </Show>
         </Show>
       </div>
+      <Show when={newSessionDesign() && !isDesktop() && layout.mobileSidePanel.opened()}>
+        <div
+          data-slot="mobile-side-panel-backdrop"
+          class="fixed inset-0 z-30 bg-black/30 md:hidden"
+          onClick={() => {
+            layout.mobileSidePanel.hide()
+            layout.fileTree.close()
+            view().reviewPanel.close()
+          }}
+          aria-hidden="true"
+        />
+      </Show>
       <Show when={!newSessionDesign()}>
         <TerminalPanel />
       </Show>

@@ -308,6 +308,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
     const [ephemeral, setEphemeral] = createStore({
       reviewPanelSource: "other" as ReviewPanelSource,
       sessionTabPreview: {} as Record<string, string | undefined>,
+      mobileSidePanelOpened: false,
     })
 
     const MAX_SESSION_KEYS = 50
@@ -749,6 +750,18 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         },
         toggle() {
           setStore("mobileSidebar", "opened", (x) => !x)
+        },
+      },
+      mobileSidePanel: {
+        opened: createMemo(() => ephemeral.mobileSidePanelOpened),
+        show() {
+          setEphemeral("mobileSidePanelOpened", true)
+        },
+        hide() {
+          setEphemeral("mobileSidePanelOpened", false)
+        },
+        toggle() {
+          setEphemeral("mobileSidePanelOpened", (opened) => !opened)
         },
       },
       pendingMessage: {
