@@ -358,19 +358,19 @@ const App = () => {
       const result = await bridge.sendAsync<boolean>("share", data)
       return result ?? false
     },
-    getDefaultServerUrl: async () => {
+    getDefaultServer: async (): Promise<ServerConnection.Key | null> => {
       const result = await bridge.sendAsync<string | null>("getDefaultServerUrl")
-      return result ?? null
+      return (result ?? null) as ServerConnection.Key | null
     },
-    setDefaultServerUrl: async (url: string | null) => {
+    setDefaultServer: async (url: ServerConnection.Key | null) => {
       await bridge.sendAsync("setDefaultServerUrl", { url })
     },
     storage: (name?: string) => createBridgeStorage(name),
   }
 
   const [defaultConfig] = createResource(async () => {
-    if (!platform.getDefaultServerUrl) return null
-    const url = await Promise.resolve(platform.getDefaultServerUrl?.()).catch(() => null)
+    if (!platform.getDefaultServer) return null
+    const url = await Promise.resolve(platform.getDefaultServer?.()).catch(() => null)
     if (!url) return null
     const displayName = await credentialStorage.getItem("displayName").catch(() => null)
     const username = await credentialStorage.getItem("username").catch(() => null)
@@ -393,7 +393,7 @@ const App = () => {
   }) => {
     const normalized = normalizeServerUrl(server.url)
     if (!normalized) return
-    await platform.setDefaultServerUrl?.(normalized)
+    await platform.setDefaultServer?.(ServerConnection.Key.make(normalized))
     if (server.displayName) await credentialStorage.setItem("displayName", server.displayName)
     else await credentialStorage.removeItem("displayName")
     if (server.username) await credentialStorage.setItem("username", server.username)
