@@ -1,0 +1,11 @@
+"$schema" = "schemas/schema.json"
+
+[default]
+description = "Default permissions for the mobile bridge plugin"
+permissions = [
+  "allow-register-listener",
+  "allow-remove-listener",
+  "allow-scan-network",
+  "allow-cancel-scan",
+  "allow-share",
+]
