@@ -518,7 +518,10 @@ export function SessionSidePanel(props: {
                     <DndKitProvider
                       sensors={[
                         PointerSensor.configure({
-                          activationConstraints: [new PointerActivationConstraints.Distance({ value: 4 })],
+                          activationConstraints: (event) =>
+                            event.pointerType === "touch"
+                              ? [new PointerActivationConstraints.Delay({ value: 250, tolerance: 10 })]
+                              : [new PointerActivationConstraints.Distance({ value: 4 })],
                           preventActivation: (event) =>
                             event.target instanceof Element &&
                             (!!event.target.closest('[data-slot="tabs-trigger-close-button"]') ||
