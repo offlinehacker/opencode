@@ -117,7 +117,7 @@ type ReviewLimit = { mode: ChangeMode; count: number; limit: number }
 
 const sessionViewState = () => ({
   messageId: undefined as string | undefined,
-  mobileTab: "session" as "session" | "changes",
+  mobileTab: "session" as "session" | "changes" | "terminal",
 })
 
 function isCurrentSessionNotFoundError(error: unknown, sessionID: string | undefined) {
@@ -732,6 +732,40 @@ export default function Page() {
     return list
   })
   const mobileChanges = createMemo(() => !isDesktop() && store.mobileTab === "changes")
+  const mobileTerminal = createMemo(() => !isDesktop() && store.mobileTab === "terminal")
+
+  createEffect(
+    on(
+      () => view().terminal.opened(),
+      (opened) => {
+        if (isDesktop() || !opened) return
+        setStore("mobileTab", "terminal")
+      },
+    ),
+  )
+  createEffect(
+    on(
+      () => store.mobileTab,
+      (tab) => {
+        if (isDesktop()) return
+        if (tab === "terminal") {
+          if (!view().terminal.opened()) view().terminal.open()
+          return
+        }
+        if (view().terminal.opened()) view().terminal.close()
+      },
+    ),
+  )
+  createEffect(
+    on(
+      () => view().terminal.opened(),
+      (opened) => {
+        if (isDesktop() || opened || store.mobileTab !== "terminal") return
+        setStore("mobileTab", "session")
+      },
+    ),
+  )
+
   const wantsReview = createMemo(() =>
     isDesktop()
       ? desktopFileTreeOpen() || (desktopReviewOpen() && activeTab() === "review")
@@ -2236,7 +2270,7 @@ export default function Page() {
         <Tabs.Trigger
           value="session"
           classList={{
-            "!w-1/2 !max-w-none": true,
+            "!w-1/3 !max-w-none": true,
             "!border-b-0 !border-t !border-border-weak-base [&:has([data-selected])]:!border-t-transparent": bottom,
           }}
           classes={{ button: compact ? "w-full !py-2" : "w-full" }}
@@ -2247,7 +2281,7 @@ export default function Page() {
         <Tabs.Trigger
           value="changes"
           classList={{
-            "!w-1/2 !max-w-none !border-r-0": true,
+            "!w-1/3 !max-w-none": true,
             "!border-b-0 !border-t !border-border-weak-base [&:has([data-selected])]:!border-t-transparent": bottom,
           }}
           classes={{ button: compact ? "w-full !py-2" : "w-full" }}
@@ -2256,6 +2290,17 @@ export default function Page() {
           {hasReview()
             ? language.t("session.review.filesChanged", { count: reviewCount() })
             : language.t("session.review.change.other")}
+        </Tabs.Trigger>
+        <Tabs.Trigger
+          value="terminal"
+          classList={{
+            "!w-1/3 !max-w-none !border-r-0": true,
+            "!border-b-0 !border-t !border-border-weak-base [&:has([data-selected])]:!border-t-transparent": bottom,
+          }}
+          classes={{ button: compact ? "w-full !py-2" : "w-full" }}
+          onClick={() => setStore("mobileTab", "terminal")}
+        >
+          {language.t("terminal.title")}
         </Tabs.Trigger>
       </Tabs.List>
     </Tabs>
@@ -2277,6 +2322,11 @@ export default function Page() {
       </Show>
       <div class="flex-1 min-h-0 overflow-hidden">
         <Switch>
+          <Match when={params.id && mobileTerminal()}>
+            <div class="relative h-full overflow-hidden">
+              <TerminalPanelV2 mobileFull />
+            </div>
+          </Match>
           <Match when={params.id && mobileChanges()}>
             <div class="relative h-full overflow-hidden">
               {reviewContent({
@@ -2339,7 +2389,7 @@ export default function Page() {
         </Switch>
       </div>
 
-      <Show when={(params.id || !newSessionDesign()) && !mobileChanges()}>
+      <Show when={(params.id || !newSessionDesign()) && !mobileChanges() && !mobileTerminal()}>
         {(_) => {
           const controller = createSessionComposerRegionController({
             state: composer,
@@ -2537,10 +2587,25 @@ export default function Page() {
           />
         </Show>
         <Show when={newSessionDesign()}>
-          <Show when={isDesktop() ? desktopV2PanelLayout().visible : terminalOpen()}>
-            <div class="min-w-0 h-full flex flex-1 flex-col">
-              <Show when={isDesktop() && (desktopV2ReviewOpen() || desktopFileTreeOpen())}>
-                <div class="min-h-0 flex-1">
+          <Show when={isDesktop() ? desktopV2PanelLayout().visible : layout.mobileSidePanel.opened()}>
+            <div
+              classList={{
+                "min-w-0 h-full flex flex-1 flex-col": isDesktop(),
+                contents: !isDesktop(),
+              }}
+            >
+              <Show
+                when={
+                  (isDesktop() && (desktopV2ReviewOpen() || desktopFileTreeOpen())) ||
+                  (!isDesktop() && layout.mobileSidePanel.opened())
+                }
+              >
+                <div
+                  classList={{
+                    "min-h-0 flex-1": isDesktop(),
+                    contents: !isDesktop(),
+                  }}
+                >
                   <SessionSidePanel
                     canReview={canReview}
                     diffs={reviewDiffs}
@@ -2563,6 +2628,7 @@ export default function Page() {
                     reviewSnap={ui.reviewSnap}
                     size={size}
                     stacked={desktopV2PanelLayout().stacked}
+                    forceOpen={!isDesktop() && layout.mobileSidePanel.opened()}
                   />
                 </div>
               </Show>
@@ -2583,7 +2649,7 @@ export default function Page() {
                   />
                 </div>
               </Show>
-              <Show when={terminalOpen()}>
+              <Show when={isDesktop() && terminalOpen()}>
                 <div
                   classList={{
                     "min-h-0 shrink-0": desktopV2PanelLayout().stacked,
@@ -2602,6 +2668,7 @@ export default function Page() {
           class="fixed inset-0 z-30 bg-black/30 md:hidden"
           onClick={() => {
             layout.mobileSidePanel.hide()
+            layout.fileTree.close()
             view().reviewPanel.close()
           }}
           aria-hidden="true"

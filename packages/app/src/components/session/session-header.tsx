@@ -498,8 +498,13 @@ export function SessionHeader() {
                           variant="ghost"
                           class="group/review-toggle titlebar-icon w-8 h-6 p-0 box-border"
                           onClick={() => {
-                            if (!view().reviewPanel.opened()) layout.mobileSidePanel.show()
-                            view().reviewPanel.toggle()
+                            if (view().reviewPanel.opened()) {
+                              view().reviewPanel.close()
+                              if (!layout.fileTree.opened()) layout.mobileSidePanel.hide()
+                              return
+                            }
+                            layout.mobileSidePanel.show()
+                            view().reviewPanel.open()
                           }}
                           aria-label={language.t("command.review.toggle")}
                           aria-expanded={view().reviewPanel.opened()}

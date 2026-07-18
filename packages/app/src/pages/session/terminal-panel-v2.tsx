@@ -19,6 +19,7 @@ import { Terminal } from "@/components/terminal"
 import { useCommand } from "@/context/command"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
+import { usePlatform } from "@/context/platform"
 import { useSettings } from "@/context/settings"
 import { useTerminal } from "@/context/terminal"
 import { useSDK } from "@/context/sdk"
@@ -27,8 +28,9 @@ import { createSizing, focusTerminalById } from "@/pages/session/helpers"
 import { getTerminalHandoff, setTerminalHandoff } from "@/pages/session/handoff"
 import { useSessionLayout } from "@/pages/session/session-layout"
 
-export function TerminalPanelV2(props: { stacked?: boolean } = {}) {
+export function TerminalPanelV2(props: { stacked?: boolean; mobileFull?: boolean } = {}) {
   const layout = useLayout()
+  const platform = usePlatform()
   const terminal = useTerminal()
   const sdk = useSDK()
   const language = useLanguage()
@@ -51,21 +53,35 @@ export function TerminalPanelV2(props: { stacked?: boolean } = {}) {
     autoCreated: false,
     recovered: {} as Record<string, boolean>,
     view: typeof window === "undefined" ? 1000 : (window.visualViewport?.height ?? window.innerHeight),
+    viewTop: typeof window === "undefined" ? 0 : (window.visualViewport?.offsetTop ?? 0),
   })
 
   const max = () => store.view * 0.6
   const pane = () => Math.min(height(), max())
   const stacked = createMemo(() => isDesktop() && props.stacked)
-  const panelHeight = createMemo(() =>
-    isDesktop() ? (stacked() ? `${pane()}px` : "100%") : opened() ? `${pane()}px` : "0px",
-  )
-  const contentHeight = createMemo(() => (isDesktop() ? (stacked() ? `${pane()}px` : "100%") : `${pane()}px`))
+  const mobileFullHeight = createMemo(() => {
+    if (!opened()) return "0px"
+    const top = root?.getBoundingClientRect().top ?? 0
+    return `${Math.max(120, store.viewTop + store.view - top)}px`
+  })
+  const panelHeight = createMemo(() => {
+    if (isDesktop()) return stacked() ? `${pane()}px` : "100%"
+    if (props.mobileFull) return mobileFullHeight()
+    return opened() ? `${pane()}px` : "0px"
+  })
+  const contentHeight = createMemo(() => {
+    if (isDesktop()) return stacked() ? `${pane()}px` : "100%"
+    return props.mobileFull ? mobileFullHeight() : `${pane()}px`
+  })
   const newTerminalKeybind = createMemo(() => command.keybindParts("terminal.new"))
 
   onMount(() => {
     if (typeof window === "undefined") return
 
-    const sync = () => setStore("view", window.visualViewport?.height ?? window.innerHeight)
+    const sync = () => {
+      setStore("view", window.visualViewport?.height ?? window.innerHeight)
+      setStore("viewTop", window.visualViewport?.offsetTop ?? 0)
+    }
     const port = window.visualViewport
 
     sync()
@@ -164,6 +180,154 @@ export function TerminalPanelV2(props: { stacked?: boolean } = {}) {
     })
   }
 
+  const sendKey = (key: string, code: string, keyCode: number, ctrl = false, alt = false) => {
+    const activeId = terminal.active()
+    if (!activeId) return
+    const wrapper = document.getElementById(`terminal-wrapper-${activeId}`)
+    const textarea = wrapper?.querySelector("textarea")
+    if (!textarea) return
+    textarea.focus()
+    textarea.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key,
+        code,
+        keyCode,
+        which: keyCode,
+        ctrlKey: ctrl,
+        altKey: alt,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    setTimeout(() => textarea.focus(), 0)
+  }
+
+  const noFocus = (fn: () => void) => (e: PointerEvent) => {
+    e.preventDefault()
+    fn()
+  }
+
+  function ExtraKeysBar() {
+    const createRepeat = (key: string, code: string, keyCode: number) => {
+      let timer: ReturnType<typeof setInterval> | undefined
+      return {
+        onPointerDown: (e: PointerEvent) => {
+          e.preventDefault()
+          sendKey(key, code, keyCode)
+          timer = setInterval(() => sendKey(key, code, keyCode), 60)
+        },
+        onPointerUp: () => {
+          if (timer) clearInterval(timer)
+          timer = undefined
+        },
+        onPointerLeave: () => {
+          if (timer) clearInterval(timer)
+          timer = undefined
+        },
+      }
+    }
+
+    return (
+      <div class="flex shrink-0 gap-0.5 px-2 py-1 bg-background-stronger border-b border-border-weaker-base">
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-11-medium"
+          onPointerDown={noFocus(() => sendKey("Escape", "Escape", 27))}
+        >
+          Esc
+        </button>
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-11-medium"
+          onPointerDown={noFocus(() => sendKey("Tab", "Tab", 9))}
+        >
+          Tab
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-11-medium"
+          style="color:#ff6b6b"
+          onPointerDown={noFocus(() => sendKey("c", "KeyC", 67, true))}
+        >
+          ^C
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-11-medium"
+          style="color:#ff6b6b"
+          onPointerDown={noFocus(() => sendKey("d", "KeyD", 68, true))}
+        >
+          ^D
+        </button>
+        <div class="w-1" />
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-text-weak text-11-medium"
+          onPointerDown={noFocus(() => sendKey("z", "KeyZ", 90, true))}
+        >
+          ^Z
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-text-weak text-11-medium"
+          onPointerDown={noFocus(() => sendKey("l", "KeyL", 76, true))}
+        >
+          ^L
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-text-weak text-11-medium"
+          onPointerDown={noFocus(() => sendKey("a", "KeyA", 65, true))}
+        >
+          ^A
+        </button>
+        <button
+          class="h-7 w-9 rounded bg-surface-base text-text-weak text-11-medium"
+          onPointerDown={noFocus(() => sendKey("e", "KeyE", 69, true))}
+        >
+          ^E
+        </button>
+        <div class="flex-1" />
+        <button
+          class="h-7 w-8 rounded bg-surface-base text-text-base text-13-medium"
+          {...createRepeat("ArrowUp", "ArrowUp", 38)}
+        >
+          ▲
+        </button>
+        <button
+          class="h-7 w-8 rounded bg-surface-base text-text-base text-13-medium"
+          {...createRepeat("ArrowDown", "ArrowDown", 40)}
+        >
+          ▼
+        </button>
+        <button
+          class="h-7 w-8 rounded bg-surface-base text-text-base text-13-medium"
+          {...createRepeat("ArrowLeft", "ArrowLeft", 37)}
+        >
+          ◀
+        </button>
+        <button
+          class="h-7 w-8 rounded bg-surface-base text-text-base text-13-medium"
+          {...createRepeat("ArrowRight", "ArrowRight", 39)}
+        >
+          ▶
+        </button>
+        <div class="flex-1" />
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-13-medium"
+          onPointerDown={noFocus(() => sendKey("/", "Slash", 191))}
+        >
+          /
+        </button>
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-11-medium"
+          onPointerDown={noFocus(() => sendKey("-", "Minus", 189))}
+        >
+          -
+        </button>
+        <button
+          class="h-7 w-7 rounded bg-surface-base text-text-base text-11-medium"
+          onPointerDown={noFocus(() => sendKey("|", "Backslash", 220))}
+        >
+          |
+        </button>
+      </div>
+    )
+  }
+
   return (
     <aside
       ref={root}
@@ -183,7 +347,10 @@ export function TerminalPanelV2(props: { stacked?: boolean } = {}) {
       }}
       style={{ height: panelHeight() }}
     >
-      <div classList={{ "md:hidden": !stacked(), hidden: stacked() }} onPointerDown={() => size.start()}>
+      <div
+        classList={{ "md:hidden": !stacked() && !props.mobileFull, hidden: stacked() || props.mobileFull }}
+        onPointerDown={() => size.start()}
+      >
         <ResizeHandle
           classList={{
             "-top-1": newLayout(),
@@ -235,7 +402,10 @@ export function TerminalPanelV2(props: { stacked?: boolean } = {}) {
           <DragDropProvider
             sensors={[
               PointerSensor.configure({
-                activationConstraints: [new PointerActivationConstraints.Distance({ value: 4 })],
+                activationConstraints: (event) =>
+                  event.pointerType === "touch"
+                    ? [new PointerActivationConstraints.Delay({ value: 250, tolerance: 10 })]
+                    : [new PointerActivationConstraints.Distance({ value: 4 })],
                 preventActivation: (event) =>
                   event.target instanceof Element &&
                   !!event.target.closest('[data-slot="tabs-trigger-close-button"], input, [contenteditable="true"]'),
@@ -319,6 +489,9 @@ export function TerminalPanelV2(props: { stacked?: boolean } = {}) {
                   </div>
                 </Tabs.List>
               </Tabs>
+              <Show when={!isDesktop() && (platform.platform === "ios" || platform.platform === "android")}>
+                <ExtraKeysBar />
+              </Show>
               <div class="flex-1 min-h-0 relative">
                 <Show when={opened() && terminal.active()} keyed>
                   {(id) => {
