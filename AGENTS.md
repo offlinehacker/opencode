@@ -1,5 +1,5 @@
 > [!IMPORTANT]
-> This is the WhisperCode mobile fork. Read [`WHISPERCODE.md`](WHISPERCODE.md) in addition to this upstream guide.
+> This is the WhisperCode mobile fork. Its default branch is `whispercode`; upstream uses `dev`. Read [`WHISPERCODE.md`](WHISPERCODE.md) in addition to this upstream guide.
 
 - To regenerate the legacy JavaScript SDK, run `./packages/sdk/js/script/build.ts`.
 - After changing the public Protocol or Server `HttpApi`, run `bun run generate` from `packages/client`. Do not edit `src/generated` or `src/generated-effect` directly.

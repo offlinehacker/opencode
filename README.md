@@ -1,5 +1,5 @@
 > [!NOTE]
-> This repository is [WhisperCode](WHISPERCODE.md), a mobile fork of OpenCode that adds Android and iOS support. It tracks upstream OpenCode but is not maintained by or affiliated with the OpenCode team.
+> This repository is [WhisperCode](WHISPERCODE.md), a mobile fork of OpenCode that adds Android and iOS support. Its default branch is `whispercode`; it tracks upstream OpenCode but is not maintained by or affiliated with the OpenCode team.
 
 <p align="center">
   <a href="https://opencode.ai">
