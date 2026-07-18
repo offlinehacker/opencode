@@ -15,6 +15,7 @@ import type { State, VcsCache } from "./types"
 import { trimSessions } from "./session-trim"
 import { dropSessionCaches } from "./session-cache"
 import { diffs as list, message as clean } from "@/utils/diffs"
+import { copyTodos } from "../todo-store"
 
 const SKIP_PARTS = new Set(["patch", "step-start", "step-finish"])
 const SESSION_CONTENT_EVENTS = new Set([
@@ -193,7 +194,9 @@ export function applyDirectoryEvent(input: {
     }
     case "todo.updated": {
       const props = event.properties as { sessionID: string; todos: Todo[] }
-      input.setStore("todo", props.sessionID, reconcile(props.todos, { key: "id" }))
+      // UPSTREAM-DIVERGENCE: Copy todo payloads before writing them so the fork's resume logic can
+      // safely share session_todo cache state across stores without reference reuse bugs.
+      input.setStore("todo", props.sessionID, copyTodos(props.todos))
       input.setSessionTodo?.(props.sessionID, props.todos)
       break
     }
