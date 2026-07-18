@@ -16,15 +16,16 @@ type OpenAttachmentPickerOptions = {
   defaultPath?: string
 }
 type SaveFilePickerOptions = { title?: string; defaultPath?: string }
-type PlatformName = "web" | "desktop"
+type PlatformName = "web" | "desktop" | "mobile"
 type DesktopOS = "macos" | "windows" | "linux"
+type MobileOS = "ios" | "android"
 
 export type FatalRendererErrorLog = {
   error: string
   url: string
   version?: string
   platform: PlatformName
-  os?: DesktopOS
+  os?: DesktopOS | MobileOS
 }
 
 type PlatformBase = {
@@ -120,16 +121,26 @@ type PlatformBase = {
 
   /** Record a fatal renderer error in platform logs (desktop only) */
   recordFatalRendererError?(error: FatalRendererErrorLog): Promise<void>
+
+  /** Haptic feedback (mobile only) */
+  haptic?(style: "light" | "medium" | "heavy" | "success" | "warning" | "error"): void
+
+  /** Share content (mobile only) */
+  share?(data: { text?: string; url?: string }): Promise<boolean>
 }
 
 export type Platform = PlatformBase &
   (
-    | { platform: "web"; os?: never }
+    | {
+        platform: "web"
+        os?: never
+      }
     | {
         platform: "desktop"
         os?: DesktopOS
         openDirectoryPickerDialog(opts?: OpenDirectoryPickerOptions): Promise<PickerPaths>
       }
+    | { platform: "mobile"; os: MobileOS; connectionHelpUrl?: string }
   )
 
 export type DisplayBackend = "auto" | "wayland"
