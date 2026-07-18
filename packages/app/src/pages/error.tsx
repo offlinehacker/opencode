@@ -235,7 +235,7 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
         url: location.href,
         version: platform.version,
         platform: platform.platform,
-        os: platform.os,
+        os: platform.platform === "desktop" ? platform.os : undefined,
       }) ?? Promise.resolve()
     return recordedFatalError
   }
