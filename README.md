@@ -1,3 +1,6 @@
+> [!NOTE]
+> This repository includes independently maintained [OpenCode mobile](MOBILE.md) work. The `android-mobile` branch adds an Android/Tauri client on the V2-only `mobile-shared-v2` base; mobile platform work is maintained as stacked branches separately from upstream OpenCode.
+
 <p align="center">
   <a href="https://opencode.ai">
     <picture>
