@@ -174,9 +174,10 @@ function ServerForm(props: ServerFormProps) {
   )
 }
 
-export function DialogSelectServer() {
+export function DialogSelectServer(props: { initialMode?: "list" | "add" } = {}) {
   const dialog = useDialog()
   const controller = useServerManagementController({ onSelect: dialog.close })
+  if (props.initialMode === "add") controller.startAdd()
 
   return (
     <Dialog title={controller.formTitle()}>

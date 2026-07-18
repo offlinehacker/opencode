@@ -1,9 +1,10 @@
 import "@/index.css"
 import * as Sentry from "@sentry/solid"
 import { I18nProvider } from "@opencode-ai/ui/context"
-import { DialogProvider } from "@opencode-ai/ui/context/dialog"
+import { DialogProvider, useDialog } from "@opencode-ai/ui/context/dialog"
 import { FileComponentProvider } from "@opencode-ai/ui/context/file"
 import { MarkedProvider } from "@opencode-ai/ui/context/marked"
+import { Button } from "@opencode-ai/ui/button"
 import { File } from "@opencode-ai/session-ui/file"
 import { Font } from "@opencode-ai/ui/font"
 import { Splash } from "@opencode-ai/ui/logo"
@@ -65,6 +66,7 @@ import { ErrorPage } from "./pages/error"
 import { useCheckServerHealth } from "./utils/server-health"
 import { legacySessionHref, legacySessionServer, requireServerKey, sessionHref } from "./utils/session-route"
 import { createSessionLineage } from "@/pages/session/session-lineage"
+import { DialogSelectServer } from "@/components/dialog-select-server"
 
 import { SessionPage, SessionRouteErrorBoundary, TargetSessionRouteContent } from "@/pages/session"
 import { NewHome, LegacyHome } from "@/pages/home"
@@ -468,6 +470,9 @@ function ConnectionGate(props: ParentProps<{ disableHealthCheck?: boolean; start
 function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key: ServerConnection.Key) => void }) {
   const language = useLanguage()
   const server = useServer()
+  const platform = usePlatform()
+  const dialog = useDialog()
+  const connectionHelpUrl = () => (platform.platform === "mobile" ? platform.connectionHelpUrl : undefined)
   const others = () => server.list.filter((s) => ServerConnection.key(s) !== server.key)
   const name = createMemo(() => server.name || server.key)
   const serverToken = "\u0000server\u0000"
@@ -507,6 +512,23 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
             </For>
           </div>
         </div>
+      </Show>
+      <Button
+        size="large"
+        variant="secondary"
+        onClick={() => dialog.show(() => <DialogSelectServer initialMode="add" />)}
+      >
+        {language.t("dialog.server.add.button")}
+      </Button>
+      <Show when={connectionHelpUrl()}>
+        {(url) => (
+          <p class="text-center text-12-regular text-text-weak">
+            Need help connecting?{" "}
+            <a class="external-link text-text-link underline" href={url()}>
+              Quick Start Guide
+            </a>
+          </p>
+        )}
       </Show>
     </div>
   )
