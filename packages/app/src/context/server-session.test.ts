@@ -158,14 +158,22 @@ function setup(sessions: Record<string, Session>) {
 }
 
 describe("server session", () => {
-  test("resolves lineage by session ID without directory", async () => {
+  test("ensures the complete lineage by session ID without directory", async () => {
     const ctx = setup({ child: session("child", "root"), root: session("root") })
 
+    const lineage = await ctx.store.ensureSessionLineage("child")
     const result = await ctx.store.lineage.resolve("child")
 
+    expect(lineage.map((item) => item.id)).toEqual(["child", "root"])
     expect(result.root.id).toBe("root")
     expect(ctx.get).toEqual([{ sessionID: "child" }, { sessionID: "root" }])
     expect(ctx.store.lineage.peek("child")).toEqual(result)
+  })
+
+  test("rejects cyclic session lineage", async () => {
+    const ctx = setup({ child: session("child", "root"), root: session("root", "child") })
+
+    await expect(ctx.store.ensureSessionLineage("child")).rejects.toThrow("Session parent cycle: child")
   })
 
   test("loads session content through the server client", async () => {
