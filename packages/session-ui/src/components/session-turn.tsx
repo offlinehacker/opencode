@@ -98,7 +98,7 @@ function summaryDiff(value: SnapshotFileDiff): value is SummaryDiff {
 
 const hidden = new Set(["todowrite"])
 
-function partState(part: PartType, showReasoningSummaries: boolean) {
+function partState(part: PartType, _showReasoningSummaries: boolean) {
   if (part.type === "tool") {
     if (hidden.has(part.tool)) return
     if (part.tool === "question" && (part.state.status === "pending" || part.state.status === "running")) return
@@ -106,7 +106,7 @@ function partState(part: PartType, showReasoningSummaries: boolean) {
   }
   if (part.type === "text") return part.text?.trim() ? ("visible" as const) : undefined
   if (part.type === "reasoning") {
-    if (showReasoningSummaries && part.text?.trim()) return "visible" as const
+    if (part.text?.trim()) return "visible" as const
     return
   }
   if (PART_MAPPING[part.type]) return "visible" as const
@@ -371,8 +371,7 @@ export function SessionTurn(
   const showThinking = createMemo(() => {
     if (!working() || !!error()) return false
     if (status().type === "retry") return false
-    if (showReasoningSummaries()) return assistantVisible() === 0
-    return true
+    return assistantVisible() === 0
   })
 
   const autoScroll = createAutoScroll({
