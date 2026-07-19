@@ -15,7 +15,6 @@ import { batch } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { diffs as cleanDiffs, message as cleanMessage } from "@/utils/diffs"
 import { sessionNotFoundError } from "@/utils/server-errors"
-import { rootSession } from "@/utils/session-route"
 import { dropSessionCaches, pickSessionCacheEvictions, SESSION_CACHE_LIMIT } from "./global-sync/session-cache"
 
 const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
@@ -261,6 +260,19 @@ export function createServerSession(client: OpencodeClient, options?: { retry?: 
     }
     void request.then(cleanup, cleanup)
     return request
+  }
+
+  const ensureSessionLineage = async (sessionID: string) => {
+    const lineage: Session[] = []
+    const seen = new Set<string>()
+    let current = await resolve(sessionID)
+    while (true) {
+      if (seen.has(current.id)) throw new Error(`Session parent cycle: ${current.id}`)
+      seen.add(current.id)
+      lineage.push(current)
+      if (!current.parentID) return lineage
+      current = await resolve(current.parentID)
+    }
   }
 
   const peekLineage = (sessionID: string) => {
@@ -775,7 +787,7 @@ export function createServerSession(client: OpencodeClient, options?: { retry?: 
       }
       case "todo.updated": {
         const props = event.properties as { sessionID: string; todos: Todo[] }
-        setData("todo", props.sessionID, reconcile(props.todos, { key: "id" }))
+        setData("todo", props.sessionID, props.todos)
         return
       }
       case "session.status": {
@@ -1052,11 +1064,12 @@ export function createServerSession(client: OpencodeClient, options?: { retry?: 
     peek: (sessionID: string) => data.info[sessionID],
     remember,
     resolve,
+    ensureSessionLineage,
     lineage: {
       peek: peekLineage,
       async resolve(sessionID: string) {
-        const session = await resolve(sessionID)
-        return { session, root: await rootSession(session, resolve) }
+        const lineage = await ensureSessionLineage(sessionID)
+        return { session: lineage[0]!, root: lineage.at(-1)! }
       },
     },
     sync,
@@ -1129,6 +1142,11 @@ export function createServerSession(client: OpencodeClient, options?: { retry?: 
         setData(produce((draft) => deleteMessageParts(draft, input.messageID)))
       },
     },
+    status() {
+      return retry(() => client.session.status()).then((result) => {
+        setData("session_status", reconcile(result.data ?? {}))
+      })
+    },
     diff(sessionID: string, options?: { force?: boolean }) {
       touch(sessionID)
       if (data.session_diff[sessionID] !== undefined && !options?.force) return Promise.resolve()
@@ -1147,7 +1165,7 @@ export function createServerSession(client: OpencodeClient, options?: { retry?: 
         const active = generation(sessionID)
         return retry(() => client.session.todo({ sessionID })).then((result) => {
           if (generations.get(sessionID) !== active) return
-          setData("todo", sessionID, reconcile(result.data ?? [], { key: "id" }))
+          setData("todo", sessionID, result.data ?? [])
         })
       })
     },

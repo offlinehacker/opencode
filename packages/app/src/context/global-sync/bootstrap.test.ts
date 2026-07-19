@@ -3,7 +3,7 @@ import { createStore } from "solid-js/store"
 import { QueryClient } from "@tanstack/solid-query"
 import type { Config, OpencodeClient, Project, Session } from "@opencode-ai/sdk/v2/client"
 import type { NormalizedProviderListResponse } from "@opencode-ai/session-ui/context"
-import { bootstrapDirectory, loadPathQuery, loadProvidersQuery } from "./bootstrap"
+import { bootstrapDirectory, loadPathQuery, loadProvidersQuery, warmSessions } from "./bootstrap"
 import type { State, VcsCache } from "./types"
 import { createServerSession } from "../server-session"
 import { ServerScope } from "@/utils/server-scope"
@@ -89,6 +89,7 @@ describe("bootstrapDirectory", () => {
       loadSessions() {},
       translate: (key) => key,
       queryClient: new QueryClient(),
+      session: createServerSession({} as OpencodeClient),
     })
 
     expect(store.status).toBe("partial")
@@ -172,5 +173,107 @@ describe("query keys", () => {
       null,
       "providers",
     ])
+  })
+})
+
+const session = (input: { id: string; parentID?: string }) =>
+  ({
+    id: input.id,
+    parentID: input.parentID,
+    time: {
+      created: 1,
+      updated: 1,
+    },
+  }) as Session
+
+const baseState = (input: Partial<State> = {}) =>
+  ({
+    status: "complete",
+    agent: [],
+    command: [],
+    project: "",
+    projectMeta: undefined,
+    icon: undefined,
+    provider_ready: true,
+    provider: {} as State["provider"],
+    config: {} as State["config"],
+    path: { directory: "/tmp" } as State["path"],
+    session: [],
+    sessionTotal: 0,
+    session_status: {},
+    session_diff: {},
+    todo: {},
+    permission: {},
+    question: {},
+    mcp_ready: true,
+    mcp: {},
+    lsp_ready: true,
+    lsp: [],
+    vcs: undefined,
+    limit: 10,
+    message: {},
+    part: {},
+    ...input,
+  }) as State
+
+function sdkWithSessions(sessions: Record<string, Session>, calls: string[]) {
+  return {
+    session: {
+      get: async ({ sessionID }: { sessionID: string }) => {
+        calls.push(sessionID)
+        return { data: sessions[sessionID] }
+      },
+    },
+  } as unknown as OpencodeClient
+}
+
+describe("warmSessions", () => {
+  test("loads missing session ancestors for prompt request trees", async () => {
+    const root = session({ id: "root" })
+    const [store, setStore] = createStore(
+      baseState({
+        session: [root],
+      }),
+    )
+    const calls: string[] = []
+    const sdk = sdkWithSessions(
+      {
+        child: session({ id: "child", parentID: "root" }),
+        grandchild: session({ id: "grandchild", parentID: "child" }),
+      },
+      calls,
+    )
+    const cache = createServerSession(sdk)
+    cache.remember(root)
+
+    await warmSessions({ ids: ["grandchild"], setStore, session: cache })
+
+    expect(calls).toEqual(["grandchild", "child"])
+    expect(store.session.map((item) => item.id)).toEqual(["child", "grandchild", "root"])
+  })
+
+  test("walks ancestors for already-known prompt sessions", async () => {
+    const grandchild = session({ id: "grandchild", parentID: "child" })
+    const root = session({ id: "root" })
+    const [store, setStore] = createStore(
+      baseState({
+        session: [grandchild, root],
+      }),
+    )
+    const calls: string[] = []
+    const sdk = sdkWithSessions(
+      {
+        child: session({ id: "child", parentID: "root" }),
+      },
+      calls,
+    )
+    const cache = createServerSession(sdk)
+    cache.remember(grandchild)
+    cache.remember(root)
+
+    await warmSessions({ ids: ["grandchild"], setStore, session: cache })
+
+    expect(calls).toEqual(["child"])
+    expect(store.session.map((item) => item.id)).toEqual(["child", "grandchild", "root"])
   })
 })

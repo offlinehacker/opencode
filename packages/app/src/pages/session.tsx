@@ -112,7 +112,7 @@ type VcsMode = "git" | "branch"
 
 const sessionViewState = () => ({
   messageId: undefined as string | undefined,
-  mobileTab: "session" as "session" | "changes",
+  mobileTab: "session" as "session" | "changes" | "terminal",
 })
 
 function isCurrentSessionNotFoundError(error: unknown, sessionID: string | undefined) {
@@ -406,6 +406,20 @@ export default function Page() {
 
   const workspaceTabs = createMemo(() => layout.tabs(workspaceKey))
   const sessionPanelKey = createMemo(() => (params.id ? `${serverSDK().scope}\0${params.id}` : undefined))
+  const RESUME_SYNC_COOLDOWN_MS = 1000
+  let lastResumeSync = 0
+
+  const refreshActiveSession = () => {
+    const id = params.id
+    if (!id) return
+    const now = Date.now()
+    if (now - lastResumeSync < RESUME_SYNC_COOLDOWN_MS) return
+    lastResumeSync = now
+    // Refresh related state together because the host can keep streaming while the app is suspended.
+    void sync().session.sync(id, { force: true })
+    void sync().session.todo(id, { force: true })
+    void sync().session.status()
+  }
 
   createEffect(
     on(
@@ -650,6 +664,7 @@ export default function Page() {
   }, desktopReviewOpen())
 
   const turnDiffs = createMemo(() => list(lastUserMessage()?.summary?.diffs))
+  const mobilePlatform = () => platform.platform === "mobile"
   const nogit = createMemo(() => {
     const project = sync().project
     return !!project && project.vcs !== "git"
@@ -666,6 +681,40 @@ export default function Page() {
     return list
   })
   const mobileChanges = createMemo(() => !isDesktop() && store.mobileTab === "changes")
+  const mobileTerminal = createMemo(() => newSessionDesign() && !isDesktop() && store.mobileTab === "terminal")
+
+  createEffect(
+    on(
+      () => view().terminal.opened(),
+      (opened) => {
+        if (!newSessionDesign() || isDesktop() || !opened) return
+        setStore("mobileTab", "terminal")
+      },
+    ),
+  )
+  createEffect(
+    on(
+      () => store.mobileTab,
+      (tab) => {
+        if (!newSessionDesign() || isDesktop()) return
+        if (tab === "terminal") {
+          if (!view().terminal.opened()) view().terminal.open()
+          return
+        }
+        if (view().terminal.opened()) view().terminal.close()
+      },
+    ),
+  )
+  createEffect(
+    on(
+      () => view().terminal.opened(),
+      (opened) => {
+        if (!newSessionDesign() || isDesktop() || opened || store.mobileTab !== "terminal") return
+        setStore("mobileTab", "session")
+      },
+    ),
+  )
+
   const wantsReview = createMemo(() =>
     isDesktop()
       ? desktopFileTreeOpen() || (desktopReviewOpen() && activeTab() === "review")
@@ -679,6 +728,56 @@ export default function Page() {
     () =>
       ["session-vcs", sdk().directory, sync().data.vcs?.branch ?? "", sync().data.vcs?.default_branch ?? ""] as const,
   )
+  const asVcsDiff = (value: unknown): VcsFileDiff | undefined =>
+    list(value).find((diff): diff is VcsFileDiff => typeof diff.file === "string")
+  const fallbackGitDiff = async () => {
+    const status = await sdk()
+      .client.file.status()
+      .then((result) => result.data ?? [])
+      .catch(() => [])
+    const diffs = await Promise.all(
+      status.map(async (item): Promise<VcsFileDiff | undefined> => {
+        if (item.status === "deleted") {
+          return asVcsDiff({
+            file: item.path,
+            before: "",
+            after: "",
+            additions: item.added,
+            deletions: item.removed,
+            status: item.status,
+          })
+        }
+
+        const content = await sdk()
+          .client.file.read({ path: item.path })
+          .then((result) => result.data)
+          .catch(() => undefined)
+        if (!content || content.type !== "text") return
+
+        if (content.diff) {
+          return {
+            file: item.path,
+            patch: content.diff,
+            additions: item.added,
+            deletions: item.removed,
+            status: item.status,
+          }
+        }
+
+        if (item.status !== "added") return
+        return asVcsDiff({
+          file: item.path,
+          before: "",
+          after: content.content,
+          additions: item.added,
+          deletions: item.removed,
+          status: item.status,
+        })
+      }),
+    )
+
+    return diffs.filter((item): item is VcsFileDiff => item !== undefined)
+  }
   const vcsQuery = createQuery(() => {
     const mode = vcsMode()
     const enabled = wantsReview() && sync().project?.vcs === "git"
@@ -687,14 +786,19 @@ export default function Page() {
       queryKey: [...vcsKey(), mode] as const,
       enabled,
       queryFn: mode
-        ? () =>
-            sdk()
-              .client.vcs.diff({ mode })
-              .then((result) => list(result.data))
-              .catch((error) => {
-                console.debug("[session-review] failed to load vcs diff", { mode, error })
-                return []
-              })
+        ? async () => {
+            try {
+              const data = await sdk()
+                .client.vcs.diff({ mode })
+                .then((result) => result.data ?? [])
+              const diffs = list(data)
+              if (diffs.length > 0 || mode !== "git") return diffs
+              return fallbackGitDiff()
+            } catch (error) {
+              console.debug("[session-review] failed to load vcs diff", { mode, error })
+              return mode === "git" ? fallbackGitDiff() : []
+            }
+          }
         : skipToken,
     }
   })
@@ -757,6 +861,14 @@ export default function Page() {
       console.debug("[session-review] failed to load bounded vcs diff", { mode, file, root, error })
     }
   }
+
+  createEffect(
+    on([sessionKey, wantsReview, () => reviewMode()] as const, ([, wants, changes]) => {
+      if (!wants) return
+      if (changes !== "git" && changes !== "branch") return
+      refreshVcs()
+    }),
+  )
 
   const newSessionWorktree = createMemo(() => {
     if (store.newSessionWorktree === "create") return "create"
@@ -1468,6 +1580,7 @@ export default function Page() {
     if (!id) return
 
     if (!wantsReview()) return
+    if (mobilePlatform() && reviewMode() !== "turn") return
     if (sync().data.session_diff[id] !== undefined) return
     if (sync().status === "loading") return
 
@@ -1483,6 +1596,7 @@ export default function Page() {
         diffFrame = undefined
         diffTimer = undefined
         if (!wants) return
+        if (mobilePlatform() && reviewMode() !== "turn") return
 
         const id = params.id
         if (!id) return
@@ -1548,12 +1662,16 @@ export default function Page() {
   let fillFrame: number | undefined
 
   const jumpThreshold = (el: HTMLDivElement) => Math.max(400, el.clientHeight)
+  const distanceFromScrollBottom = (el: HTMLDivElement) => {
+    const max = Math.max(0, el.scrollHeight - el.clientHeight)
+    return Math.max(0, max - el.scrollTop)
+  }
 
   const updateScrollState = (el: HTMLDivElement) => {
-    const max = el.scrollHeight - el.clientHeight
-    const distance = max - el.scrollTop
+    const max = Math.max(0, el.scrollHeight - el.clientHeight)
+    const distance = distanceFromScrollBottom(el)
     const overflow = max > 1
-    const bottom = !overflow || distance <= 2
+    const bottom = !overflow || distance <= 2 || !autoScroll.userScrolled()
     const jump = overflow && distance > jumpThreshold(el)
 
     if (ui.scroll.overflow === overflow && ui.scroll.bottom === bottom && ui.scroll.jump === jump) return
@@ -1982,9 +2100,7 @@ export default function Page() {
 
       const el = scroller
       const delta = next - dockHeight
-      const stick = el
-        ? !autoScroll.userScrolled() || el.scrollHeight - el.clientHeight - el.scrollTop < 10 + Math.max(0, delta)
-        : false
+      const stick = el ? !autoScroll.userScrolled() || distanceFromScrollBottom(el) < 10 + Math.max(0, delta) : false
 
       dockHeight = next
 
@@ -2031,7 +2147,22 @@ export default function Page() {
   )
 
   onMount(() => {
+    // Native resume hooks cover mobile suspension paths that do not reliably emit browser focus events.
+    const onResume = () => {
+      if (document.visibilityState === "hidden") return
+      refreshActiveSession()
+    }
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") return
+      onResume()
+    }
+
     makeEventListener(document, "keydown", handleKeyDown)
+    makeEventListener(window, "focus", onResume)
+    makeEventListener(window, "pageshow", onResume)
+    makeEventListener(window, "online", onResume)
+    makeEventListener(window, "opencode:resume", onResume)
+    makeEventListener(document, "visibilitychange", onVisibility)
   })
 
   onCleanup(() => {
@@ -2046,7 +2177,7 @@ export default function Page() {
 
   useUsageExceededDialogs()
 
-  const mobileTabs = (compact = false, bottom = false) => (
+  const mobileTabs = (compact = false, bottom = false, includeTerminal = false) => (
     <Tabs value={store.mobileTab} class="h-auto">
       <Tabs.List
         classList={{
@@ -2057,7 +2188,8 @@ export default function Page() {
         <Tabs.Trigger
           value="session"
           classList={{
-            "!w-1/2 !max-w-none": true,
+            "!w-1/2 !max-w-none": !includeTerminal,
+            "!w-1/3 !max-w-none": includeTerminal,
             "!border-b-0 !border-t !border-border-weak-base [&:has([data-selected])]:!border-t-transparent": bottom,
           }}
           classes={{ button: compact ? "w-full !py-2" : "w-full" }}
@@ -2068,7 +2200,8 @@ export default function Page() {
         <Tabs.Trigger
           value="changes"
           classList={{
-            "!w-1/2 !max-w-none !border-r-0": true,
+            "!w-1/2 !max-w-none !border-r-0": !includeTerminal,
+            "!w-1/3 !max-w-none": includeTerminal,
             "!border-b-0 !border-t !border-border-weak-base [&:has([data-selected])]:!border-t-transparent": bottom,
           }}
           classes={{ button: compact ? "w-full !py-2" : "w-full" }}
@@ -2078,6 +2211,19 @@ export default function Page() {
             ? language.t("session.review.filesChanged", { count: reviewCount() })
             : language.t("session.review.change.other")}
         </Tabs.Trigger>
+        <Show when={includeTerminal}>
+          <Tabs.Trigger
+            value="terminal"
+            classList={{
+              "!w-1/3 !max-w-none !border-r-0": true,
+              "!border-b-0 !border-t !border-border-weak-base [&:has([data-selected])]:!border-t-transparent": bottom,
+            }}
+            classes={{ button: compact ? "w-full !py-2" : "w-full" }}
+            onClick={() => setStore("mobileTab", "terminal")}
+          >
+            {language.t("terminal.title")}
+          </Tabs.Trigger>
+        </Show>
       </Tabs.List>
     </Tabs>
   )
@@ -2094,10 +2240,15 @@ export default function Page() {
     <>
       {sessionSync() ?? ""}
       <Show when={!isDesktop() && !!params.id && settings.general.newLayoutDesigns() && !mobileTabsBottom()}>
-        {mobileTabs(true)}
+        {mobileTabs(true, false, true)}
       </Show>
       <div class="flex-1 min-h-0 overflow-hidden">
         <Switch>
+          <Match when={params.id && mobileTerminal()}>
+            <div class="relative h-full overflow-hidden">
+              <TerminalPanelV2 mobileFull />
+            </div>
+          </Match>
           <Match when={params.id && mobileChanges()}>
             <div class="relative h-full overflow-hidden">
               {reviewContent({
@@ -2160,7 +2311,7 @@ export default function Page() {
         </Switch>
       </div>
 
-      <Show when={(params.id || !newSessionDesign()) && !mobileChanges()}>
+      <Show when={(params.id || !newSessionDesign()) && !mobileChanges() && !mobileTerminal()}>
         {(_) => {
           const controller = createSessionComposerRegionController({
             state: composer,
@@ -2277,7 +2428,7 @@ export default function Page() {
           )
         }}
       </Show>
-      <Show when={!!params.id && mobileTabsBottom()}>{mobileTabs(true, true)}</Show>
+      <Show when={!!params.id && mobileTabsBottom()}>{mobileTabs(true, true, true)}</Show>
     </>
   )
 
@@ -2353,10 +2504,25 @@ export default function Page() {
           />
         </Show>
         <Show when={newSessionDesign()}>
-          <Show when={isDesktop() ? desktopV2PanelLayout().visible : terminalOpen()}>
-            <div class="min-w-0 h-full flex flex-1 flex-col">
-              <Show when={isDesktop() && (desktopV2ReviewOpen() || desktopFileTreeOpen())}>
-                <div class="min-h-0 flex-1">
+          <Show when={isDesktop() ? desktopV2PanelLayout().visible : layout.mobileSidePanel.opened()}>
+            <div
+              classList={{
+                "min-w-0 h-full flex flex-1 flex-col": isDesktop(),
+                contents: !isDesktop(),
+              }}
+            >
+              <Show
+                when={
+                  (isDesktop() && (desktopV2ReviewOpen() || desktopFileTreeOpen())) ||
+                  (!isDesktop() && layout.mobileSidePanel.opened())
+                }
+              >
+                <div
+                  classList={{
+                    "min-h-0 flex-1": isDesktop(),
+                    contents: !isDesktop(),
+                  }}
+                >
                   <SessionSidePanel
                     canReview={canReview}
                     diffs={reviewDiffs}
@@ -2379,10 +2545,11 @@ export default function Page() {
                     reviewSnap={ui.reviewSnap}
                     size={size}
                     stacked={desktopV2PanelLayout().stacked}
+                    forceOpen={!isDesktop() && layout.mobileSidePanel.opened()}
                   />
                 </div>
               </Show>
-              <Show when={desktopV2PanelLayout().stacked}>
+              <Show when={isDesktop() && desktopV2PanelLayout().stacked}>
                 <div class="relative h-2 shrink-0" onPointerDown={() => size.start()}>
                   <ResizeHandle
                     class="!relative !inset-auto !h-full !w-full !transform-none"
@@ -2399,7 +2566,7 @@ export default function Page() {
                   />
                 </div>
               </Show>
-              <Show when={terminalOpen()}>
+              <Show when={isDesktop() && terminalOpen()}>
                 <div
                   classList={{
                     "min-h-0 shrink-0": desktopV2PanelLayout().stacked,
@@ -2413,7 +2580,18 @@ export default function Page() {
           </Show>
         </Show>
       </div>
-
+      <Show when={newSessionDesign() && !isDesktop() && layout.mobileSidePanel.opened()}>
+        <div
+          data-slot="mobile-side-panel-backdrop"
+          class="fixed inset-0 z-30 bg-black/30 md:hidden"
+          onClick={() => {
+            layout.mobileSidePanel.hide()
+            layout.fileTree.close()
+            view().reviewPanel.close()
+          }}
+          aria-hidden="true"
+        />
+      </Show>
       <Show when={!newSessionDesign()}>
         <TerminalPanel />
       </Show>

@@ -60,6 +60,33 @@ test("keeps the file-browser sidebar mounted when switching file tabs", async ({
   await expect.poll(() => viewport.evaluate((element) => element.scrollTop)).toBe(scrolled)
 })
 
+test.describe("mobile side panel", () => {
+  test.use({ viewport: { width: 430, height: 800 } })
+
+  test("opens context and files in the V2 mobile panel", async ({ page }) => {
+    await setup(page, { panelOpened: false })
+
+    await page.goto(`/server/${base64Encode(server)}/session/${sessionID}`)
+    await expectSessionTitle(page, title)
+
+    await page.getByRole("button", { name: "View context usage" }).click()
+    const panel = page.locator("#review-panel")
+    await expect(panel).toBeVisible()
+    await expect(panel.getByRole("tab", { name: "Context" })).toHaveAttribute("data-selected", "")
+
+    await panel.getByRole("button", { name: "Close", exact: true }).click()
+    await expect(panel).toHaveCount(0)
+
+    await page.getByRole("button", { name: "Open file" }).click()
+    await expect(panel).toBeVisible()
+    await expect(panel.getByRole("tab", { name: "Open file" })).toHaveAttribute("data-selected", "")
+    await expect(panel.locator('[data-component="session-review-v2-sidebar-root"]')).toBeVisible()
+
+    await page.locator('[data-slot="mobile-side-panel-backdrop"]').click({ position: { x: 5, y: 5 } })
+    await expect(panel).toHaveCount(0)
+  })
+})
+
 type Probed = HTMLElement & { __e2eProbe?: string }
 
 async function writeProbe(page: Page) {
@@ -74,7 +101,7 @@ async function readProbe(page: Page) {
     .evaluate((el) => (el as Probed).__e2eProbe)
 }
 
-async function setup(page: Page) {
+async function setup(page: Page, options?: { panelOpened?: boolean }) {
   await mockOpenCodeServer(page, {
     directory,
     project: {
@@ -123,7 +150,7 @@ async function setup(page: Page) {
   })
 
   await page.addInitScript(
-    ({ directory, server, sessionID }) => {
+    ({ directory, server, sessionID, panelOpened }) => {
       localStorage.setItem("settings.v3", JSON.stringify({ general: { newLayoutDesigns: true } }))
       localStorage.setItem(
         "opencode.global.dat:server",
@@ -134,7 +161,7 @@ async function setup(page: Page) {
       )
       localStorage.setItem(
         "opencode.global.dat:layout",
-        JSON.stringify({ review: { diffStyle: "split", panelOpened: true } }),
+        JSON.stringify({ review: { diffStyle: "split", panelOpened: panelOpened ?? true } }),
       )
       localStorage.setItem(
         "opencode.global.dat:review-panel-v2",
@@ -145,6 +172,6 @@ async function setup(page: Page) {
         JSON.stringify([{ type: "session", server, sessionId: sessionID }]),
       )
     },
-    { directory, server, sessionID },
+    { directory, server, sessionID, panelOpened: options?.panelOpened },
   )
 }

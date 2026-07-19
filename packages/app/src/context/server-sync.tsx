@@ -9,6 +9,7 @@ import type {
 import { showToast } from "@/utils/toast"
 import { getFilename } from "@opencode-ai/core/util/path"
 import { type Accessor, batch, createMemo, getOwner, onCleanup, onMount, untrack } from "solid-js"
+import { makeEventListener } from "@solid-primitives/event-listener"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import type { InitError } from "../pages/error"
@@ -23,6 +24,7 @@ import {
   loadProjectsQuery,
   loadProvidersQuery,
   loadReferencesQuery,
+  warmSessions,
 } from "./global-sync/bootstrap"
 import { createChildStoreManager } from "./global-sync/child-store"
 import { applyDirectoryEvent, applyGlobalEvent } from "./global-sync/event-reducer"
@@ -428,6 +430,14 @@ export function createServerSyncContextInner(serverSDK: ServerSDK) {
         void queryClient.fetchQuery(queryOptionsApi.references(key))
       },
     })
+    if (event.type === "permission.asked" || event.type === "question.asked") {
+      const sessionID = (event.properties as { sessionID?: string })?.sessionID
+      if (sessionID) {
+        void warmSessions({ ids: [sessionID], setStore, session }).catch((err) => {
+          console.error("Failed to warm prompt session", err)
+        })
+      }
+    }
   })
 
   onCleanup(unsub)
@@ -455,6 +465,40 @@ export function createServerSyncContextInner(serverSDK: ServerSDK) {
         void serverSDK.event.start()
       }, 0)
     }
+  })
+
+  const RESUME_REFRESH_COOLDOWN_MS = 1000
+  let lastResumeRefresh = 0
+
+  const refreshOnResume = () => {
+    const now = Date.now()
+    // Focus, visibility, connectivity, and native resume events often arrive together.
+    if (now - lastResumeRefresh < RESUME_REFRESH_COOLDOWN_MS) return
+    lastResumeRefresh = now
+
+    // A suspended client can miss global and directory events. Clearing this metadata forces each
+    // active directory to reload its session page instead of trusting the pre-suspension limit.
+    queue.refresh()
+    for (const directory of Object.keys(children.children)) {
+      sessionMeta.delete(directoryKey(directory))
+      queue.push(directory)
+    }
+  }
+
+  const onVisibility = () => {
+    if (document.visibilityState !== "visible") return
+    refreshOnResume()
+  }
+
+  const onPageShow = (event: PageTransitionEvent) => {
+    if (!event.persisted) return
+    refreshOnResume()
+  }
+
+  onMount(() => {
+    makeEventListener(window, "pageshow", onPageShow)
+    makeEventListener(window, "online", refreshOnResume)
+    makeEventListener(document, "visibilitychange", onVisibility)
   })
 
   const projectApi = {

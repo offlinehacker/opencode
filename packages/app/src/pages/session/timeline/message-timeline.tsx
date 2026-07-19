@@ -58,7 +58,7 @@ import { Popover as KobaltePopover } from "@kobalte/core/popover"
 import { normalize } from "@opencode-ai/session-ui/session-diff"
 import { useFileComponent } from "@opencode-ai/ui/context/file"
 import { shouldMarkBoundaryGesture, normalizeWheelDelta } from "@/pages/session/message-gesture"
-import { SessionContextUsage } from "@/components/session-context-usage"
+import { SessionContextUsage, SessionFilesButton } from "@/components/session-context-usage"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useSessionKey } from "@/pages/session/session-layout"
@@ -1027,7 +1027,12 @@ export function MessageTimeline(props: {
     const defaultOpen = createMemo(() => {
       const item = part()
       if (!item) return
-      return partDefaultOpen(item, settings.general.shellToolPartsExpanded(), settings.general.editToolPartsExpanded())
+      return partDefaultOpen(
+        item,
+        settings.general.shellToolPartsExpanded(),
+        settings.general.editToolPartsExpanded(),
+        settings.general.showReasoningSummaries(),
+      )
     })
 
     return (
@@ -1492,6 +1497,9 @@ export function MessageTimeline(props: {
                       placement="bottom"
                       buttonAppearance={settings.general.newLayoutDesigns() ? "v2" : "default"}
                     />
+                    <Show when={settings.general.newLayoutDesigns()}>
+                      {(_) => <SessionFilesButton placement="bottom" buttonAppearance="v2" />}
+                    </Show>
                     <Show when={!parentID()}>
                       <Show
                         when={settings.general.newLayoutDesigns()}

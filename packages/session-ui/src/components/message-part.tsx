@@ -66,6 +66,9 @@ import { useLocation } from "@solidjs/router"
 import { attached, inline, kind, typeLabel } from "./message-file"
 import { readPartText } from "./message-part-text"
 import { SessionProgressIndicatorV2 } from "../v2/components/session-progress-indicator-v2"
+import { isReasoningSummary, partDefaultOpen, partRenderable } from "./message-part-display"
+
+export { partDefaultOpen } from "./message-part-display"
 
 async function writeClipboard(text: string): Promise<boolean> {
   const body = typeof document === "undefined" ? undefined : document.body
@@ -614,8 +617,6 @@ function taskSession(
 }
 
 const CONTEXT_GROUP_TOOLS = new Set(["read", "glob", "grep", "list"])
-const HIDDEN_TOOLS = new Set(["todowrite"])
-
 function list<T>(value: T[] | undefined | null, fallback: T[]) {
   if (Array.isArray(value)) return value
   return fallback
@@ -718,24 +719,7 @@ function index<T extends { id: string }>(items: readonly T[]) {
 }
 
 export function renderable(part: PartType, showReasoningSummaries = true) {
-  if (part.type === "tool") {
-    if (HIDDEN_TOOLS.has(part.tool)) return false
-    if (part.tool === "question") return part.state.status !== "pending" && part.state.status !== "running"
-    return true
-  }
-  if (part.type === "text") return !!part.text?.trim()
-  if (part.type === "reasoning") return showReasoningSummaries && !!part.text?.trim()
-  return !!PART_MAPPING[part.type]
-}
-
-function toolDefaultOpen(tool: string, shell = false, edit = false) {
-  if (tool === "bash") return shell
-  if (tool === "edit" || tool === "write" || tool === "apply_patch") return edit
-}
-
-export function partDefaultOpen(part: PartType, shell = false, edit = false) {
-  if (part.type !== "tool") return
-  return toolDefaultOpen(part.tool, shell, edit)
+  return partRenderable(part, showReasoningSummaries) ?? !!PART_MAPPING[part.type]
 }
 
 export function AssistantParts(props: {
@@ -828,7 +812,12 @@ export function AssistantParts(props: {
                         showAssistantCopyPartID={props.showAssistantCopyPartID}
                         turnDurationMs={props.turnDurationMs}
                         useV2Actions={props.useV2Actions}
-                        defaultOpen={partDefaultOpen(item()!, props.shellToolDefaultOpen, props.editToolDefaultOpen)}
+                        defaultOpen={partDefaultOpen(
+                          item()!,
+                          props.shellToolDefaultOpen,
+                          props.editToolDefaultOpen,
+                          props.showReasoningSummaries,
+                        )}
                       />
                     </Show>
                   </Show>
@@ -1769,17 +1758,31 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
 
 PART_MAPPING["reasoning"] = function ReasoningPartDisplay(props) {
   const data = useData()
+  const i18n = useI18n()
   const part = () => props.part as ReasoningPart
   const streaming = createMemo(
     () => props.message.role === "assistant" && typeof (props.message as AssistantMessage).time.completed !== "number",
   )
   const text = () => readPartText(data.store.part_text_accum_delta, part())
+  const content = () => (
+    <Show when={streaming()} fallback={<Markdown text={text()} cacheKey={part().id} streaming={false} />}>
+      <PacedMarkdown text={text()} cacheKey={part().id} streaming={streaming()} />
+    </Show>
+  )
 
   return (
     <Show when={text()}>
       <div data-component="reasoning-part" data-timeline-part-id={part().id}>
-        <Show when={streaming()} fallback={<Markdown text={text()} cacheKey={part().id} streaming={false} />}>
-          <PacedMarkdown text={text()} cacheKey={part().id} streaming={streaming()} />
+        <Show when={!isReasoningSummary(part())} fallback={content()}>
+          <BasicTool
+            icon="brain"
+            trigger={{ title: i18n.t("ui.sessionTurn.status.thinking") }}
+            defaultOpen={props.defaultOpen}
+            open={props.toolOpen}
+            onOpenChange={props.onToolOpenChange}
+          >
+            {content()}
+          </BasicTool>
         </Show>
       </div>
     </Show>

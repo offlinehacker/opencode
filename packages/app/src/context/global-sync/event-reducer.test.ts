@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test"
-import type { Message, Part, PermissionRequest, Project, QuestionRequest, Session } from "@opencode-ai/sdk/v2/client"
+import type {
+  Message,
+  Part,
+  PermissionRequest,
+  Project,
+  QuestionRequest,
+  Session,
+  Todo,
+} from "@opencode-ai/sdk/v2/client"
 import { createStore } from "solid-js/store"
 import type { State } from "./types"
 import { applyDirectoryEvent, applyGlobalEvent, cleanupDroppedSessionCaches } from "./event-reducer"
@@ -56,6 +64,13 @@ const questionRequest = (id: string, sessionID: string, title = id) =>
       },
     ],
   }) as QuestionRequest
+
+const todo = (content: string, status = "pending") =>
+  ({
+    content,
+    status,
+    priority: "medium",
+  }) as Todo
 
 const baseState = (input: Partial<State> = {}) =>
   ({
@@ -549,6 +564,57 @@ describe("applyDirectoryEvent", () => {
       loadLsp() {},
     })
     expect(store.question[sessionID]?.map((x) => x.id)).toEqual(["q_1", "q_3"])
+  })
+
+  test("replaces todo lists on updates without leaving stale entries", () => {
+    const sessionID = "ses_1"
+    const seen: Array<{ sessionID: string; todos: Todo[] | undefined }> = []
+    const [store, setStore] = createStore(
+      baseState({
+        todo: {
+          [sessionID]: [todo("one"), todo("two", "in_progress"), todo("three")],
+        },
+      }),
+    )
+
+    applyDirectoryEvent({
+      event: {
+        type: "todo.updated",
+        properties: {
+          sessionID,
+          todos: [todo("done", "completed")],
+        },
+      },
+      store,
+      setStore,
+      push() {},
+      directory: "/tmp",
+      loadLsp() {},
+      setSessionTodo(sessionID, todos) {
+        seen.push({ sessionID, todos })
+      },
+    })
+
+    expect(store.todo[sessionID]).toEqual([todo("done", "completed")])
+    expect(seen).toEqual([{ sessionID, todos: [todo("done", "completed")] }])
+
+    applyDirectoryEvent({
+      event: {
+        type: "todo.updated",
+        properties: {
+          sessionID,
+          todos: [],
+        },
+      },
+      store,
+      setStore,
+      push() {},
+      directory: "/tmp",
+      loadLsp() {},
+      setSessionTodo() {},
+    })
+
+    expect(store.todo[sessionID]).toEqual([])
   })
 
   test("updates vcs branch in store and cache", () => {

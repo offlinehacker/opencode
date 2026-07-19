@@ -78,6 +78,7 @@ export function SessionSidePanel(props: {
   reviewSnap: boolean
   size: Sizing
   stacked?: boolean
+  forceOpen?: boolean
 }) {
   const layout = useLayout()
   const settings = useSettings()
@@ -92,7 +93,8 @@ export function SessionSidePanel(props: {
   const isDesktop = createMediaQuery("(min-width: 768px)")
   const shown = settings.visibility.fileTree
 
-  const reviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
+  const canOpen = createMemo(() => isDesktop() || !!props.forceOpen)
+  const reviewOpen = createMemo(() => canOpen() && view().reviewPanel.opened())
   const fileOpen = createMemo(
     () =>
       isDesktop() &&
@@ -102,13 +104,18 @@ export function SessionSidePanel(props: {
       }),
   )
   const open = createMemo(() => reviewOpen() || fileOpen())
-  const reviewTab = createMemo(() => isDesktop())
+  const reviewTab = createMemo(() => canOpen())
   const panelWidth = createMemo(() => {
     if (!open()) return "0px"
+    if (!isDesktop()) return "100%"
     if (reviewOpen()) return "auto"
     return `${layout.fileTree.width()}px`
   })
-  const treeWidth = createMemo(() => (fileOpen() ? `${layout.fileTree.width()}px` : "0px"))
+  const treeWidth = createMemo(() => {
+    if (!fileOpen()) return "0px"
+    if (!isDesktop()) return "100%"
+    return `${layout.fileTree.width()}px`
+  })
 
   const diffs = createMemo(() => props.diffs().filter(renderDiff))
   const diffFiles = createMemo(() => diffs().map((d) => d.file))
@@ -211,6 +218,11 @@ export function SessionSidePanel(props: {
     previewTab(SESSION_OPEN_FILE_TAB)
     queueMicrotask(() => fileFilter?.focus())
   }
+  const closeMobilePanel = () => {
+    layout.mobileSidePanel.hide()
+    layout.fileTree.close()
+    view().reviewPanel.close()
+  }
   const activateTab = (value: string) => {
     const next = normalizeTab(value)
     const path = file.pathFromTab(next)
@@ -240,6 +252,7 @@ export function SessionSidePanel(props: {
   const closeTabKeybind = createMemo(() => command.keybindParts("tab.close"))
   const [store, setStore] = createStore({
     activeDraggable: undefined as string | undefined,
+    expanded: false,
   })
 
   const handleDragStart = (event: unknown) => {
@@ -284,33 +297,56 @@ export function SessionSidePanel(props: {
   })
 
   return (
-    <Show when={isDesktop() && !(settings.general.newLayoutDesigns() && !params.id)}>
+    <Show when={(isDesktop() || !!props.forceOpen) && !(settings.general.newLayoutDesigns() && !params.id)}>
       <aside
         id="review-panel"
         aria-label={language.t("session.panel.reviewAndFiles")}
         aria-hidden={!open()}
         inert={!open()}
-        class="relative min-w-0 flex overflow-hidden"
+        class="min-w-0 flex overflow-hidden"
         classList={{
           "bg-v2-background-bg-base": settings.general.newLayoutDesigns(),
           "bg-background-base": !settings.general.newLayoutDesigns(),
-          "h-full shrink-0": !props.stacked,
-          "h-full min-h-0": props.stacked,
+          relative: isDesktop(),
+          "h-full shrink-0": isDesktop() && !props.stacked,
+          "h-full min-h-0": isDesktop() && props.stacked,
           "pointer-events-none": !open(),
           "transition-[width] duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[width] motion-reduce:transition-none":
             !props.size.active() && !props.reviewSnap,
           "rounded-[10px] shadow-[var(--v2-elevation-raised)] overflow-hidden": settings.general.newLayoutDesigns(),
-          "flex-1": reviewOpen(),
+          "flex-1": isDesktop() && reviewOpen(),
+          "relative w-full shrink-0": !isDesktop(),
+          "z-40 h-[52%]": !isDesktop() && !store.expanded,
+          "z-[80] h-full": !isDesktop() && store.expanded,
         }}
         style={{ width: panelWidth() }}
       >
         <Show when={open()}>
           <div
-            class="size-full flex"
+            class="relative size-full flex"
             classList={{
               "border-l border-border-weaker-base": !settings.general.newLayoutDesigns(),
+              "pt-10": !isDesktop() && !!props.forceOpen,
             }}
           >
+            <Show when={!isDesktop() && props.forceOpen}>
+              <div class="absolute inset-x-0 top-0 z-10 flex items-center justify-end gap-1 border-b border-border-weaker-base bg-v2-background-bg-base px-2 py-1">
+                <IconButtonV2
+                  icon={<Icon name={store.expanded ? "chevron-down" : "arrow-up"} />}
+                  variant="ghost-muted"
+                  size="large"
+                  onClick={() => setStore("expanded", !store.expanded)}
+                  aria-label={store.expanded ? language.t("session.todo.collapse") : language.t("session.todo.expand")}
+                />
+                <IconButtonV2
+                  icon={<Icon name="close-small" />}
+                  variant="ghost-muted"
+                  size="large"
+                  onClick={closeMobilePanel}
+                  aria-label={language.t("common.close")}
+                />
+              </div>
+            </Show>
             <Show when={reviewOpen()}>
               <div
                 class="relative min-w-0 h-full flex-1 overflow-hidden"
@@ -518,7 +554,10 @@ export function SessionSidePanel(props: {
                     <DndKitProvider
                       sensors={[
                         PointerSensor.configure({
-                          activationConstraints: [new PointerActivationConstraints.Distance({ value: 4 })],
+                          activationConstraints: (event) =>
+                            event.pointerType === "touch"
+                              ? [new PointerActivationConstraints.Delay({ value: 250, tolerance: 10 })]
+                              : [new PointerActivationConstraints.Distance({ value: 4 })],
                           preventActivation: (event) =>
                             event.target instanceof Element &&
                             (!!event.target.closest('[data-slot="tabs-trigger-close-button"]') ||

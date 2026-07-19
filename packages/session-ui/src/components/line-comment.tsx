@@ -82,8 +82,8 @@ export const LineCommentAnchor = (props: LineCommentAnchorProps) => {
               type="button"
               aria-label={props.buttonLabel}
               data-slot="line-comment-button"
-              on:mousedown={(e) => e.stopPropagation()}
-              on:mouseup={(e) => e.stopPropagation()}
+              on:pointerdown={(e) => e.stopPropagation()}
+              on:pointerup={(e) => e.stopPropagation()}
               on:click={props.onClick as any}
               on:mouseenter={props.onMouseEnter as any}
             >
@@ -100,7 +100,7 @@ export const LineCommentAnchor = (props: LineCommentAnchorProps) => {
                 classList={{
                   [props.popoverClass ?? ""]: !!props.popoverClass,
                 }}
-                on:mousedown={(e) => e.stopPropagation()}
+                on:pointerdown={(e) => e.stopPropagation()}
                 on:focusout={props.onPopoverFocusOut as any}
               >
                 {props.children}
@@ -115,7 +115,7 @@ export const LineCommentAnchor = (props: LineCommentAnchorProps) => {
           classList={{
             [props.popoverClass ?? ""]: !!props.popoverClass,
           }}
-          on:mousedown={(e) => e.stopPropagation()}
+          on:pointerdown={(e) => e.stopPropagation()}
           on:click={props.onClick as any}
           on:mouseenter={props.onMouseEnter as any}
           on:focusout={props.onPopoverFocusOut as any}
@@ -376,6 +376,7 @@ export const LineCommentEditor = (props: LineCommentEditorProps) => {
                     type="button"
                     data-slot="line-comment-mention-item"
                     data-active={mention.active() === item.path ? "" : undefined}
+                    onPointerDown={(event) => event.preventDefault()}
                     onMouseDown={(event) => event.preventDefault()}
                     onMouseEnter={() => mention.setActive(item.path)}
                     onClick={() => selectMention(item)}
@@ -407,6 +408,7 @@ export const LineCommentEditor = (props: LineCommentEditorProps) => {
                   type="button"
                   data-slot="line-comment-action"
                   data-variant="ghost"
+                  on:pointerdown={hold as any}
                   on:mousedown={hold as any}
                   on:click={click(split.onCancel) as any}
                 >
@@ -417,6 +419,7 @@ export const LineCommentEditor = (props: LineCommentEditorProps) => {
                   data-slot="line-comment-action"
                   data-variant="primary"
                   disabled={split.value.trim().length === 0}
+                  on:pointerdown={hold as any}
                   on:mousedown={hold as any}
                   on:click={click(submit) as any}
                 >
